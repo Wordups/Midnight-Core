@@ -149,11 +149,16 @@ nav{
   margin-bottom:24px;
   opacity:0;animation:fadeUp .8s ease .3s forwards;
 }
-.hero-sub{
-  font-size:17px;color:var(--t2);font-weight:300;
-  max-width:460px;line-height:1.7;margin-bottom:10px;
-  opacity:0;animation:fadeUp .8s ease .35s forwards;
-}
+    .hero-sub {
+        font-size: 17px;
+        color: var(--t2);
+        font-weight: 300;
+        max-width: 460px;
+        line-height: 1.7;
+        margin-bottom: 10px;
+        opacity: 0;
+        animation: fadeUp .8s ease .35s forwards;
+    }
 .hero-sub strong{color:var(--t1);font-weight:500}
 .hero-btns{
   display:flex;gap:12px;margin-bottom:44px;
@@ -308,6 +313,8 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
   .hero-title{font-size:clamp(56px,15vw,90px)!important}
   .hero-btns{flex-direction:column!important}
   .hero-btns .btn-primary,.hero-btns .btn-outline{width:100%!important;text-align:center!important}
+  #page-home section{grid-template-columns:1fr!important}
+  #page-home section > div:last-child{min-height:60vw!important}
   .ent-grid{grid-template-columns:1fr!important}
   .pipeline{grid-template-columns:1fr!important}
   .pipeline::before{display:none!important}
@@ -375,16 +382,10 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
 </nav>
 
 <div class="page active" id="page-home">
-  <section style="display:flex;flex-direction:column;background:var(--bg)">
-    <div style="position:relative;width:100%;height:75vw;max-height:640px;min-height:300px;overflow:hidden;border-bottom:1px solid var(--b0)">
-      <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;object-position:center 12%;opacity:0;animation:fadeIn 1.2s ease .3s forwards">
-        <source src="midnight-chicken.mp4" type="video/mp4">
-        <img src="chicken.png" alt="Midnight — Chief Compliance Officer" style="width:100%;height:100%;object-fit:cover;object-position:center 12%">
-      </video>
-
-    </div>
-    <div style="display:flex;flex-direction:column;justify-content:center;padding:clamp(32px,6vw,60px) clamp(20px,8vw,80px) clamp(40px,7vw,70px);position:relative">
-      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 60% 50%,rgba(0,212,245,0.04),transparent 60%);pointer-events:none"></div>
+  <section style="display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 96px);background:var(--bg)">
+    <!-- Left: text -->
+    <div style="display:flex;flex-direction:column;justify-content:center;padding:clamp(32px,6vw,80px) clamp(20px,5vw,70px);position:relative;border-right:1px solid var(--b0)">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 80% 50%,rgba(0,212,245,0.05),transparent 60%);pointer-events:none"></div>
       <div class="eyebrow" style="opacity:0;animation:fadeUp .7s ease .1s forwards">Enterprise Policy Intelligence · Takeoff</div>
       <h1 class="hero-title">MID<br><span class="hl">NIGHT</span></h1>
       <div class="hero-tagline">Policy Intelligence Engine</div>
@@ -399,6 +400,13 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
         <span class="badge">NIST CSF</span><span class="badge">CoBIT</span>
         <span class="badge">SOC 2</span>
       </div>
+    </div>
+    <!-- Right: video -->
+    <div style="position:relative;overflow:hidden;background:#050c16;">
+      <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;object-position:center 12%;opacity:0;animation:fadeIn 1.2s ease .3s forwards">
+        <source src="midnight-chicken.mp4" type="video/mp4">
+        <img src="chicken.png" alt="Midnight — Chief Compliance Officer" style="width:100%;height:100%;object-fit:cover;object-position:center 12%">
+      </video>
     </div>
   </section>
 
