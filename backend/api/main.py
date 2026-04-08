@@ -39,4 +39,7 @@ async def health():
     return {"status": "ok", "service": "midnight-core"}
 
 # ── Static files (no password) ─────────────────────────────────────────────────
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/index.html")
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
