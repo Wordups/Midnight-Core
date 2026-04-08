@@ -1,0 +1,7 @@
+{
+  "template_name": "generic_sop",
+  "version": "1.0",
+  "type": "SOP",
+  "supported_outputs": ["docx", "pdf"],
+  "description": "Generic standard operating procedure template"
+}

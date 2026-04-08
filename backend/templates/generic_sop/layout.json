@@ -1,0 +1,5 @@
+{
+  "fonts": { "family": "Calibri", "size_body": 11 },
+  "tables": { "numbered_steps": true, "shaded_headers": true },
+  "sections": ["objective", "inputs", "outputs", "tools", "steps", "escalation"]
+}

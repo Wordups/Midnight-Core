@@ -1,0 +1,1 @@
+{ "template_name": "generic_playbook", "version": "1.0", "type": "PLAYBOOK", "supported_outputs": ["docx","pdf"] }

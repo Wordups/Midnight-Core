@@ -1,0 +1,7 @@
+{
+  "template_name": "generic_policy",
+  "version": "1.0",
+  "type": "POLICY",
+  "supported_outputs": ["docx", "pdf"],
+  "description": "Generic enterprise policy template"
+}

@@ -1,0 +1,9 @@
+{
+  "Title":      "title",
+  "Objective":  "objective",
+  "Steps":      "steps",
+  "Inputs":     "inputs",
+  "Outputs":    "outputs",
+  "Tools":      "tools",
+  "Escalation": "escalation"
+}

@@ -1,0 +1,4 @@
+{
+  "required": ["policy_name", "version", "effective_date", "owner", "purpose", "scope", "policy_statements"],
+  "optional": ["policy_number", "approver", "exceptions", "enforcement", "revision_history", "roles_responsibilities"]
+}

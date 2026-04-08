@@ -1,0 +1,4 @@
+{
+  "required": ["title", "objective", "steps", "owner"],
+  "optional": ["inputs", "outputs", "tools", "escalation", "revision_history"]
+}

@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Midnight — Compliance Platform</title>
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/syne@5/index.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/dm-sans@5/index.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/dm-mono@5/index.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #10131a;
+    --bg3: #161b24;
+    --bg4: #1c2230;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8a90a0;
+    --text3: #545c6e;
+    --green: #3fd68c;
+    --green-bg: rgba(63,214,140,0.1);
+    --amber: #f5a623;
+    --amber-bg: rgba(245,166,35,0.1);
+    --red: #ff5c5c;
+    --red-bg: rgba(255,92,92,0.1);
+    --blue: #4a9eff;
+    --blue-bg: rgba(74,158,255,0.08);
+    --accent: #3fd68c;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+    z-index: 100;
+  }
+
+  .logo-area {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .logo-name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 3px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+
+  .nav-section {
+    padding: 0 12px;
+    flex: 1;
+  }
+
+  .nav-label {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0 8px;
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 400;
+    margin-bottom: 2px;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+
+  .nav-item.active {
+    background: var(--bg4);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+
+  .nav-icon { width: 16px; height: 16px; opacity: 0.6; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--red-bg);
+    color: var(--red);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+  }
+
+  .nav-spacer { height: 16px; }
+
+  .mascot-area {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mascot-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1c2a1a, #0f1f10);
+    border: 1px solid rgba(63,214,140,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .mascot-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: var(--font-display);
+  }
+
+  .mascot-role {
+    font-size: 10px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+
+  /* MAIN CONTENT */
+  .main {
+    margin-left: 220px;
+    min-height: 100vh;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .org-tag {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .org-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  .run-btn {
+    background: var(--accent);
+    color: #0a0c10;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: opacity 0.15s;
+  }
+
+  .run-btn:hover { opacity: 0.85; }
+
+  /* CONTENT AREA */
+  .content { padding: 24px 28px; }
+
+  /* METRIC CARDS */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .metric-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .metric-card:hover { border-color: var(--border2); }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .metric-card.green::before { background: var(--green); }
+  .metric-card.amber::before { background: var(--amber); }
+  .metric-card.red::before { background: var(--red); }
+
+  .metric-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .metric-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .metric-icon.green { background: var(--green-bg); }
+  .metric-icon.amber { background: var(--amber-bg); }
+  .metric-icon.red { background: var(--red-bg); }
+
+  .metric-label {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--font-mono);
+    margin-bottom: 6px;
+  }
+
+  .metric-val {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .metric-val.green { color: var(--green); }
+  .metric-val.amber { color: var(--amber); }
+  .metric-val.red { color: var(--red); }
+
+  .metric-sub {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .metric-sub-item {
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .metric-sub-item span {
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
+
+  .metric-sub-item span.red { color: var(--red); }
+  .metric-sub-item span.amber { color: var(--amber); }
+  .metric-sub-item span.green { color: var(--green); }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* PANEL */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .panel-action {
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    opacity: 0.8;
+  }
+
+  .panel-action:hover { opacity: 1; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    font-size: 12px;
+    padding: 10px 14px;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* POLICY TABLE */
+  .table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 100px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-family: var(--font-mono);
+  }
+
+  .table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 100px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  .table-row:last-child { border-bottom: none; }
+  .table-row:hover { background: var(--bg3); }
+
+  .doc-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .doc-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .doc-checkbox.checked {
+    background: var(--green-bg);
+    border-color: var(--green);
+  }
+
+  .doc-type-pill {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .doc-type-pill.policy { background: rgba(74,158,255,0.12); color: var(--blue); }
+  .doc-type-pill.sop { background: rgba(138,100,255,0.12); color: #8a64ff; }
+  .doc-type-pill.playbook { background: rgba(245,166,35,0.12); color: var(--amber); }
+  .doc-type-pill.standard { background: rgba(63,214,140,0.12); color: var(--green); }
+  .doc-type-pill.plan { background: rgba(255,92,92,0.12); color: var(--red); }
+
+  .status-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .status-badge::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .status-badge.ready { background: var(--green-bg); color: var(--green); }
+  .status-badge.ready::before { background: var(--green); }
+  .status-badge.review { background: var(--amber-bg); color: var(--amber); }
+  .status-badge.review::before { background: var(--amber); }
+  .status-badge.draft { background: var(--blue-bg); color: var(--blue); }
+  .status-badge.draft::before { background: var(--blue); }
+  .status-badge.progress { background: rgba(138,100,255,0.1); color: #8a64ff; }
+  .status-badge.progress::before { background: #8a64ff; }
+
+  .owner-cell {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .actions-cell {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .action-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .action-btn:hover { border-color: var(--border2); background: var(--bg4); }
+
+  /* GAPS PANEL */
+  .gap-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .gap-item:hover { background: var(--bg3); }
+  .gap-item:last-child { border-bottom: none; }
+
+  .gap-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .gap-control {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .critical-badge {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--red-bg);
+    color: var(--red);
+    font-family: var(--font-mono);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .critical-badge.med {
+    background: var(--amber-bg);
+    color: var(--amber);
+  }
+
+  .gap-desc {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .gap-meta {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+  }
+
+  /* ACTIVITY + BOTTOM GRID */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+  }
+
+  .activity-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr 1fr 80px;
+    padding: 11px 20px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    font-size: 12px;
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  .activity-row:hover { background: var(--bg3); }
+  .activity-row:last-child { border-bottom: none; }
+
+  .time-cell { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+
+  .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text2);
+  }
+
+  .result-cell { font-family: var(--font-mono); font-size: 11px; }
+  .result-cell.ok { color: var(--green); }
+  .result-cell.warn { color: var(--amber); }
+
+  /* FEED PANEL */
+  .feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .feed-item:hover { background: var(--bg3); }
+  .feed-item:last-child { border-bottom: none; }
+
+  .feed-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .feed-body { flex: 1; }
+
+  .feed-action {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .feed-detail {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+  }
+
+  .feed-time {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* SEARCH INPUT */
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px 6px 30px;
+    font-size: 12px;
+    color: var(--text);
+    font-family: var(--font-body);
+    outline: none;
+    width: 160px;
+    transition: border-color 0.15s;
+  }
+
+  .search-input:focus { border-color: var(--border2); }
+  .search-input::placeholder { color: var(--text3); }
+
+  .search-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 11px;
+  }
+
+  /* CLUCK BANNER */
+  .cluck-banner {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .cluck-banner:hover { border-color: rgba(63,214,140,0.4); border-left-color: var(--accent); }
+
+  .cluck-emoji { font-size: 24px; }
+
+  .cluck-text { flex: 1; }
+  .cluck-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .cluck-sub { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+
+  .cluck-cta {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  /* FRAMEWORK BAR */
+  .fw-section { padding: 16px 20px; }
+
+  .fw-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .fw-row:last-child { margin-bottom: 0; }
+
+  .fw-name {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text2);
+    width: 70px;
+    flex-shrink: 0;
+  }
+
+  .fw-bar-track {
+    flex: 1;
+    height: 5px;
+    background: var(--bg3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .fw-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  .fw-pct {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    width: 34px;
+    text-align: right;
+  }
+
+  /* MINI CHART */
+  .mini-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 40px;
+    padding: 0 20px 16px;
+  }
+
+  .bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    transition: height 0.3s;
+    cursor: pointer;
+  }
+
+  .bar.blue { background: rgba(74,158,255,0.5); }
+  .bar.blue:hover { background: var(--blue); }
+  .bar.red { background: rgba(255,92,92,0.4); }
+  .bar.red:hover { background: var(--red); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 280px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo-area">
+    <div class="logo-name">Midnight</div>
+    <div class="logo-sub">Compliance Platform</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Workspace</div>
+    <div class="nav-item active" onclick="showToast('Overview')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      Overview
+    </div>
+    <div class="nav-item" onclick="showToast('Policy Library')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 6h12M2 9h8M2 12h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Policy Library
+    </div>
+    <div class="nav-item" onclick="showToast('Gap Analysis')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Gap Analysis
+      <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-label">Build</div>
+    <div class="nav-item" onclick="showToast('Create Policy')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Create Policy
+    </div>
+    <div class="nav-item" onclick="showToast('Migrate Document')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Migrate Document
+    </div>
+    <div class="nav-item" onclick="showToast('Bird Talk')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M13 5.5C13 8.5 10.5 11 8 12.5 5.5 11 3 8.5 3 5.5A5 5 0 0 1 8 1a5 5 0 0 1 5 4.5z" stroke="currentColor" stroke-width="1.2"/></svg>
+      Bird Talk
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-label">Reports</div>
+    <div class="nav-item" onclick="showToast('GRC Summary')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M4 10l2.5-3L9 9l2-2.5L13 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
+      GRC Summary
+    </div>
+    <div class="nav-item" onclick="showToast('Executive Report')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 13V9M6 13V6M9 13V8M12 13V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Executive Report
+    </div>
+  </div>
+  <div class="mascot-area">
+    <div class="mascot-avatar">🐔</div>
+    <div>
+      <div class="mascot-name">Midnight</div>
+      <div class="mascot-role">Chief Compliance Officer</div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title">Overview</div>
+    <div class="topbar-right">
+      <div class="org-tag">
+        <div class="org-dot"></div>
+        Acme Corp · Healthcare
+      </div>
+      <button class="run-btn" onclick="showToast('Running analysis...')">+ New Analysis</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- CLUCK BANNER -->
+    <div class="cluck-banner" onclick="showToast('Opening Bird Talk...')">
+      <div class="cluck-emoji">🐔</div>
+      <div class="cluck-text">
+        <div class="cluck-title">Midnight found 3 critical gaps that could affect your next audit</div>
+        <div class="cluck-sub">HIPAA · PCI DSS · HITRUST — ask me what to do first</div>
+      </div>
+      <div class="cluck-cta">Ask Midnight →</div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics-row">
+      <div class="metric-card green">
+        <div class="metric-top">
+          <div>
+            <div class="metric-label">Policies processed</div>
+            <div class="metric-val green">98</div>
+          </div>
+          <div class="metric-icon green">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="metric-sub">
+          <div class="metric-sub-item"><span class="green">+12</span> last 7 days</div>
+          <div class="metric-sub-item"><span>14</span> frameworks</div>
+        </div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-top">
+          <div>
+            <div class="metric-label">Framework gaps found</div>
+            <div class="metric-val red">24</div>
+          </div>
+          <div class="metric-icon red">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 11v1" stroke="#ff5c5c" stroke-width="1.5" stroke-linecap="round"/><path d="M7 2L1 13h14L9 2H7z" stroke="#ff5c5c" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="metric-sub">
+          <div class="metric-sub-item"><span class="red">8 critical</span></div>
+          <div class="metric-sub-item"><span class="amber">11 medium</span></div>
+        </div>
+      </div>
+      <div class="metric-card amber">
+        <div class="metric-top">
+          <div>
+            <div class="metric-label">Needs review</div>
+            <div class="metric-val amber">7</div>
+          </div>
+          <div class="metric-icon amber">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#f5a623" stroke-width="1.2"/><path d="M8 5v3" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.8" fill="#f5a623"/></svg>
+          </div>
+        </div>
+        <div class="metric-sub">
+          <div class="metric-sub-item"><span class="red">3 critical</span></div>
+          <div class="metric-sub-item">owner assigned</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+      <!-- POLICY LIBRARY -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Policy Library</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="search-wrap">
+              <span class="search-icon">⌕</span>
+              <input type="text" class="search-input" placeholder="Search policies...">
+            </div>
+            <button class="run-btn" style="padding:6px 12px;font-size:11px;" onclick="showToast('New policy wizard launching...')">+ New Policy</button>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="setTab(this)">In Progress</div>
+          <div class="tab" onclick="setTab(this)">Needs Review</div>
+          <div class="tab" onclick="setTab(this)">Completed</div>
+          <div class="tab" onclick="setTab(this)">All</div>
+        </div>
+        <div class="table-header">
+          <span>Policy</span>
+          <span>Status</span>
+          <span>Owner</span>
+          <span style="text-align:right">Actions</span>
+        </div>
+        <div class="table-row" onclick="showToast('Opening Access Control Policy...')">
+          <div class="doc-name-cell">
+            <div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+            <span class="doc-type-pill policy">POLICY</span>
+            <span style="color:var(--text);font-size:13px;">Access Control Policy</span>
+          </div>
+          <div><span class="status-badge progress">In Progress</span></div>
+          <div class="owner-cell">
+            <div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>
+            Joe Bailey
+          </div>
+          <div class="actions-cell">
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Editing...')">✎</div>
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Downloading...')">↓</div>
+          </div>
+        </div>
+        <div class="table-row" onclick="showToast('Opening Incident Response Plan...')">
+          <div class="doc-name-cell">
+            <div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+            <span class="doc-type-pill plan">PLAN</span>
+            <span style="color:var(--text);font-size:13px;">Incident Response Plan</span>
+          </div>
+          <div><span class="status-badge review">Review</span></div>
+          <div class="owner-cell">
+            <div class="avatar" style="background:rgba(138,100,255,0.15);color:#8a64ff;">SP</div>
+            Sari Patel
+          </div>
+          <div class="actions-cell">
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Editing...')">✎</div>
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Downloading...')">↓</div>
+          </div>
+        </div>
+        <div class="table-row" onclick="showToast('Opening Vendor Management Policy...')">
+          <div class="doc-name-cell">
+            <div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div>
+            <span class="doc-type-pill policy">POLICY</span>
+            <span style="color:var(--text);font-size:13px;">Vendor Management Policy</span>
+          </div>
+          <div><span class="status-badge progress">In Progress</span></div>
+          <div class="owner-cell">
+            <div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>
+            Joe Bailey
+          </div>
+          <div class="actions-cell">
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Editing...')">✎</div>
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Downloading...')">↓</div>
+          </div>
+        </div>
+        <div class="table-row" onclick="showToast('Opening Password Policy...')">
+          <div class="doc-name-cell">
+            <div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+            <span class="doc-type-pill standard">STANDARD</span>
+            <span style="color:var(--text);font-size:13px;">Password & MFA Standard</span>
+          </div>
+          <div><span class="status-badge ready">Ready</span></div>
+          <div class="owner-cell">
+            <div class="avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div>
+            A. Hoffman
+          </div>
+          <div class="actions-cell">
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Editing...')">✎</div>
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Downloading...')">↓</div>
+          </div>
+        </div>
+        <div class="table-row" onclick="showToast('Opening Phishing Playbook...')">
+          <div class="doc-name-cell">
+            <div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div>
+            <span class="doc-type-pill playbook">PLAYBOOK</span>
+            <span style="color:var(--text);font-size:13px;">Phishing Response Playbook</span>
+          </div>
+          <div><span class="status-badge draft">Draft</span></div>
+          <div class="owner-cell">
+            <div class="avatar" style="background:rgba(245,166,35,0.15);color:var(--amber);">JB</div>
+            Joe Bailey
+          </div>
+          <div class="actions-cell">
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Editing...')">✎</div>
+            <div class="action-btn" onclick="event.stopPropagation();showToast('Downloading...')">↓</div>
+          </div>
+        </div>
+
+        <!-- MINI CHART -->
+        <div style="padding:14px 20px 8px;font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.07em;">Past 7 days activity</div>
+        <div class="mini-chart">
+          <div class="bar blue" style="height:28px;" title="Mon"></div>
+          <div class="bar blue" style="height:18px;" title="Tue"></div>
+          <div class="bar blue" style="height:35px;" title="Wed"></div>
+          <div class="bar red" style="height:12px;" title="Thu"></div>
+          <div class="bar blue" style="height:40px;" title="Fri"></div>
+          <div class="bar red" style="height:8px;" title="Sat"></div>
+          <div class="bar blue" style="height:22px;" title="Sun"></div>
+        </div>
+        <div style="display:flex;gap:16px;padding:0 20px 14px;font-size:10px;font-family:var(--font-mono);color:var(--text3);">
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:rgba(74,158,255,0.5);display:inline-block;"></span>Processed</span>
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:rgba(255,92,92,0.4);display:inline-block;"></span>Failed runs</span>
+        </div>
+      </div>
+
+      <!-- GAPS PANEL -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Framework Gaps</div>
+          <div class="panel-action" onclick="showToast('Viewing all gaps...')">View all →</div>
+        </div>
+
+        <!-- FW COVERAGE BARS -->
+        <div class="fw-section" style="border-bottom:1px solid var(--border);">
+          <div class="fw-row">
+            <div class="fw-name">HIPAA</div>
+            <div class="fw-bar-track"><div class="fw-bar-fill" style="width:78%;background:#3fd68c;"></div></div>
+            <div class="fw-pct" style="color:#3fd68c;">78%</div>
+          </div>
+          <div class="fw-row">
+            <div class="fw-name">HITRUST</div>
+            <div class="fw-bar-track"><div class="fw-bar-fill" style="width:52%;background:#f5a623;"></div></div>
+            <div class="fw-pct" style="color:#f5a623;">52%</div>
+          </div>
+          <div class="fw-row">
+            <div class="fw-name">PCI DSS</div>
+            <div class="fw-bar-track"><div class="fw-bar-fill" style="width:44%;background:#ff5c5c;"></div></div>
+            <div class="fw-pct" style="color:#ff5c5c;">44%</div>
+          </div>
+          <div class="fw-row">
+            <div class="fw-name">NIST CSF</div>
+            <div class="fw-bar-track"><div class="fw-bar-fill" style="width:65%;background:#f5a623;"></div></div>
+            <div class="fw-pct" style="color:#f5a623;">65%</div>
+          </div>
+          <div class="fw-row">
+            <div class="fw-name">SOC 2</div>
+            <div class="fw-bar-track"><div class="fw-bar-fill" style="width:30%;background:#ff5c5c;"></div></div>
+            <div class="fw-pct" style="color:#ff5c5c;">30%</div>
+          </div>
+        </div>
+
+        <div class="gap-item" onclick="showToast('Building Incident Response Plan...')">
+          <div class="gap-top">
+            <span class="gap-control">NIST PR.DS-5</span>
+            <span class="critical-badge">Critical</span>
+          </div>
+          <div class="gap-desc">No incident response plan detected</div>
+          <div class="gap-meta">HIPAA · HITRUST · NIST · → Build now</div>
+        </div>
+        <div class="gap-item" onclick="showToast('Building Vendor Risk Policy...')">
+          <div class="gap-top">
+            <span class="gap-control">PCI DSS 3.5.1</span>
+            <span class="critical-badge">Critical</span>
+          </div>
+          <div class="gap-desc">Vendor risk management policy missing</div>
+          <div class="gap-meta">PCI DSS · HITRUST · → Build now</div>
+        </div>
+        <div class="gap-item" onclick="showToast('Reviewing HIPAA training gap...')">
+          <div class="gap-top">
+            <span class="gap-control">HIPAA 164.308(a)(5)</span>
+            <span class="critical-badge">Critical</span>
+          </div>
+          <div class="gap-desc">Security awareness training gap detected</div>
+          <div class="gap-meta">HIPAA · ISO 27001 · → Review</div>
+        </div>
+        <div class="gap-item" onclick="showToast('Reviewing ISO user responsibility...')">
+          <div class="gap-top">
+            <span class="gap-control">ISO 27001 A.8.1</span>
+            <span class="critical-badge med">Medium</span>
+          </div>
+          <div class="gap-desc">Lacks clear user responsibility definition</div>
+          <div class="gap-meta">ISO 27001 · NIST AC-2 · → Review</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="bottom-grid">
+      <!-- ACTIVITY TABLE -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Activity</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="search-wrap">
+              <span class="search-icon">⌕</span>
+              <input type="text" class="search-input" placeholder="Search..." style="width:130px;">
+            </div>
+            <div class="panel-action" onclick="showToast('Viewing all activity...')">View all →</div>
+          </div>
+        </div>
+        <div class="table-header" style="grid-template-columns:70px 1fr 1fr 1fr 90px;">
+          <span>Time</span>
+          <span>User</span>
+          <span>Action</span>
+          <span>File / Policy</span>
+          <span>Result</span>
+        </div>
+        <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;" onclick="showToast('Viewing activity detail...')">
+          <div class="time-cell">2 min ago</div>
+          <div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div> Joe Bailey</div>
+          <div style="color:var(--text2);">Uploaded</div>
+          <div style="color:var(--text2);">Incident Response Plan</div>
+          <div class="result-cell ok">● Audit-ready</div>
+        </div>
+        <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;" onclick="showToast('Viewing activity detail...')">
+          <div class="time-cell">8 min ago</div>
+          <div class="user-cell"><div class="avatar" style="background:rgba(138,100,255,0.15);color:#8a64ff;">SP</div> Sari Patel</div>
+          <div style="color:var(--text2);">Transformed</div>
+          <div style="color:var(--text2);">Access Control Policy</div>
+          <div class="result-cell ok">● Audit-ready</div>
+        </div>
+        <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;" onclick="showToast('Viewing activity detail...')">
+          <div class="time-cell">14 min ago</div>
+          <div class="user-cell"><div class="avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div> A. Hoffman</div>
+          <div style="color:var(--text2);">Downloaded</div>
+          <div style="color:var(--text2);">GRC Summary</div>
+          <div class="result-cell ok">● Audit-ready</div>
+        </div>
+        <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;" onclick="showToast('Viewing activity detail...')">
+          <div class="time-cell">1 hr ago</div>
+          <div class="user-cell"><div class="avatar" style="background:rgba(245,166,35,0.15);color:var(--amber);">JB</div> Joe Bailey</div>
+          <div style="color:var(--text2);">Assigned reviewer</div>
+          <div style="color:var(--text2);">Vendor Risk Policy</div>
+          <div class="result-cell warn">● Needs review</div>
+        </div>
+        <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;" onclick="showToast('Viewing activity detail...')">
+          <div class="time-cell">3 hr ago</div>
+          <div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">AH</div> A. Hoffman</div>
+          <div style="color:var(--text2);">Gap analysis run</div>
+          <div style="color:var(--text2);">Full program</div>
+          <div class="result-cell ok">● Complete</div>
+        </div>
+      </div>
+
+      <!-- FEED PANEL -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Activity</div>
+          <div class="panel-action">View all →</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>
+          <div class="feed-body">
+            <div class="feed-action">Uploaded document</div>
+            <div class="feed-detail">Incident Response Plan · System action suppressed</div>
+          </div>
+          <div class="feed-time">1m ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-avatar" style="background:rgba(138,100,255,0.15);color:#8a64ff;">SP</div>
+          <div class="feed-body">
+            <div class="feed-action">Transformed Policy</div>
+            <div class="feed-detail">Access Control Policy · GRC mapping applied</div>
+          </div>
+          <div class="feed-time">5m ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div>
+          <div class="feed-body">
+            <div class="feed-action">Download GRC Summary</div>
+            <div class="feed-detail">57-page GRC summary · HIPAA + PCI</div>
+          </div>
+          <div class="feed-time">8m ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-avatar" style="background:rgba(245,166,35,0.15);color:var(--amber);">JB</div>
+          <div class="feed-body">
+            <div class="feed-action">Assigned Reviewer</div>
+            <div class="feed-detail">Resolution sorting requested</div>
+          </div>
+          <div class="feed-time">12m ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div>
+          <div class="feed-body">
+            <div class="feed-action">Download PDF Output</div>
+            <div class="feed-detail">Audit-ready document package</div>
+          </div>
+          <div class="feed-time">1h ago</div>
+        </div>
+        <div style="padding:14px 20px;">
+          <button class="run-btn" style="width:100%;padding:10px;font-size:12px;border-radius:8px;" onclick="showToast('Exporting executive report...')">Export Executive Report →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toast-msg">Action triggered</span>
+</div>
+
+<script>
+  function setTab(el) {
+    el.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const API = 'http://localhost:8000';
+
+  async function apiFetch(path) {
+    try {
+      const res = await fetch(API + path);
+      if (!res.ok) throw new Error(res.statusText);
+      return await res.json();
+    } catch (e) {
+      console.warn('API unavailable, using static data:', e.message);
+      return null;
+    }
+  }
+
+  function relativeTime(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+  }
+
+  async function loadSummary() {
+    const data = await apiFetch('/dashboard/summary');
+    if (!data) return;
+    document.querySelector('.metric-card.green .metric-val').textContent = data.policies_processed;
+    document.querySelector('.metric-card.red .metric-val').textContent = data.gaps_total;
+    document.querySelector('.metric-card.amber .metric-val').textContent = data.needs_review_total;
+    const bars = document.querySelectorAll('.fw-bar-fill');
+    const pcts = document.querySelectorAll('.fw-pct');
+    data.frameworks.forEach((fw, i) => {
+      if (!bars[i]) return;
+      const pct = fw.coverage_pct;
+      const color = pct >= 70 ? '#3fd68c' : pct >= 50 ? '#f5a623' : '#ff5c5c';
+      bars[i].style.background = color;
+      bars[i].style.width = '0';
+      setTimeout(() => { bars[i].style.width = pct + '%'; }, 300 + i * 80);
+      pcts[i].textContent = pct + '%';
+      pcts[i].style.color = color;
+    });
+  }
+
+  async function loadGaps() {
+    const data = await apiFetch('/dashboard/gaps');
+    if (!data) return;
+    const panels = document.querySelectorAll('.panel');
+    let container = null;
+    panels.forEach(p => { if (p.querySelector('.gap-item')) container = p; });
+    if (!container) return;
+    container.querySelectorAll('.gap-item').forEach(el => el.remove());
+    data.items.slice(0, 5).forEach(gap => {
+      const div = document.createElement('div');
+      div.className = 'gap-item';
+      div.onclick = () => showToast('Building: ' + gap.suggested_action);
+      div.innerHTML = `<div class="gap-top"><span class="gap-control">${gap.control_id}</span><span class="critical-badge ${gap.severity === 'medium' ? 'med' : ''}">${gap.severity === 'critical' ? 'Critical' : 'Medium'}</span></div><div class="gap-desc">${gap.description}</div><div class="gap-meta">${gap.affected_frameworks.join(' · ')} · → Build now</div>`;
+      container.appendChild(div);
+    });
+  }
+
+  async function loadDocuments() {
+    const data = await apiFetch('/dashboard/documents');
+    if (!data) return;
+    const allRows = document.querySelectorAll('.table-row');
+    if (!allRows.length) return;
+    const container = allRows[0].parentElement;
+    container.querySelectorAll('.table-row').forEach(el => el.remove());
+    const sc = { ready:'ready', review:'review', draft:'draft', progress:'progress' };
+    const sl = { ready:'Ready', review:'Review', draft:'Draft', progress:'In Progress' };
+    const tc = { POLICY:'policy', SOP:'sop', PLAYBOOK:'playbook', STANDARD:'standard', PLAN:'plan', PROCEDURE:'sop' };
+    data.items.forEach(doc => {
+      const row = document.createElement('div');
+      row.className = 'table-row';
+      row.onclick = () => showToast('Opening ' + doc.name + '...');
+      const checked = doc.status === 'ready' || doc.status === 'progress';
+      row.innerHTML = `<div class="doc-name-cell"><div class="doc-checkbox ${checked ? 'checked' : ''}">${checked ? '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>' : '<div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div>'}</div><span class="doc-type-pill ${tc[doc.doc_type]||'policy'}">${doc.doc_type}</span><span style="color:var(--text);font-size:13px;">${doc.name}</span></div><div><span class="status-badge ${sc[doc.status]||'draft'}">${sl[doc.status]||doc.status}</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${doc.owner_initials}</div>${doc.owner_name.split(' ')[0]}</div><div class="actions-cell"><div class="action-btn" onclick="event.stopPropagation();showToast('Editing...')">✎</div><div class="action-btn" onclick="event.stopPropagation();showToast('Downloading...')">↓</div></div>`;
+      container.appendChild(row);
+    });
+  }
+
+  async function loadActivity() {
+    const data = await apiFetch('/dashboard/activity');
+    if (!data) return;
+    const rc = { 'audit-ready':'ok', 'needs-review':'warn', 'complete':'ok', 'failed':'warn' };
+    const rl = { 'audit-ready':'● Audit-ready', 'needs-review':'● Needs review', 'complete':'● Complete', 'failed':'● Failed' };
+    const tableRows = document.querySelectorAll('.activity-row');
+    if (tableRows.length) {
+      const cont = tableRows[0].parentElement;
+      cont.querySelectorAll('.activity-row').forEach(el => el.remove());
+      data.items.slice(0,5).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'activity-row';
+        row.style.gridTemplateColumns = '70px 1fr 1fr 1fr 90px';
+        row.onclick = () => showToast('Viewing activity detail...');
+        row.innerHTML = `<div class="time-cell">${relativeTime(item.timestamp)}</div><div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${item.user_initials}</div>${item.user_name.split(' ')[0]}</div><div style="color:var(--text2);">${item.action}</div><div style="color:var(--text2);">${item.target}</div><div class="result-cell ${rc[item.result]||'ok'}">${rl[item.result]||item.result}</div>`;
+        cont.appendChild(row);
+      });
+    }
+    const feedItems = document.querySelectorAll('.feed-item');
+    if (feedItems.length) {
+      const cont = feedItems[0].parentElement;
+      const btn = cont.querySelector('div[style*="padding:14px"]');
+      cont.querySelectorAll('.feed-item').forEach(el => el.remove());
+      data.items.slice(0,5).forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'feed-item';
+        el.innerHTML = `<div class="feed-avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${item.user_initials}</div><div class="feed-body"><div class="feed-action">${item.action}</div><div class="feed-detail">${item.target}</div></div><div class="feed-time">${relativeTime(item.timestamp)}</div>`;
+        if (btn) cont.insertBefore(el, btn); else cont.appendChild(el);
+      });
+    }
+  }
+
+  loadSummary();
+  loadGaps();
+  loadDocuments();
+  loadActivity();
+
+  document.querySelectorAll('.fw-bar-fill').forEach(bar => {
+    const w = bar.style.width;
+    bar.style.width = '0';
+    setTimeout(() => { bar.style.width = w; }, 300);
+  });
+</script>
+
+</body>
+</html>

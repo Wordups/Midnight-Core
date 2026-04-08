@@ -1,0 +1,1 @@
+{ "template_name": "generic_plan", "version": "1.0", "type": "PLAN", "supported_outputs": ["docx","pdf"] }

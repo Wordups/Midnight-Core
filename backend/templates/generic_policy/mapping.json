@@ -1,0 +1,14 @@
+{
+  "Policy Title":     "policy_name",
+  "Document Number":  "policy_number",
+  "Version":          "version",
+  "Effective Date":   "effective_date",
+  "Owner":            "owner",
+  "Approver":         "approver",
+  "Purpose":          "purpose",
+  "Scope":            "scope",
+  "Policy Statements":"policy_statements",
+  "Roles":            "roles_responsibilities",
+  "Exceptions":       "exceptions",
+  "Enforcement":      "enforcement"
+}

@@ -1,0 +1,26 @@
+{
+  "header": {
+    "logo_position": "left",
+    "banner_height": 4.25,
+    "show_policy_number": true
+  },
+  "fonts": {
+    "family": "Calibri",
+    "size_body": 11,
+    "size_heading": 14
+  },
+  "tables": {
+    "shaded_headers": true,
+    "checkbox_columns": false,
+    "border_style": "single"
+  },
+  "sections": [
+    "purpose",
+    "scope",
+    "policy_statements",
+    "roles_responsibilities",
+    "exceptions",
+    "enforcement",
+    "revision_history"
+  ]
+}
