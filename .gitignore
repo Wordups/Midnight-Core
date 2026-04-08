@@ -74,3 +74,7 @@ htmlcov/
 # ── Client data — hard stop ───────────────────────────────────────────────────
 # No client names, policy numbers, or internal docs ever enter this repo.
 # If you are about to commit a file with a client name in it — stop.
+
+.vs/
+
+.vs/
