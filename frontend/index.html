@@ -643,5 +643,263 @@ async function handleSubmit(e) {
   }
 }
 </script>
+<!-- ── BIRD TALK WIDGET ─────────────────────────────────────────────────── -->
+<style>
+#bt-launcher{
+  position:fixed;bottom:28px;right:28px;z-index:9999;
+  width:64px;height:64px;border-radius:50%;
+  background:var(--cyan);border:none;cursor:pointer;
+  box-shadow:0 4px 24px rgba(0,212,245,0.35);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+  animation:btPop .6s cubic-bezier(.34,1.56,.64,1) 2s both;
+}
+#bt-launcher:hover{transform:scale(1.08);box-shadow:0 6px 32px rgba(0,212,245,0.5)}
+#bt-launcher img{width:42px;height:42px;object-fit:cover;border-radius:50%}
+#bt-launcher .bt-close{display:none;font-size:20px;color:#000;font-weight:700;line-height:1}
+#bt-launcher.open .bt-icon{display:none}
+#bt-launcher.open .bt-close{display:block}
+
+#bt-window{
+  position:fixed;bottom:104px;right:28px;z-index:9998;
+  width:360px;height:520px;
+  background:var(--s1);
+  border:1px solid var(--cyan-bd);
+  border-radius:16px;
+  display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(0,212,245,0.1);
+  transform:scale(0.85) translateY(20px);
+  opacity:0;pointer-events:none;
+  transition:transform .25s cubic-bezier(.34,1.2,.64,1),opacity .2s ease;
+  overflow:hidden;
+}
+#bt-window.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+
+.bt-header{
+  padding:16px 18px;
+  background:linear-gradient(135deg,var(--s2),var(--s3));
+  border-bottom:1px solid var(--b0);
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+}
+.bt-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--cyan);overflow:hidden;flex-shrink:0;
+  border:2px solid rgba(0,212,245,0.3);
+}
+.bt-avatar img{width:100%;height:100%;object-fit:cover}
+.bt-info{}
+.bt-name{font-family:var(--display);font-size:16px;letter-spacing:0.08em;color:var(--t0)}
+.bt-status{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:var(--cyan);text-transform:uppercase;margin-top:1px}
+
+.bt-messages{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:10px;
+  scroll-behavior:smooth;
+}
+.bt-messages::-webkit-scrollbar{width:4px}
+.bt-messages::-webkit-scrollbar-track{background:transparent}
+.bt-messages::-webkit-scrollbar-thumb{background:var(--b1);border-radius:2px}
+
+.bt-msg{max-width:85%;animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.bt-msg.bot{align-self:flex-start}
+.bt-msg.user{align-self:flex-end}
+.bt-bubble{
+  padding:10px 14px;border-radius:12px;
+  font-size:13px;line-height:1.55;font-family:var(--body);
+}
+.bt-msg.bot .bt-bubble{
+  background:var(--s2);border:1px solid var(--b0);
+  color:var(--t1);border-bottom-left-radius:4px;
+}
+.bt-msg.user .bt-bubble{
+  background:var(--cyan);color:#000;font-weight:500;
+  border-bottom-right-radius:4px;
+}
+.bt-typing{display:flex;gap:4px;padding:10px 14px;background:var(--s2);border:1px solid var(--b0);border-radius:12px;border-bottom-left-radius:4px;width:fit-content}
+.bt-typing span{width:6px;height:6px;background:var(--t3);border-radius:50%;animation:typeDot 1.2s infinite}
+.bt-typing span:nth-child(2){animation-delay:.2s}
+.bt-typing span:nth-child(3){animation-delay:.4s}
+@keyframes typeDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+.bt-input-row{
+  padding:12px;border-top:1px solid var(--b0);
+  display:flex;gap:8px;align-items:center;flex-shrink:0;
+  background:var(--s2);
+}
+#bt-input{
+  flex:1;background:var(--s3);border:1px solid var(--b0);
+  border-radius:8px;padding:9px 12px;
+  color:var(--t1);font-size:13px;font-family:var(--body);
+  outline:none;transition:border-color .15s;
+  resize:none;
+}
+#bt-input:focus{border-color:var(--cyan)}
+#bt-input::placeholder{color:var(--t3)}
+#bt-send{
+  width:36px;height:36px;border-radius:8px;
+  background:var(--cyan);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .15s,transform .15s;flex-shrink:0;
+}
+#bt-send:hover{opacity:0.85;transform:scale(1.05)}
+#bt-send:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+#bt-send svg{width:16px;height:16px}
+
+.bt-nudge{
+  position:fixed;bottom:104px;right:28px;z-index:9997;
+  background:var(--s1);border:1px solid var(--cyan-bd);
+  border-radius:12px;padding:12px 16px;
+  font-size:13px;color:var(--t1);font-family:var(--body);
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  max-width:240px;line-height:1.5;
+  animation:nudgeIn .4s cubic-bezier(.34,1.2,.64,1) 3s both;
+  cursor:pointer;
+}
+.bt-nudge strong{color:var(--cyan);display:block;font-family:var(--display);font-size:15px;letter-spacing:0.06em;margin-bottom:4px}
+.bt-nudge:hover{border-color:var(--cyan)}
+@keyframes nudgeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes btPop{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+</style>
+
+<!-- Nudge bubble -->
+<div class="bt-nudge" id="bt-nudge" onclick="toggleBirdTalk()">
+  <strong>🐔 Bird Talk</strong>
+  Tell me your industry — I'll show you what you're missing.
+</div>
+
+<!-- Launcher button -->
+<button id="bt-launcher" onclick="toggleBirdTalk()">
+  <span class="bt-icon" style="display:flex;align-items:center;justify-content:center">
+    <img src="chicken.png" alt="Bird Talk" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+    <span style="display:none;font-size:24px">🐔</span>
+  </span>
+  <span class="bt-close">✕</span>
+</button>
+
+<!-- Chat window -->
+<div id="bt-window">
+  <div class="bt-header">
+    <div class="bt-avatar">
+      <img src="chicken.png" alt="Midnight" onerror="this.style.display='none'">
+    </div>
+    <div class="bt-info">
+      <div class="bt-name">MIDNIGHT</div>
+      <div class="bt-status">● Chief Compliance Officer</div>
+    </div>
+  </div>
+  <div class="bt-messages" id="bt-messages"></div>
+  <div class="bt-input-row">
+    <input id="bt-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendBT()}">
+    <button id="bt-send" onclick="sendBT()">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2l6 6-6 6" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// ── Bird Talk ──────────────────────────────────────────────────────────────
+const BT_SYSTEM = `You are Midnight, the AI compliance assistant for Midnight by Takeoff — a compliance system builder and audit preparation platform. Your mascot persona is a chicken named Bird Talk who is the Chief Compliance Officer.
+
+Your job is to help visitors understand their compliance needs, qualify leads, and guide them toward requesting enterprise access.
+
+Key product facts:
+- Midnight helps organizations build their compliance program, structure documentation, and prepare for audits
+- Covers: HIPAA, HiTrust, PCI DSS, ISO 27001, NIST CSF, CoBIT 2019, SOC 2 Type II
+- Philosophy: "Handshake, not takeover" — human-led, intelligence-backed
+- Not a replacement for compliance teams — an accelerator
+- Enterprise only — no self-serve
+- Pricing starts at $500/month
+
+Your personality: warm, direct, a little witty. You're a chicken who knows compliance cold. Keep responses SHORT (2-4 sentences max). Ask one question at a time. Always move toward: 1) understanding their industry, 2) identifying their pain, 3) routing them to Request Enterprise Access.
+
+Never give long lists. Never be salesy. Just be helpful and smart. End responses with a relevant question when appropriate. 🐔`;
+
+let btOpen = false;
+let btHistory = [];
+let btStarted = false;
+
+function toggleBirdTalk() {
+  btOpen = !btOpen;
+  const win = document.getElementById('bt-window');
+  const btn = document.getElementById('bt-launcher');
+  const nudge = document.getElementById('bt-nudge');
+  win.classList.toggle('open', btOpen);
+  btn.classList.toggle('open', btOpen);
+  if(nudge) nudge.style.display = 'none';
+  if(btOpen && !btStarted) { btStarted = true; btGreet(); }
+  if(btOpen) setTimeout(() => document.getElementById('bt-input').focus(), 300);
+}
+
+function btGreet() {
+  setTimeout(() => {
+    addBTMsg('bot', "Hey — I'm Midnight. 🐔 What industry are you in? I'll tell you exactly what your compliance program needs.");
+  }, 400);
+}
+
+function addBTMsg(role, text) {
+  const msgs = document.getElementById('bt-messages');
+  const div = document.createElement('div');
+  div.className = `bt-msg ${role}`;
+  div.innerHTML = `<div class="bt-bubble">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('bt-messages');
+  const div = document.createElement('div');
+  div.id = 'bt-typing';
+  div.className = 'bt-msg bot';
+  div.innerHTML = `<div class="bt-typing"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendBT() {
+  const input = document.getElementById('bt-input');
+  const btn = document.getElementById('bt-send');
+  const text = input.value.trim();
+  if(!text) return;
+  
+  input.value = '';
+  btn.disabled = true;
+  addBTMsg('user', text);
+  btHistory.push({ role: 'user', content: text });
+  
+  const typing = showTyping();
+  
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: BT_SYSTEM,
+        messages: btHistory
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || "Hmm, something went wrong on my end. 🐔 Try again?";
+    typing.remove();
+    addBTMsg('bot', reply);
+    btHistory.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    typing.remove();
+    addBTMsg('bot', "Network hiccup. 🐔 Try again in a sec.");
+  }
+  
+  btn.disabled = false;
+  input.focus();
+}
+
+// Auto-hide nudge after 8 seconds
+setTimeout(() => {
+  const n = document.getElementById('bt-nudge');
+  if(n && !btOpen) n.style.opacity = '0', n.style.transition = 'opacity .5s', setTimeout(() => n.remove(), 500);
+}, 8000);
+</script>
 </body>
 </html>
