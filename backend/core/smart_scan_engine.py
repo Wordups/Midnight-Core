@@ -1,15 +1,6 @@
 """
 backend/core/smart_scan_engine.py
 Midnight Core — Smart Scan (Bird Eye) Engine
-
-Sits alongside: classifier.py, extractor.py, gap_engine.py, framework_mapper.py
-Pipeline:
-  1. Template Learning   — parse reference template into section schema
-  2. Source Intake       — extract .docx blocks preserving hierarchy
-  3. Section ID          — group blocks by semantic heading meaning
-  4. Normalization       — strip layout noise, preserve bullets/numbering
-  5. LLM Mapping         — Groq semantic section → template alignment
-  6. Gap Scoring         — score completeness 0-100, label, flag priorities
 """
 
 import os
@@ -24,30 +15,21 @@ from docx import Document
 from io import BytesIO
 
 
-# ---------------------------------------------------------------------------
-# Config — reuses existing GROQ env var from your Core pipeline
-# ---------------------------------------------------------------------------
-
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL   = "llama-3.3-70b-versatile"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-
-
-# ---------------------------------------------------------------------------
-# Semantic synonym map — handles messy real-world policy section naming
-# ---------------------------------------------------------------------------
 
 SECTION_SYNONYMS: dict[str, list[str]] = {
     "purpose":                ["objective", "intent", "goal", "overview", "introduction", "background"],
     "scope":                  ["applicability", "applies to", "coverage", "audience", "in scope", "out of scope"],
     "policy_statement":       ["statement", "policy intent", "policy position", "policy declaration", "mandate"],
-    "definitions":            ["terms", "glossary", "acronyms", "key terms", "definitions and terms"],
-    "procedures":             ["process", "steps", "instructions", "guidelines", "how to", "workflow", "process steps"],
-    "roles_responsibilities": ["responsibilities", "raci", "roles", "ownership", "accountabilities", "assignments"],
-    "references":             ["citations", "related documents", "related policies", "supporting docs", "see also"],
-    "revision_history":       ["version history", "change log", "document history", "amendments", "revisions"],
-    "exceptions":             ["exception process", "waivers", "deviations", "exemptions"],
-    "enforcement":            ["violations", "non-compliance", "consequences", "disciplinary", "sanctions"],
+    "definitions":            ["terms", "glossary", "acronyms", "key terms"],
+    "procedures":             ["process", "steps", "instructions", "guidelines", "how to", "workflow"],
+    "roles_responsibilities": ["responsibilities", "raci", "roles", "ownership", "accountabilities"],
+    "references":             ["citations", "related documents", "related policies", "see also"],
+    "revision_history":       ["version history", "change log", "document history", "amendments"],
+    "exceptions":             ["waivers", "deviations", "exemptions"],
+    "enforcement":            ["violations", "non-compliance", "consequences", "sanctions"],
 }
 
 SECTION_MIN_WORDS: dict[str, int] = {
@@ -72,10 +54,6 @@ REQUIRED_SECTIONS = [
     "revision_history",
 ]
 
-
-# ---------------------------------------------------------------------------
-# Result model
-# ---------------------------------------------------------------------------
 
 class SectionStatus(str, Enum):
     COMPLETE = "complete"
@@ -111,10 +89,6 @@ class SmartScanResult:
         }
 
 
-# ---------------------------------------------------------------------------
-# Extraction helpers
-# ---------------------------------------------------------------------------
-
 def _hash_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:16]
 
@@ -128,7 +102,6 @@ def _slugify(text: str) -> str:
 
 
 def match_section_key(heading: str) -> Optional[str]:
-    """Match a heading to a canonical section key via semantic synonyms."""
     h = heading.lower().strip()
     for key, synonyms in SECTION_SYNONYMS.items():
         if key in h or any(s in h for s in synonyms):
@@ -137,11 +110,6 @@ def match_section_key(heading: str) -> Optional[str]:
 
 
 def extract_docx_blocks(file_bytes: bytes) -> list[dict]:
-    """
-    Extract all content from a .docx as structured blocks.
-    Tables parsed as data (rows/cells), never as layout.
-    List hierarchy preserved by style name.
-    """
     doc    = Document(BytesIO(file_bytes))
     blocks = []
 
@@ -187,10 +155,6 @@ def extract_docx_blocks(file_bytes: bytes) -> list[dict]:
 
 
 def learn_template(template_bytes: bytes) -> dict:
-    """
-    Parse reference template → section schema.
-    We OWN the template so layout-aware parsing is safe here.
-    """
     doc    = Document(BytesIO(template_bytes))
     schema = {"sections": [], "styles": {}, "hash": _hash_bytes(template_bytes)}
 
@@ -217,10 +181,6 @@ def learn_template(template_bytes: bytes) -> dict:
 
     return schema
 
-
-# ---------------------------------------------------------------------------
-# Section identification + normalization
-# ---------------------------------------------------------------------------
 
 def identify_sections(blocks: list[dict]) -> dict[str, list[dict]]:
     sections: dict[str, list[dict]] = {}
@@ -252,25 +212,20 @@ def normalize_section(blocks: list[dict]) -> str:
     return "\n".join(lines).strip()
 
 
-# ---------------------------------------------------------------------------
-# LLM semantic mapping
-# ---------------------------------------------------------------------------
-
 BIRD_EYE_SYSTEM_PROMPT = """You are Smart Scan (Bird Eye), the semantic analysis engine inside Midnight — Takeoff LLC's enterprise policy intelligence platform.
 
 Your job:
 1. Receive normalized text extracted from an unstructured policy document.
 2. Receive the list of required template sections.
 3. Map the source content to the correct sections based on MEANING, not formatting.
-4. Return ONLY valid JSON. No markdown, no preamble, no explanation.
+4. Return ONLY valid JSON. No markdown, no preamble.
 
 Hard rules:
-- NEVER invent or hallucinate content not present in the source.
+- NEVER invent or hallucinate content not in the source.
 - NEVER merge unrelated sections.
 - Preserve bullet and numbering hierarchy in procedures.
 - Use semantic matching: "Objective"→purpose, "Applicability"→scope, "Responsibilities"→roles_responsibilities.
 - Mark missing sections as missing. Do not fill gaps.
-- Mark partially complete sections as partial.
 
 Output (strict JSON, no fences):
 {
@@ -322,15 +277,7 @@ async def llm_map_sections(extracted_text: str, template_sections: list[str]) ->
     return json.loads(raw)
 
 
-# ---------------------------------------------------------------------------
-# Gap scoring
-# ---------------------------------------------------------------------------
-
-def score_document(
-    mapped:   dict,
-    missing:  list,
-    partial:  list,
-) -> tuple[int, str, dict]:
+def score_document(mapped: dict, missing: list, partial: list) -> tuple[int, str, dict]:
     statuses: dict[str, SectionStatus] = {}
     total = earned = 0
 
@@ -362,58 +309,40 @@ def build_notes(statuses: dict, mapped: dict, missing: list, partial: list) -> l
     notes = []
     for key in missing:
         if key in REQUIRED_SECTIONS:
-            notes.append(f"REQUIRED — '{key.replace('_',' ').title()}' section not found in source document.")
+            notes.append(f"REQUIRED — '{key.replace('_',' ').title()}' section not found.")
     for key in partial:
-        notes.append(f"PARTIAL — '{key.replace('_',' ').title()}' present but lacks sufficient detail.")
+        notes.append(f"PARTIAL — '{key.replace('_',' ').title()}' present but lacks detail.")
     if "procedures" in mapped:
         c = str(mapped["procedures"])
         if "step" not in c.lower() and "•" not in c and "1." not in c:
-            notes.append("Procedures section may lack step-by-step structure — consider explicit numbered steps.")
+            notes.append("Procedures may lack step-by-step structure.")
     if "revision_history" in missing:
-        notes.append("No revision history found — document cannot be version-tracked.")
+        notes.append("No revision history — document cannot be version-tracked.")
     if "roles_responsibilities" in missing:
         notes.append("No roles or RACI defined — policy ownership is unclear.")
     return notes
 
 
-# ---------------------------------------------------------------------------
-# Main entry point
-# ---------------------------------------------------------------------------
+async def _run_pipeline(source_bytes: bytes, template_sections: list[str], source_filename: str) -> SmartScanResult:
+    result             = SmartScanResult()
+    result.source_hash = _hash_bytes(source_bytes)
 
-async def run_smart_scan(
-    source_bytes:    bytes,
-    template_bytes:  bytes,
-    source_filename: str = "source.docx",
-) -> SmartScanResult:
-    result               = SmartScanResult()
-    result.source_hash   = _hash_bytes(source_bytes)
-    result.template_hash = _hash_bytes(template_bytes)
-
-    # 1. Learn template
-    schema            = learn_template(template_bytes)
-    template_sections = [s["id"] for s in schema["sections"]] or list(SECTION_SYNONYMS.keys())
-
-    # 2. Extract + identify sections from source
-    blocks      = extract_docx_blocks(source_bytes)
+    blocks       = extract_docx_blocks(source_bytes)
     raw_sections = identify_sections(blocks)
 
-    # 3. Normalize to text
     parts = []
     for key, blks in raw_sections.items():
         content = normalize_section(blks)
         if content:
             parts.append(f"[SECTION: {key}]\n{content}")
-    full_text = "\n\n".join(parts)
 
-    # 4. LLM mapping
-    llm = await llm_map_sections(full_text, template_sections)
+    llm = await llm_map_sections("\n\n".join(parts), template_sections)
 
     result.mapped_sections  = llm.get("mapped_sections", {})
     result.missing_sections = llm.get("missing_sections", [])
     result.partial_sections = llm.get("partial_sections", [])
     result.unmapped_content = llm.get("unmapped_content", [])
 
-    # 5. Score + notes
     score, label, statuses = score_document(
         result.mapped_sections,
         result.missing_sections,
@@ -425,5 +354,25 @@ async def run_smart_scan(
     result.notes            = llm.get("notes", []) + build_notes(
         statuses, result.mapped_sections, result.missing_sections, result.partial_sections
     )
-
     return result
+
+
+async def run_smart_scan(
+    source_bytes:    bytes,
+    template_bytes:  bytes,
+    source_filename: str = "source.docx",
+) -> SmartScanResult:
+    """Full scan against a provided reference template."""
+    schema            = learn_template(template_bytes)
+    template_sections = [s["id"] for s in schema["sections"]] or list(SECTION_SYNONYMS.keys())
+    result            = await _run_pipeline(source_bytes, template_sections, source_filename)
+    result.template_hash = _hash_bytes(template_bytes)
+    return result
+
+
+async def run_smart_scan_preflight(
+    source_bytes:    bytes,
+    source_filename: str = "source.docx",
+) -> SmartScanResult:
+    """Pre-flight scan — no template needed. Uses built-in required section schema."""
+    return await _run_pipeline(source_bytes, list(SECTION_SYNONYMS.keys()), source_filename)
