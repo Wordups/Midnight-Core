@@ -1,0 +1,161 @@
+"""
+backend/api/smart_scan.py
+Midnight Core — Smart Scan (Bird Eye) Router
+
+Sits alongside: routes.py, dashboard.py
+Registered in:  backend/api/main.py
+"""
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
+
+from backend.core.smart_scan_engine import (
+    run_smart_scan,
+    learn_template,
+    REQUIRED_SECTIONS,
+    SmartScanResult,
+)
+
+router = APIRouter(prefix="/api/smart-scan", tags=["Smart Scan"])
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _validate_docx(file: UploadFile) -> None:
+    if not file.filename.endswith(".docx"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Smart Scan requires .docx files. Got: '{file.filename}'"
+        )
+
+
+def _quality_warning(score: int) -> str | None:
+    if score < 30:
+        return (
+            "Source document quality is critically low. "
+            "Midnight rebuilt what it could and flagged all gaps. "
+            "This reflects your current policy state — not a system error."
+        )
+    if score < 55:
+        return (
+            "Source document is weakly structured. "
+            "Several required sections are missing or incomplete. "
+            "Review all flagged gaps before using this output for audit purposes."
+        )
+    return None
+
+
+def _priority_gaps(result: SmartScanResult) -> list[dict]:
+    severity_map = {"policy_statement": "critical", "procedures": "critical"}
+    return [
+        {
+            "section":  s.replace("_", " ").title(),
+            "severity": severity_map.get(s, "high"),
+            "action":   f"Generate {s.replace('_', ' ')} section",
+        }
+        for s in REQUIRED_SECTIONS
+        if s in result.missing_sections
+    ][:3]
+
+
+# ---------------------------------------------------------------------------
+# POST /api/smart-scan/run
+# ---------------------------------------------------------------------------
+
+@router.post("/run")
+async def run_scan(
+    source_doc:   UploadFile = File(..., description="Policy document to analyze (.docx)"),
+    template_doc: UploadFile = File(..., description="Reference template to compare against (.docx)"),
+    tenant_id:    str        = Form(default="default"),
+    doc_type:     str        = Form(default="policy",  description="policy | sop | standard | playbook | plan"),
+    industry:     str        = Form(default=""),
+):
+    """
+    Smart Scan (Bird Eye) — Full pipeline.
+    Processes source doc semantically regardless of structure.
+    Compares against reference template.
+    Returns mapped sections, gaps, quality score, and prioritized actions.
+    """
+    _validate_docx(source_doc)
+    _validate_docx(template_doc)
+
+    source_bytes   = await source_doc.read()
+    template_bytes = await template_doc.read()
+
+    if not source_bytes:
+        raise HTTPException(status_code=400, detail="Source document is empty.")
+    if not template_bytes:
+        raise HTTPException(status_code=400, detail="Template document is empty.")
+
+    try:
+        result: SmartScanResult = await run_smart_scan(
+            source_bytes=source_bytes,
+            template_bytes=template_bytes,
+            source_filename=source_doc.filename,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Smart Scan engine error: {str(e)}")
+
+    output                 = result.to_dict()
+    output["priority_gaps"] = _priority_gaps(result)
+    output["meta"]         = {
+        "source_filename":   source_doc.filename,
+        "template_filename": template_doc.filename,
+        "tenant_id":         tenant_id,
+        "doc_type":          doc_type,
+        "industry":          industry,
+        "engine":            "Bird Eye",
+        "version":           "core",
+    }
+
+    warning = _quality_warning(result.quality_score)
+    if warning:
+        output["source_quality_warning"] = warning
+
+    return JSONResponse(content=output)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/smart-scan/learn-template
+# ---------------------------------------------------------------------------
+
+@router.post("/learn-template")
+async def learn_template_endpoint(
+    template_doc: UploadFile = File(..., description="Reference template .docx"),
+    tenant_id:    str        = Form(default="default"),
+):
+    """
+    Pre-process a reference template into a section schema.
+    Useful for validating your template structure before running scans.
+    """
+    _validate_docx(template_doc)
+    template_bytes = await template_doc.read()
+
+    if not template_bytes:
+        raise HTTPException(status_code=400, detail="Template document is empty.")
+
+    schema = learn_template(template_bytes)
+
+    return JSONResponse(content={
+        "template_hash":      schema["hash"],
+        "sections_detected":  len(schema["sections"]),
+        "section_ids":        [s["id"]      for s in schema["sections"]],
+        "unmatched_headings": [s["heading"] for s in schema["sections"] if not s["matched"]],
+        "styles":             schema.get("styles", {}),
+        "tenant_id":          tenant_id,
+    })
+
+
+# ---------------------------------------------------------------------------
+# GET /api/smart-scan/health
+# ---------------------------------------------------------------------------
+
+@router.get("/health")
+async def health():
+    return {
+        "status":  "operational",
+        "engine":  "Smart Scan (Bird Eye)",
+        "version": "core",
+    }

@@ -28,18 +28,20 @@ def verify_password(credentials: HTTPBasicCredentials = Depends(security)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, headers={"WWW-Authenticate": "Basic"})
     return credentials.username
 
-# ── Register routers (password protected) ─────────────────────────────────────
-from backend.api.routes import router as pipeline_router
-from backend.api.dashboard import router as dashboard_router
-app.include_router(pipeline_router, dependencies=[Depends(verify_password)])
-app.include_router(dashboard_router, dependencies=[Depends(verify_password)])
+from backend.api.routes     import router as pipeline_router
+from backend.api.dashboard  import router as dashboard_router
+from backend.api.smart_scan import router as smart_scan_router
+
+app.include_router(pipeline_router,   dependencies=[Depends(verify_password)])
+app.include_router(dashboard_router,  dependencies=[Depends(verify_password)])
+app.include_router(smart_scan_router, dependencies=[Depends(verify_password)])
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "midnight-core"}
 
-# ── Static files (no password) ─────────────────────────────────────────────────
 @app.get("/")
 async def root():
     return RedirectResponse(url="/index.html")
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
