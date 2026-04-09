@@ -1,6 +1,7 @@
 """
 backend/core/smart_scan_engine.py
 Midnight Core — Smart Scan (Bird Eye) Engine
+Powered by Claude Opus (Anthropic)
 """
 
 import os
@@ -10,14 +11,13 @@ import hashlib
 from typing import Optional
 from enum import Enum
 
-import httpx
+import anthropic
 from docx import Document
 from io import BytesIO
 
 
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL   = "llama-3.3-70b-versatile"
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL   = "claude-opus-4-5"
 
 SECTION_SYNONYMS: dict[str, list[str]] = {
     "purpose":                ["objective", "intent", "goal", "overview", "introduction", "background"],
@@ -218,16 +218,17 @@ Your job:
 1. Receive normalized text extracted from an unstructured policy document.
 2. Receive the list of required template sections.
 3. Map the source content to the correct sections based on MEANING, not formatting.
-4. Return ONLY valid JSON. No markdown, no preamble.
+4. Return ONLY valid JSON. No markdown, no preamble, no explanation.
 
 Hard rules:
-- NEVER invent or hallucinate content not in the source.
+- NEVER invent or hallucinate content not in the source document.
 - NEVER merge unrelated sections.
-- Preserve bullet and numbering hierarchy in procedures.
+- Preserve bullet and numbering hierarchy in procedures sections.
 - Use semantic matching: "Objective"→purpose, "Applicability"→scope, "Responsibilities"→roles_responsibilities.
-- Mark missing sections as missing. Do not fill gaps.
+- Mark missing sections as missing. Do not fill gaps with invented content.
+- Mark partially complete sections as partial with what actually exists.
 
-Output (strict JSON, no fences):
+Output format (strict JSON, no markdown fences, no preamble):
 {
   "mapped_sections": {
     "purpose": "...",
@@ -243,35 +244,29 @@ Output (strict JSON, no fences):
   },
   "missing_sections": ["section_key"],
   "partial_sections": ["section_key"],
-  "unmapped_content": ["text not matching any section"],
+  "unmapped_content": ["text block not matching any section"],
   "notes": ["observation about document quality or structure"]
 }
-Only include keys in mapped_sections where content was actually found."""
+Only include keys in mapped_sections where content was actually found in the source."""
 
 
 async def llm_map_sections(extracted_text: str, template_sections: list[str]) -> dict:
+    """Call Claude Opus to semantically map document sections."""
     user_msg = (
         f"TEMPLATE SECTIONS REQUIRED:\n{json.dumps(template_sections, indent=2)}\n\n"
         f"SOURCE DOCUMENT CONTENT:\n---\n{extracted_text[:12000]}\n---\n\n"
-        f"Map the source content to the template sections. Return only JSON."
+        f"Map the source content to the template sections. Return only valid JSON, no markdown."
     )
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.post(
-            GROQ_API_URL,
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
-            json={
-                "model":       GROQ_MODEL,
-                "temperature": 0.1,
-                "max_tokens":  4096,
-                "messages": [
-                    {"role": "system", "content": BIRD_EYE_SYSTEM_PROMPT},
-                    {"role": "user",   "content": user_msg},
-                ],
-            },
-        )
-        resp.raise_for_status()
-        raw = resp.json()["choices"][0]["message"]["content"].strip()
 
+    client  = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=4096,
+        system=BIRD_EYE_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+
+    raw = message.content[0].text.strip()
     raw = re.sub(r"^```[a-z]*\n?", "", raw)
     raw = re.sub(r"\n?```$",       "", raw)
     return json.loads(raw)
@@ -323,7 +318,11 @@ def build_notes(statuses: dict, mapped: dict, missing: list, partial: list) -> l
     return notes
 
 
-async def _run_pipeline(source_bytes: bytes, template_sections: list[str], source_filename: str) -> SmartScanResult:
+async def _run_pipeline(
+    source_bytes: bytes,
+    template_sections: list[str],
+    source_filename: str
+) -> SmartScanResult:
     result             = SmartScanResult()
     result.source_hash = _hash_bytes(source_bytes)
 
