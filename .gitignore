@@ -31,6 +31,7 @@ ENV/
 backend/storage/uploads/
 backend/storage/outputs/
 backend/storage/temp/
+data/
 *.docx
 *.pdf
 *.txt

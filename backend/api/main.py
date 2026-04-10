@@ -39,6 +39,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+def get_workspace_id() -> str:
+    return os.getenv("WORKSPACE_ID", "personal")
+
+
 def _get_password() -> str:
     password = os.getenv("TOOL_PASSWORD")
     environment = os.getenv("ENVIRONMENT", "development").lower()
@@ -110,7 +114,7 @@ async def login(payload: LoginRequest, response: Response):
         samesite="lax",
         max_age=60 * 60 * 12,
     )
-    return {"authenticated": True}
+    return {"authenticated": True, "workspace_id": get_workspace_id()}
 
 @app.post("/auth/logout")
 async def logout(response: Response):
@@ -124,7 +128,7 @@ async def session_status(request: Request):
         request.cookies.get(session_cookie_name, ""),
         _build_session_token(password),
     )
-    return {"authenticated": authenticated}
+    return {"authenticated": authenticated, "workspace_id": get_workspace_id()}
 
 @app.get("/")
 async def root():

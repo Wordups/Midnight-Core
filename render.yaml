@@ -17,3 +17,5 @@ services:
         sync: false
       - key: ENVIRONMENT
         value: production
+      - key: WORKSPACE_ID
+        value: personal

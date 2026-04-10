@@ -663,7 +663,7 @@
             <div class="progress-wrap" id="cp-progress"><div class="progress-label" id="cp-progress-label">Extracting requirements...</div><div class="progress-bar"><div class="progress-fill" id="cp-progress-fill" style="width:0%"></div></div></div>
             <div class="output-text" id="cp-out-text"></div>
             <div class="output-actions" id="cp-out-actions" style="display:none;">
-              <button class="output-btn primary" onclick="showToast('Downloading policy document...')">Download .docx</button>
+              <button class="output-btn primary" id="cp-download-btn" onclick="downloadOutput('cp')">Download .docx</button>
               <button class="output-btn" onclick="showToast('Downloading GRC Summary...')">Download GRC Summary</button>
               <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
             </div>
@@ -793,7 +793,7 @@
             <div class="progress-wrap" id="mg-progress"><div class="progress-label" id="mg-progress-label">Extracting content...</div><div class="progress-bar"><div class="progress-fill" id="mg-progress-fill" style="width:0%"></div></div></div>
             <div class="output-text" id="mg-out-text"></div>
             <div class="output-actions" id="mg-out-actions" style="display:none;">
-              <button class="output-btn primary" onclick="showToast('Downloading migrated document...')">Download .docx</button>
+              <button class="output-btn primary" id="mg-download-btn" onclick="downloadOutput('mg')">Download .docx</button>
               <button class="output-btn" onclick="showToast('Downloading GRC Summary...')">Download GRC Summary</button>
               <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
             </div>
@@ -915,6 +915,10 @@
 <script>
 const API = window.location.origin;
 let authReady = null;
+const outputDownloads = {
+  cp: { url: null, filename: null, preview: '' },
+  mg: { url: null, filename: null, preview: '' },
+};
 
 // ── Navigation ────────────────────────────────────────────────────────
 function showView(viewId, navEl, title) {
@@ -1009,26 +1013,133 @@ function getFilenameFromDisposition(headerValue, fallbackName) {
   return match ? match[1] : fallbackName;
 }
 
-async function downloadDocxResponse(response, fallbackName) {
+function resetOutputDownload(key) {
+  const existing = outputDownloads[key];
+  if (existing && existing.url) {
+    URL.revokeObjectURL(existing.url);
+  }
+  outputDownloads[key] = { url: null, filename: null, preview: '' };
+}
+
+function downloadOutput(key) {
+  const download = outputDownloads[key];
+  if (!download?.url || !download?.filename) {
+    showToast('Download not ready yet');
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = download.url;
+  link.download = download.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function formatRelativeTime(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value || 'just now';
+  const seconds = Math.max(1, Math.floor((Date.now() - parsed.getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+function renderDocumentRows(target, items) {
+  if (!target) return;
+  if (!items.length) {
+    target.innerHTML = `<div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span style="color:var(--text2);font-size:13px;">No generated outputs yet</span></div><div><span class="status-badge draft">Empty</span></div><div class="owner-cell">Personal Workspace</div><div class="actions-cell"></div></div>`;
+    return;
+  }
+
+  target.innerHTML = items.map(item => {
+    const typeClass = String(item.doc_type || 'policy').toLowerCase().replace(/\s+/g, '');
+    const statusClass = String(item.status || 'ready').toLowerCase();
+    return `<div class="table-row">
+      <div class="doc-name-cell">
+        <div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <span class="doc-type-pill ${escapeHtml(typeClass)}">${escapeHtml(item.doc_type)}</span>
+        <span style="color:var(--text);font-size:13px;" title="${escapeHtml(item.preview || item.name)}">${escapeHtml(item.name)}</span>
+      </div>
+      <div><span class="status-badge ${escapeHtml(statusClass)}">${escapeHtml(item.status)}</span></div>
+      <div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escapeHtml(item.owner_initials)}</div>${escapeHtml(item.owner_name)}</div>
+      <div class="actions-cell"><div class="action-btn" onclick="window.location.href='${escapeHtml(item.download_path)}'">↓</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderActivityRows(target, items) {
+  if (!target) return;
+  if (!items.length) {
+    target.innerHTML = `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">now</div><div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">ME</div>You</div><div style="color:var(--text2);">Waiting</div><div style="color:var(--text2);">No activity yet</div><div class="result-cell warn">● Idle</div></div>`;
+    return;
+  }
+
+  target.innerHTML = items.map(item => {
+    const ok = String(item.result || '').toLowerCase().includes('audit') || String(item.result || '').toLowerCase().includes('complete');
+    return `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;">
+      <div class="time-cell">${escapeHtml(formatRelativeTime(item.timestamp))}</div>
+      <div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escapeHtml(item.user_initials)}</div>${escapeHtml(item.user_name)}</div>
+      <div style="color:var(--text2);">${escapeHtml(item.action)}</div>
+      <div style="color:var(--text2);">${escapeHtml(item.target)}</div>
+      <div class="result-cell ${ok ? 'ok' : 'warn'}">● ${escapeHtml(item.result)}</div>
+    </div>`;
+  }).join('');
+}
+
+function ensureRowContainerAfter(headerEl, rowClass) {
+  if (!headerEl) return null;
+  let cursor = headerEl.nextElementSibling;
+
+  if (cursor && cursor.dataset && cursor.dataset.dynamicContainer === 'true') {
+    return cursor;
+  }
+
+  const container = document.createElement('div');
+  container.dataset.dynamicContainer = 'true';
+
+  while (cursor && cursor.classList && cursor.classList.contains(rowClass)) {
+    const next = cursor.nextElementSibling;
+    container.appendChild(cursor);
+    cursor = next;
+  }
+
+  headerEl.parentNode.insertBefore(container, cursor || null);
+  return container;
+}
+
+async function downloadDocxResponse(response, fallbackName, outputKey) {
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.detail || 'Request failed');
   }
+
+  resetOutputDownload(outputKey);
 
   const blob = await response.blob();
   const filename = getFilenameFromDisposition(
     response.headers.get('Content-Disposition'),
     fallbackName,
   );
+  const preview = (response.headers.get('X-Midnight-Preview') || '').trim();
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  return filename;
+
+  outputDownloads[outputKey] = { url, filename, preview };
+  downloadOutput(outputKey);
+  return outputDownloads[outputKey];
 }
 
 // ── Framework checkboxes ──────────────────────────────────────────────
@@ -1070,6 +1181,7 @@ function clearFile() {
   document.getElementById('mg-file').value = '';
   document.getElementById('scan-result').classList.remove('active');
   window._scanPassed = false;
+  resetOutputDownload('mg');
 }
 
 // ── Progress animation ────────────────────────────────────────────────
@@ -1092,6 +1204,7 @@ async function createPolicy() {
   const name = document.getElementById('cp-name').value.trim();
   if(!name) { showToast('Please enter a policy name'); return; }
   const btn = document.getElementById('cp-submit');
+  resetOutputDownload('cp');
   btn.disabled = true; btn.textContent = 'Generating...';
   const out = document.getElementById('cp-output');
   out.style.display = 'block';
@@ -1126,12 +1239,13 @@ async function createPolicy() {
           description: document.getElementById('cp-desc').value
         })
       });
-      const filename = await downloadDocxResponse(res, `${name.replace(/\s+/g, '_')}_v1.0.docx`);
+      const download = await downloadDocxResponse(res, `${name.replace(/\s+/g, '_')}_v1.0.docx`, 'cp');
       document.getElementById('cp-progress').style.display = 'none';
-      document.getElementById('cp-out-text').textContent = `Downloaded ${filename}`;
+      document.getElementById('cp-out-text').textContent = download.preview || 'Policy generated successfully. Use the download button to review the full document.';
       document.getElementById('cp-out-status').textContent = 'Complete';
       document.getElementById('cp-out-status').className = 'output-status done';
       document.getElementById('cp-out-actions').style.display = 'flex';
+      await refreshDashboardData();
       showToast('Policy generated — ' + name);
     } catch(e) {
       document.getElementById('cp-progress').style.display = 'none';
@@ -1258,6 +1372,7 @@ function dismissScan() {
 async function _runMigration() {
   const btn = document.getElementById('mg-submit');
   const out = document.getElementById('mg-output');
+  resetOutputDownload('mg');
   btn.disabled    = true;
   btn.textContent = 'Processing...';
   out.style.display = 'block';
@@ -1285,15 +1400,17 @@ async function _runMigration() {
         method:  'POST',
         body:    formData,
       });
-      const filename = await downloadDocxResponse(
+      const download = await downloadDocxResponse(
         res,
         `${selectedFile.name.replace(/\.docx$/i, '')}_migrated.docx`,
+        'mg',
       );
       document.getElementById('mg-progress').style.display = 'none';
-      document.getElementById('mg-out-text').textContent = `Downloaded ${filename}`;
+      document.getElementById('mg-out-text').textContent = download.preview || 'Migration complete. Use the download button to review the full document.';
       document.getElementById('mg-out-status').textContent = 'Complete';
       document.getElementById('mg-out-status').className = 'output-status done';
       document.getElementById('mg-out-actions').style.display = 'flex';
+      await refreshDashboardData();
       showToast('Document migrated — ' + selectedFile.name);
     } catch(e) {
       document.getElementById('mg-progress').style.display = 'none';
@@ -1396,6 +1513,26 @@ async function loadSummary() {
   if(meta) meta.textContent = `${data.policies_processed} docs analyzed · ${data.gaps_total} gaps detected`;
 }
 
+async function loadDocuments() {
+  const data = await apiFetch('/dashboard/documents');
+  if (!data) return;
+  const overviewHeader = document.querySelector('.main-grid .panel .table-header');
+  const libraryHeader = document.querySelector('#view-library .panel .table-header');
+  renderDocumentRows(ensureRowContainerAfter(overviewHeader, 'table-row'), data.items);
+  renderDocumentRows(ensureRowContainerAfter(libraryHeader, 'table-row'), data.items);
+}
+
+async function loadActivity() {
+  const data = await apiFetch('/dashboard/activity');
+  if (!data) return;
+  const activityHeader = document.querySelector('.bottom-grid .panel .table-header');
+  renderActivityRows(ensureRowContainerAfter(activityHeader, 'activity-row'), data.items);
+}
+
+async function refreshDashboardData() {
+  await Promise.all([loadSummary(), loadDocuments(), loadActivity()]);
+}
+
 document.querySelectorAll('.fw-bar-fill').forEach(bar => {
   const w = bar.style.width; bar.style.width = '0';
   setTimeout(() => { bar.style.width = w; }, 400);
@@ -1424,7 +1561,7 @@ setTimeout(() => {
   if(review)   countUp(review,   parseInt(review.textContent)   || 7,  700);
 }, 300);
 
-ensureAuthenticated().then(loadSummary).catch(() => {
+ensureAuthenticated().then(refreshDashboardData).catch(() => {
   showToast('Authentication required to load dashboard data');
 });
 </script>

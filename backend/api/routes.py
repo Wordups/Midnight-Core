@@ -20,6 +20,7 @@ from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from dotenv import load_dotenv
+from backend.storage.file_store import save_generated_document
 
 try:
     import anthropic
@@ -32,6 +33,10 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL   = "claude-opus-4-5"
+
+
+def _get_workspace_id() -> str:
+    return os.getenv("WORKSPACE_ID", "personal")
 
 
 def _get_anthropic_client():
@@ -366,6 +371,18 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
     return buf.read()
 
 
+def _build_preview_text(policy_data: dict) -> str:
+    preview_candidates = [
+        policy_data.get("purpose"),
+        policy_data.get("scope"),
+        policy_data.get("policy_statement"),
+    ]
+    for candidate in preview_candidates:
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip().replace("\n", " ")[:280]
+    return "Document generated successfully. Use the download button to review the full policy."
+
+
 @router.post("/migrate")
 async def migrate_document(
     file:          UploadFile | None = File(default=None),
@@ -410,10 +427,25 @@ async def migrate_document(
 
     # Return as downloadable file
     output_name = upload.filename.replace(".docx", "") + "_migrated.docx"
+    preview_text = _build_preview_text(policy_data)
+    record = save_generated_document(
+        workspace_id=_get_workspace_id(),
+        filename=output_name,
+        document_name=policy_data.get("policy_name", output_name.replace(".docx", "")),
+        doc_type=policy_data.get("doc_type", template_name),
+        preview=preview_text,
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        file_bytes=docx_bytes,
+        source_name=upload.filename,
+    )
     return StreamingResponse(
         BytesIO(docx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{output_name}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{output_name}"',
+            "X-Midnight-Preview": preview_text,
+            "X-Midnight-Document-Id": record["id"],
+        },
     )
 
 
@@ -501,10 +533,25 @@ async def create_document(request: CreatePolicyRequest):
         raise HTTPException(status_code=500, detail=f"Document rendering error: {str(e)}")
 
     output_name = f"{request.policy_name.replace(' ', '_')}_v1.0.docx"
+    preview_text = _build_preview_text(policy_data)
+    record = save_generated_document(
+        workspace_id=_get_workspace_id(),
+        filename=output_name,
+        document_name=policy_data.get("policy_name", request.policy_name),
+        doc_type=request.doc_type,
+        preview=preview_text,
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        file_bytes=docx_bytes,
+        source_name=request.policy_name,
+    )
     return StreamingResponse(
         BytesIO(docx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{output_name}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{output_name}"',
+            "X-Midnight-Preview": preview_text,
+            "X-Midnight-Document-Id": record["id"],
+        },
     )
 
 
