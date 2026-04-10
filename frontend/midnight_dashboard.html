@@ -1036,6 +1036,37 @@ function downloadOutput(key) {
   link.remove();
 }
 
+function parseDownloadFilename(contentDisposition, fallbackName) {
+  const match = /filename="?([^"]+)"?/i.exec(contentDisposition || '');
+  if (match && match[1]) return match[1];
+  return fallbackName || 'midnight-document.docx';
+}
+
+async function downloadDashboardArtifact(path, fallbackName) {
+  try {
+    const response = await apiRequest(path);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.detail || 'Download failed');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = parseDownloadFilename(
+      response.headers.get('Content-Disposition'),
+      fallbackName,
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    showToast(error.message || 'Download failed');
+  }
+}
+
 function escapeHtml(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -1076,7 +1107,7 @@ function renderDocumentRows(target, items) {
       </div>
       <div><span class="status-badge ${escapeHtml(statusClass)}">${escapeHtml(item.status)}</span></div>
       <div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escapeHtml(item.owner_initials)}</div>${escapeHtml(item.owner_name)}</div>
-      <div class="actions-cell"><div class="action-btn" onclick="window.location.href='${escapeHtml(item.download_path)}'">↓</div></div>
+      <div class="actions-cell"><div class="action-btn" data-path="${escapeHtml(item.download_path)}" data-filename="${escapeHtml(item.filename || item.name)}" onclick="downloadDashboardArtifact(this.dataset.path, this.dataset.filename)">↓</div></div>
     </div>`;
   }).join('');
 }

@@ -59,6 +59,7 @@ class GapsResponse(BaseModel):
 class DocumentItem(BaseModel):
     id: str
     name: str
+    filename: str
     doc_type: str
     status: str
     owner_name: str
@@ -132,6 +133,7 @@ def _documents_response() -> DocumentsResponse:
         DocumentItem(
             id=record["id"],
             name=record["name"],
+            filename=record["filename"],
             doc_type=record["doc_type"],
             status=record["status"],
             owner_name=owner_name,
