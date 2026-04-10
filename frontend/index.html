@@ -818,6 +818,41 @@ Never give long lists. Never be salesy. Just be helpful and smart. End responses
 let btOpen = false;
 let btHistory = [];
 let btStarted = false;
+const API = window.location.origin;
+let btAuthReady = null;
+
+async function ensureBirdTalkAuth(forcePrompt = false) {
+  if (btAuthReady && !forcePrompt) return btAuthReady;
+
+  btAuthReady = (async () => {
+    if (!forcePrompt) {
+      const session = await fetch(API + '/auth/session', { credentials: 'include' });
+      if (session.ok) {
+        const data = await session.json();
+        if (data.authenticated) return true;
+      }
+    }
+
+    const password = window.prompt('Enter your Midnight access password to use Bird Talk');
+    if (!password) throw new Error('Authentication cancelled');
+
+    const login = await fetch(API + '/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!login.ok) {
+      btAuthReady = null;
+      throw new Error('Authentication failed');
+    }
+
+    return true;
+  })();
+
+  return btAuthReady;
+}
 
 function toggleBirdTalk() {
   btOpen = !btOpen;
@@ -871,18 +906,32 @@ async function sendBT() {
   const typing = showTyping();
   
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    await ensureBirdTalkAuth();
+    let res = await fetch(API + '/pipeline/birdsong', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
         system: BT_SYSTEM,
         messages: btHistory
       })
     });
+    if (res.status === 401) {
+      btAuthReady = null;
+      await ensureBirdTalkAuth(true);
+      res = await fetch(API + '/pipeline/birdsong', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: BT_SYSTEM,
+          messages: btHistory
+        })
+      });
+    }
+    if (!res.ok) throw new Error('Bird Talk request failed');
     const data = await res.json();
-    const reply = data.content?.[0]?.text || "Hmm, something went wrong on my end. 🐔 Try again?";
+    const reply = data.reply || "Hmm, something went wrong on my end. 🐔 Try again?";
     typing.remove();
     addBTMsg('bot', reply);
     btHistory.push({ role: 'assistant', content: reply });

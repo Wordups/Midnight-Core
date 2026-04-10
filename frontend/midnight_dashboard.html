@@ -913,7 +913,8 @@
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg">Action triggered</span></div>
 
 <script>
-const API = 'https://midnight-core.onrender.com';
+const API = window.location.origin;
+let authReady = null;
 
 // ── Navigation ────────────────────────────────────────────────────────
 function showView(viewId, navEl, title) {
@@ -948,6 +949,86 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(window._tt);
   window._tt = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+async function ensureAuthenticated(forcePrompt = false) {
+  if (authReady && !forcePrompt) return authReady;
+
+  authReady = (async () => {
+    if (!forcePrompt) {
+      const session = await fetch(API + '/auth/session', { credentials: 'include' });
+      if (session.ok) {
+        const data = await session.json();
+        if (data.authenticated) return true;
+      }
+    }
+
+    const password = window.prompt('Enter your Midnight access password');
+    if (!password) throw new Error('Authentication cancelled');
+
+    const login = await fetch(API + '/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!login.ok) {
+      authReady = null;
+      throw new Error('Authentication failed');
+    }
+
+    return true;
+  })();
+
+  return authReady;
+}
+
+async function apiRequest(path, options = {}) {
+  await ensureAuthenticated();
+
+  let response = await fetch(API + path, {
+    credentials: 'include',
+    ...options,
+  });
+
+  if (response.status === 401) {
+    authReady = null;
+    await ensureAuthenticated(true);
+    response = await fetch(API + path, {
+      credentials: 'include',
+      ...options,
+    });
+  }
+
+  return response;
+}
+
+function getFilenameFromDisposition(headerValue, fallbackName) {
+  const match = /filename="?([^"]+)"?/i.exec(headerValue || '');
+  return match ? match[1] : fallbackName;
+}
+
+async function downloadDocxResponse(response, fallbackName) {
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || 'Request failed');
+  }
+
+  const blob = await response.blob();
+  const filename = getFilenameFromDisposition(
+    response.headers.get('Content-Disposition'),
+    fallbackName,
+  );
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  return filename;
 }
 
 // ── Framework checkboxes ──────────────────────────────────────────────
@@ -1033,9 +1114,9 @@ async function createPolicy() {
   animateProgress('cp-progress-fill', 'cp-progress-label', steps, async () => {
     try {
       const frameworks = getSelectedFrameworks('cp-frameworks');
-      const res = await fetch(API + '/pipeline/create', {
+      const res = await apiRequest('/pipeline/create', {
         method:'POST',
-        headers:{'Content-Type':'application/json', 'Authorization': 'Basic ' + btoa(':midnight2025')},
+        headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           policy_name: name,
           doc_type: document.getElementById('cp-type').value,
@@ -1045,9 +1126,9 @@ async function createPolicy() {
           description: document.getElementById('cp-desc').value
         })
       });
-      const data = await res.json();
+      const filename = await downloadDocxResponse(res, `${name.replace(/\s+/g, '_')}_v1.0.docx`);
       document.getElementById('cp-progress').style.display = 'none';
-      document.getElementById('cp-out-text').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('cp-out-text').textContent = `Downloaded ${filename}`;
       document.getElementById('cp-out-status').textContent = 'Complete';
       document.getElementById('cp-out-status').className = 'output-status done';
       document.getElementById('cp-out-actions').style.display = 'flex';
@@ -1095,11 +1176,11 @@ async function runBirdEye() {
     fd.append('doc_type',   document.getElementById('mg-template')?.value || 'policy');
     fd.append('industry',   document.getElementById('mg-industry')?.value || '');
 
-    const res  = await fetch(API + '/smart-scan/preflight', {
+    const res  = await apiRequest('/api/smart-scan/preflight', {
       method:  'POST',
-      headers: { 'Authorization': 'Basic ' + btoa(':midnight2025') },
       body:    fd,
     });
+    if (!res.ok) throw new Error('Bird Eye scan failed');
     const data = await res.json();
 
     clearInterval(ticker);
@@ -1200,14 +1281,16 @@ async function _runMigration() {
       const formData = new FormData();
       formData.append('source_file',   selectedFile);
       formData.append('template_name', document.getElementById('mg-template').value);
-      const res  = await fetch(API + '/pipeline/migrate', {
+      const res  = await apiRequest('/pipeline/migrate', {
         method:  'POST',
-        headers: { 'Authorization': 'Basic ' + btoa(':midnight2025') },
         body:    formData,
       });
-      const data = await res.json();
+      const filename = await downloadDocxResponse(
+        res,
+        `${selectedFile.name.replace(/\.docx$/i, '')}_migrated.docx`,
+      );
       document.getElementById('mg-progress').style.display = 'none';
-      document.getElementById('mg-out-text').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('mg-out-text').textContent = `Downloaded ${filename}`;
       document.getElementById('mg-out-status').textContent = 'Complete';
       document.getElementById('mg-out-status').className = 'output-status done';
       document.getElementById('mg-out-actions').style.display = 'flex';
@@ -1275,13 +1358,14 @@ async function sendBT() {
   btHistory.push({role:'user', content:text});
   showBTTyping();
   try {
-    const res  = await fetch('https://api.anthropic.com/v1/messages', {
+    const res  = await apiRequest('/pipeline/birdsong', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:1000, system:BT_SYSTEM, messages:btHistory})
+      body: JSON.stringify({system:BT_SYSTEM, messages:btHistory})
     });
+    if (!res.ok) throw new Error('Bird Talk request failed');
     const data  = await res.json();
-    const reply = data.content?.[0]?.text || "Something went wrong on my end. 🐔 Try again?";
+    const reply = data.reply || "Something went wrong on my end. 🐔 Try again?";
     document.getElementById('bt-typing')?.remove();
     addBTMsg('bot', reply);
     btHistory.push({role:'assistant', content:reply});
@@ -1295,7 +1379,7 @@ async function sendBT() {
 // ── API data loading ──────────────────────────────────────────────────
 async function apiFetch(path) {
   try {
-    const res = await fetch(API + path, {headers:{'Authorization': 'Basic ' + btoa(':midnight2025')}});
+    const res = await apiRequest(path);
     if(!res.ok) throw new Error();
     return await res.json();
   } catch(e) { return null; }
@@ -1340,7 +1424,9 @@ setTimeout(() => {
   if(review)   countUp(review,   parseInt(review.textContent)   || 7,  700);
 }, 300);
 
-loadSummary();
+ensureAuthenticated().then(loadSummary).catch(() => {
+  showToast('Authentication required to load dashboard data');
+});
 </script>
 </body>
 </html>

@@ -11,13 +11,28 @@ import hashlib
 from typing import Optional
 from enum import Enum
 
-import anthropic
 from docx import Document
 from io import BytesIO
+from dotenv import load_dotenv
+
+try:
+    import anthropic
+except ImportError:  # pragma: no cover - handled at runtime when dependency is missing
+    anthropic = None
+
+load_dotenv()
 
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL   = "claude-opus-4-5"
+
+
+def _get_anthropic_client():
+    if anthropic is None:
+        raise RuntimeError("Anthropic dependency is not installed on the server.")
+    if not ANTHROPIC_API_KEY:
+        raise RuntimeError("ANTHROPIC_API_KEY is not configured.")
+    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 SECTION_SYNONYMS: dict[str, list[str]] = {
     "purpose":                ["objective", "intent", "goal", "overview", "introduction", "background"],
@@ -258,7 +273,7 @@ async def llm_map_sections(extracted_text: str, template_sections: list[str]) ->
         f"Map the source content to the template sections. Return only valid JSON, no markdown."
     )
 
-    client  = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    client  = _get_anthropic_client()
     message = client.messages.create(
         model=ANTHROPIC_MODEL,
         max_tokens=4096,

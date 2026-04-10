@@ -59,7 +59,7 @@ cd backend
 uvicorn api.main:app --reload --port 8000
 ```
 
-Dashboard: open `frontend/midnight_dashboard.html` in browser.
+Dashboard: open `http://localhost:8000/midnight_dashboard.html` after starting the backend.
 
 ---
 
@@ -69,8 +69,9 @@ See `.env.example`. Never commit `.env`.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GROQ_API_KEY` | Yes | LLaMA 3.3 70B via Groq |
+| `ANTHROPIC_API_KEY` | Yes | Claude access for Smart Scan, migration, creation, and Bird Talk |
 | `TOOL_PASSWORD` | Yes | Dashboard access gate |
+| `ALLOWED_ORIGINS` | Recommended | Comma-separated list of allowed browser origins |
 | `SUPABASE_URL` | Phase 2 | Document + gap storage |
 | `SUPABASE_KEY` | Phase 2 | Supabase anon key |
 
@@ -81,7 +82,7 @@ See `.env.example`. Never commit `.env`.
 Hosted on Render. Config in `render.yaml`.
 
 - Backend: `https://midnight-core.onrender.com`
-- Dashboard: `frontend/midnight_dashboard.html` (set `API` const to Render URL)
+- Dashboard: `/midnight_dashboard.html` served from the same Render app origin
 
 ---
 

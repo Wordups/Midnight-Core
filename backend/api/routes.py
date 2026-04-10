@@ -10,22 +10,48 @@ POST /pipeline/birdsong  → Bird Talk proxy (Anthropic key stays server-side)
 
 import os
 import json
-import asyncio
 from io import BytesIO
 from typing import Optional
 
-import anthropic
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from dotenv import load_dotenv
+
+try:
+    import anthropic
+except ImportError:  # pragma: no cover - handled at runtime when dependency is missing
+    anthropic = None
+
+load_dotenv()
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL   = "claude-opus-4-5"
+
+
+def _get_anthropic_client():
+    if anthropic is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Anthropic dependency is not installed on the server.",
+        )
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured.")
+    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+
+def _require_docx(upload: UploadFile, field_name: str = "file") -> None:
+    filename = upload.filename or field_name
+    if not filename.lower().endswith(".docx"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name} must be a .docx file. Got '{filename}'.",
+        )
 
 # ── Framework control mappings ────────────────────────────────────────────────
 
@@ -90,11 +116,8 @@ async def birdsong(request: BirdsongRequest):
     Bird Talk proxy — Anthropic key stays server-side.
     Frontend calls this instead of hitting Anthropic directly.
     """
-    if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
-
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        client = _get_anthropic_client()
 
         system = request.system or (
             "You are Midnight, the AI compliance assistant for the Midnight compliance platform "
@@ -205,7 +228,7 @@ async def _extract_and_reconstruct(
         f"Reconstruct this policy into the required JSON structure. Return only JSON."
     )
 
-    client  = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    client  = _get_anthropic_client()
     message = client.messages.create(
         model=ANTHROPIC_MODEL,
         max_tokens=4096,
@@ -345,7 +368,8 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
 
 @router.post("/migrate")
 async def migrate_document(
-    file:          UploadFile = File(...),
+    file:          UploadFile | None = File(default=None),
+    source_file:   UploadFile | None = File(default=None),
     template_name: str        = Form(default="generic_policy"),
     industry:      str        = Form(default="Healthcare"),
     frameworks:    str        = Form(default="HIPAA,HiTrust"),
@@ -354,10 +378,13 @@ async def migrate_document(
     Full migration pipeline:
     upload .docx → Bird Eye extraction → Claude Opus reconstruction → .docx output
     """
-    if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured on server.")
+    upload = file or source_file
+    if upload is None:
+        raise HTTPException(status_code=400, detail="No document was uploaded.")
 
-    file_bytes = await file.read()
+    _require_docx(upload)
+
+    file_bytes = await upload.read()
     if not file_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
@@ -366,7 +393,7 @@ async def migrate_document(
     try:
         policy_data = await _extract_and_reconstruct(
             file_bytes=file_bytes,
-            filename=file.filename,
+            filename=upload.filename,
             template_name=template_name,
             frameworks=fw_list,
         )
@@ -382,7 +409,7 @@ async def migrate_document(
         raise HTTPException(status_code=500, detail=f"Document rendering error: {str(e)}")
 
     # Return as downloadable file
-    output_name = file.filename.replace(".docx", "") + "_migrated.docx"
+    output_name = upload.filename.replace(".docx", "") + "_migrated.docx"
     return StreamingResponse(
         BytesIO(docx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -434,9 +461,6 @@ class CreatePolicyRequest(BaseModel):
 
 @router.post("/create")
 async def create_document(request: CreatePolicyRequest):
-    if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured on server.")
-
     fw_context = []
     for fw in request.frameworks:
         if fw in FRAMEWORK_CONTROLS:
@@ -454,7 +478,7 @@ async def create_document(request: CreatePolicyRequest):
     )
 
     try:
-        client  = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        client  = _get_anthropic_client()
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=4096,
@@ -491,10 +515,11 @@ async def analyze_document(
     file:       UploadFile = File(...),
     frameworks: str        = Form(default="HIPAA,PCI DSS,NIST CSF"),
 ):
-    if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured on server.")
+    _require_docx(file)
 
     file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
     fw_list    = [f.strip() for f in frameworks.split(",") if f.strip()]
 
     doc   = Document(BytesIO(file_bytes))
@@ -515,7 +540,7 @@ async def analyze_document(
     )
 
     try:
-        client  = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        client  = _get_anthropic_client()
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=2048,

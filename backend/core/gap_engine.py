@@ -365,6 +365,21 @@ for ctrl in CONTROL_REGISTRY:
 _CONTROL_LOOKUP: dict[str, Control] = {c.id: c for c in CONTROL_REGISTRY}
 
 
+def get_equivalent_controls(control_id: str) -> set[str]:
+    equivalents = set(CROSS_FRAMEWORK_MAP.get(control_id, []))
+    for primary, mapped_controls in CROSS_FRAMEWORK_MAP.items():
+        if control_id in mapped_controls:
+            equivalents.add(primary)
+            equivalents.update(c for c in mapped_controls if c != control_id)
+    return equivalents
+
+
+def is_control_covered(control_id: str, covered_set: set[str]) -> bool:
+    if control_id in covered_set:
+        return True
+    return any(equivalent in covered_set for equivalent in get_equivalent_controls(control_id))
+
+
 # ── Core engine ────────────────────────────────────────────────────────────────
 
 def get_required_controls(frameworks: list[str], doc_type: str) -> list[Control]:
@@ -407,26 +422,18 @@ def compute_gaps(
 
     gaps = []
     for ctrl in required:
-        if ctrl.id not in covered_set:
-            # Check if a cross-framework equivalent covers this
-            cross = CROSS_FRAMEWORK_MAP.get(ctrl.id, [])
-            covered_by_cross = any(c in covered_set for c in cross)
+        if not is_control_covered(ctrl.id, covered_set):
+            affected = {ctrl.framework}
+            for equivalent_id in get_equivalent_controls(ctrl.id):
+                equivalent = _CONTROL_LOOKUP.get(equivalent_id)
+                if equivalent:
+                    affected.add(equivalent.framework)
 
-            if not covered_by_cross:
-                # Find all frameworks this gap affects
-                affected = [ctrl.framework]
-                for primary, equivalents in CROSS_FRAMEWORK_MAP.items():
-                    if ctrl.id in equivalents and primary in covered_set:
-                        pass  # covered via cross-reference
-                    elif ctrl.id in equivalents:
-                        affected.append(_CONTROL_LOOKUP[primary].framework if primary in _CONTROL_LOOKUP else "")
-                affected = list(set(filter(None, affected)))
-
-                gaps.append(Gap(
-                    control=ctrl,
-                    reason=f"No content mapped to {ctrl.id} in uploaded document",
-                    affected_frameworks=affected,
-                ))
+            gaps.append(Gap(
+                control=ctrl,
+                reason=f"No content mapped to {ctrl.id} in uploaded document",
+                affected_frameworks=sorted(affected),
+            ))
 
     # Coverage % per framework
     coverage = {}
@@ -438,11 +445,7 @@ def compute_gaps(
         if not fw_controls:
             coverage[framework] = 100
             continue
-        covered_count = sum(
-            1 for c in fw_controls
-            if c.id in covered_set
-            or any(x in covered_set for x in CROSS_FRAMEWORK_MAP.get(c.id, []))
-        )
+        covered_count = sum(1 for c in fw_controls if is_control_covered(c.id, covered_set))
         coverage[framework] = round((covered_count / len(fw_controls)) * 100)
 
     return GapReport(
@@ -506,11 +509,7 @@ def run_program_gap_analysis(
         if not fw_controls:
             coverage[framework] = 100
             continue
-        covered_count = sum(
-            1 for c in fw_controls
-            if c.id in all_covered
-            or any(x in all_covered for x in CROSS_FRAMEWORK_MAP.get(c.id, []))
-        )
+        covered_count = sum(1 for c in fw_controls if is_control_covered(c.id, all_covered))
         coverage[framework] = round((covered_count / len(fw_controls)) * 100)
 
     gaps_sorted = sorted(gaps, key=lambda g: {"critical": 0, "medium": 1, "low": 2}[g["severity"]])
