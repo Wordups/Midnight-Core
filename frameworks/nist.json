@@ -1,0 +1,38 @@
+[
+  {
+    "id": "NIST-ID.AM",
+    "name": "Asset Management",
+    "description": "Identify systems, data, software, and related assets so they can be governed and protected appropriately.",
+    "category": "Asset Management"
+  },
+  {
+    "id": "NIST-ID.RA",
+    "name": "Risk Assessment",
+    "description": "Assess cybersecurity risk using defined methods so decisions can be prioritized and managed consistently.",
+    "category": "Risk Management"
+  },
+  {
+    "id": "NIST-PR.AC",
+    "name": "Identity Management and Access Control",
+    "description": "Use identity and access controls to limit access to authorized users, devices, and services.",
+    "category": "Access Control"
+  },
+  {
+    "id": "NIST-PR.DS",
+    "name": "Data Security",
+    "description": "Protect data through safeguards that preserve confidentiality, integrity, and availability.",
+    "category": "Data Protection"
+  },
+  {
+    "id": "NIST-DE.CM",
+    "name": "Security Continuous Monitoring",
+    "description": "Monitor systems and environments for anomalous activity and changes that may indicate risk.",
+    "category": "Logging & Monitoring"
+  },
+  {
+    "id": "NIST-RS.RP",
+    "name": "Response Planning",
+    "description": "Maintain and execute response planning so incidents are handled in a coordinated way.",
+    "category": "Incident Response"
+  }
+]

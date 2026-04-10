@@ -1,0 +1,38 @@
+[
+  {
+    "id": "PCI-1.2",
+    "name": "Network Security Controls",
+    "description": "Maintain network security controls that restrict and manage traffic to cardholder data environments.",
+    "category": "Access Control"
+  },
+  {
+    "id": "PCI-3.3",
+    "name": "Stored Account Data Protection",
+    "description": "Protect stored account data using safeguards that reduce exposure and misuse.",
+    "category": "Data Protection"
+  },
+  {
+    "id": "PCI-7.2",
+    "name": "Access by Business Need to Know",
+    "description": "Restrict access to system components and data based on business need and job responsibility.",
+    "category": "Access Control"
+  },
+  {
+    "id": "PCI-8.2",
+    "name": "User Identification and Authentication",
+    "description": "Use strong user identification and authentication practices for system access.",
+    "category": "Access Control"
+  },
+  {
+    "id": "PCI-10.2",
+    "name": "Audit Log Review",
+    "description": "Review audit logs and security events so suspicious or unauthorized activity can be identified.",
+    "category": "Logging & Monitoring"
+  },
+  {
+    "id": "PCI-12.8",
+    "name": "Third-Party Service Provider Oversight",
+    "description": "Manage third-party providers with defined responsibilities and oversight for security obligations.",
+    "category": "Vendor Management"
+  }
+]

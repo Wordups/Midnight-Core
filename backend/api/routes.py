@@ -20,7 +20,12 @@ from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from dotenv import load_dotenv
-from backend.storage.file_store import save_generated_document
+from backend.storage.file_store import save_generated_document, list_generated_documents
+from backend.core.framework_layer import (
+    build_framework_mapping_rules,
+    build_framework_prompt_context,
+)
+from backend.renderers.pdf_renderer import build_grc_summary_pdf
 
 try:
     import anthropic
@@ -171,11 +176,7 @@ Your output must be valid JSON with this exact structure:
   "references": [...],
   "revision_history": [...],
   "framework_mappings": {
-    "HIPAA": [...],
-    "PCI DSS": [...],
-    "ISO 27001": [...],
-    "NIST CSF": [...],
-    "SOC 2": [...]
+    "<requested framework or HITRUST Domains>": [...]
   },
   "gaps": [...],
   "quality_score": 0
@@ -184,7 +185,7 @@ Your output must be valid JSON with this exact structure:
 Rules:
 - NEVER invent content not in the source
 - Preserve all original meaning
-- Map to framework controls where content clearly applies
+- Map only to the provided framework controls or HITRUST-aligned domains
 - List gaps where required sections are missing or weak
 - quality_score is 0-100 based on completeness
 - Return ONLY valid JSON, no markdown, no preamble"""
@@ -218,17 +219,15 @@ async def _extract_and_reconstruct(
     if len(raw_text) < 50:
         raise HTTPException(status_code=400, detail="Document appears to be empty or unreadable.")
 
-    # Build framework context
-    fw_context = []
-    for fw in frameworks:
-        if fw in FRAMEWORK_CONTROLS:
-            fw_context.append(f"{fw}: {', '.join(FRAMEWORK_CONTROLS[fw][:3])}")
+    normalized_frameworks, fw_context = build_framework_prompt_context(frameworks)
+    mapping_rules = build_framework_mapping_rules(frameworks)
 
     user_msg = (
         f"DOCUMENT: {filename}\n"
         f"TEMPLATE TYPE: {template_name}\n"
-        f"FRAMEWORKS TO MAP: {', '.join(frameworks)}\n"
+        f"FRAMEWORKS TO MAP: {', '.join(normalized_frameworks)}\n"
         f"FRAMEWORK CONTROLS REFERENCE:\n{chr(10).join(fw_context)}\n\n"
+        f"MAPPING RULES: {mapping_rules}\n\n"
         f"SOURCE CONTENT:\n---\n{raw_text[:14000]}\n---\n\n"
         f"Reconstruct this policy into the required JSON structure. Return only JSON."
     )
@@ -389,7 +388,7 @@ async def migrate_document(
     source_file:   UploadFile | None = File(default=None),
     template_name: str        = Form(default="generic_policy"),
     industry:      str        = Form(default="Healthcare"),
-    frameworks:    str        = Form(default="HIPAA,HiTrust"),
+    frameworks:    str        = Form(default="HIPAA,HITRUST"),
 ):
     """
     Full migration pipeline:
@@ -477,7 +476,7 @@ Return valid JSON with this structure:
 
 Rules:
 - Write professionally and specifically for the industry provided
-- Map to applicable framework controls
+- Map only to the provided framework controls or HITRUST-aligned domains
 - Procedures must be numbered step-by-step
 - Return ONLY valid JSON, no markdown"""
 
@@ -491,21 +490,26 @@ class CreatePolicyRequest(BaseModel):
     description: Optional[str] = None
 
 
+class GrcSummaryRequest(BaseModel):
+    organization_name: str
+    industry: str
+    frameworks: list[str]
+
+
 @router.post("/create")
 async def create_document(request: CreatePolicyRequest):
-    fw_context = []
-    for fw in request.frameworks:
-        if fw in FRAMEWORK_CONTROLS:
-            fw_context.append(f"{fw}: {', '.join(FRAMEWORK_CONTROLS[fw][:3])}")
+    normalized_frameworks, fw_context = build_framework_prompt_context(request.frameworks)
+    mapping_rules = build_framework_mapping_rules(request.frameworks)
 
     user_msg = (
         f"Policy Name: {request.policy_name}\n"
         f"Document Type: {request.doc_type}\n"
         f"Industry: {request.industry}\n"
-        f"Frameworks: {', '.join(request.frameworks)}\n"
+        f"Frameworks: {', '.join(normalized_frameworks)}\n"
         f"Owner: {request.owner}\n"
         f"Description/Scope: {request.description or 'Not provided'}\n\n"
         f"Framework Controls Reference:\n{chr(10).join(fw_context)}\n\n"
+        f"Mapping Rules: {mapping_rules}\n\n"
         f"Create a complete enterprise policy document. Return only JSON."
     )
 
@@ -557,6 +561,45 @@ async def create_document(request: CreatePolicyRequest):
 
 # ── Gap analysis ──────────────────────────────────────────────────────────────
 
+@router.post("/grc-summary")
+async def create_grc_summary(request: GrcSummaryRequest):
+    normalized_frameworks, _ = build_framework_prompt_context(request.frameworks)
+    workspace_id = _get_workspace_id()
+    documents = list_generated_documents(workspace_id)
+
+    pdf_bytes = build_grc_summary_pdf(
+        organization_name=request.organization_name.strip() or "Organization",
+        industry=request.industry.strip() or "Unspecified",
+        frameworks=normalized_frameworks,
+        documents=documents,
+    )
+
+    output_name = f"{request.organization_name.strip().replace(' ', '_') or 'organization'}_grc_summary.pdf"
+    preview_text = (
+        f"GRC summary for {request.organization_name.strip() or 'your workspace'} "
+        f"covering {', '.join(normalized_frameworks) or 'selected frameworks'}."
+    )
+    record = save_generated_document(
+        workspace_id=workspace_id,
+        filename=output_name,
+        document_name=f"{request.organization_name.strip() or 'Organization'} GRC Summary",
+        doc_type="PDF",
+        preview=preview_text,
+        content_type="application/pdf",
+        file_bytes=pdf_bytes,
+        source_name=request.organization_name.strip() or output_name,
+    )
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{output_name}"',
+            "X-Midnight-Preview": preview_text,
+            "X-Midnight-Document-Id": record["id"],
+        },
+    )
+
+
 @router.post("/analyze")
 async def analyze_document(
     file:       UploadFile = File(...),
@@ -573,14 +616,13 @@ async def analyze_document(
     lines = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
     text  = "\n".join(lines)[:10000]
 
-    fw_context = []
-    for fw in fw_list:
-        if fw in FRAMEWORK_CONTROLS:
-            fw_context.append(f"{fw}: {', '.join(FRAMEWORK_CONTROLS[fw])}")
+    normalized_frameworks, fw_context = build_framework_prompt_context(fw_list)
+    mapping_rules = build_framework_mapping_rules(fw_list)
 
     user_msg = (
-        f"FRAMEWORKS: {', '.join(fw_list)}\n\n"
+        f"FRAMEWORKS: {', '.join(normalized_frameworks)}\n\n"
         f"FRAMEWORK CONTROLS:\n{chr(10).join(fw_context)}\n\n"
+        f"MAPPING RULES: {mapping_rules}\n\n"
         f"POLICY DOCUMENT:\n---\n{text}\n---\n\n"
         f"Analyze this policy against the framework controls. "
         f"Return JSON with: covered_controls, missing_controls, partial_controls, gaps, recommendations, overall_score (0-100)"

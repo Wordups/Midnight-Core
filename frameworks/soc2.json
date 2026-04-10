@@ -1,0 +1,38 @@
+[
+  {
+    "id": "SOC2-CC1",
+    "name": "Control Environment",
+    "description": "Establish governance and accountability practices that support reliable control execution.",
+    "category": "Governance"
+  },
+  {
+    "id": "SOC2-CC2",
+    "name": "Communication and Information",
+    "description": "Maintain communication and information practices that support control awareness and operation.",
+    "category": "Governance"
+  },
+  {
+    "id": "SOC2-CC3",
+    "name": "Risk Assessment",
+    "description": "Assess and prioritize risks that could affect service commitments and system requirements.",
+    "category": "Risk Management"
+  },
+  {
+    "id": "SOC2-CC6",
+    "name": "Logical and Physical Access Controls",
+    "description": "Apply access controls to protect systems, data, and supporting infrastructure.",
+    "category": "Access Control"
+  },
+  {
+    "id": "SOC2-CC7",
+    "name": "System Operations",
+    "description": "Monitor systems and respond to events so service commitments remain reliable.",
+    "category": "Logging & Monitoring"
+  },
+  {
+    "id": "SOC2-CC9",
+    "name": "Risk Mitigation",
+    "description": "Mitigate operational and third-party risks through defined control activities.",
+    "category": "Vendor Management"
+  }
+]

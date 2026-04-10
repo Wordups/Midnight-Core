@@ -1,0 +1,38 @@
+[
+  {
+    "id": "HIPAA-164.308(a)(1)",
+    "name": "Security Management Process",
+    "description": "Establish and maintain a security management process that includes identifying and reducing risks to electronic protected health information.",
+    "category": "Risk Management"
+  },
+  {
+    "id": "HIPAA-164.308(a)(3)",
+    "name": "Workforce Security",
+    "description": "Apply workforce access procedures so only appropriate personnel can access electronic protected health information.",
+    "category": "Access Control"
+  },
+  {
+    "id": "HIPAA-164.308(a)(5)",
+    "name": "Security Awareness and Training",
+    "description": "Provide a security awareness and training program for the workforce with ongoing reinforcement.",
+    "category": "Training"
+  },
+  {
+    "id": "HIPAA-164.312(a)(1)",
+    "name": "Access Control",
+    "description": "Implement technical access controls so electronic protected health information is available only to authorized people and systems.",
+    "category": "Access Control"
+  },
+  {
+    "id": "HIPAA-164.312(b)",
+    "name": "Audit Controls",
+    "description": "Record and examine system activity involving systems that store or use electronic protected health information.",
+    "category": "Logging & Monitoring"
+  },
+  {
+    "id": "HIPAA-164.312(e)(1)",
+    "name": "Transmission Security",
+    "description": "Protect electronic protected health information when it is transmitted across networks.",
+    "category": "Data Protection"
+  }
+]

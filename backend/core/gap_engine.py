@@ -254,33 +254,33 @@ CONTROL_REGISTRY: list[Control] = [
         suggested_action="Build security awareness training plan",
     ),
 
-    # ── HITRUST ────────────────────────────────────────────────────────────────
+    # ── HITRUST Domains (alignment only) ──────────────────────────────────────
     Control(
-        id="HITRUST-01.a",
-        framework="HITRUST",
-        name="Access Control Policy",
-        description="Access control policy documented and implemented",
+        id="HITRUST-DOMAIN-ACCESS",
+        framework="HITRUST Domains",
+        name="Access Control",
+        description="Access control practices align to the HITRUST access control domain",
         severity="critical",
         doc_types=["POLICY"],
-        suggested_action="Create or update access control policy",
+        suggested_action="Create or update access control policy for HITRUST-aligned domain coverage",
     ),
     Control(
-        id="HITRUST-06.d",
-        framework="HITRUST",
+        id="HITRUST-DOMAIN-VENDOR",
+        framework="HITRUST Domains",
         name="Vendor Management",
-        description="Third-party service delivery managed and monitored",
+        description="Third-party oversight aligns to the HITRUST vendor management domain",
         severity="critical",
         doc_types=["POLICY", "PROCEDURE"],
-        suggested_action="Build vendor risk management policy",
+        suggested_action="Build vendor risk management policy for HITRUST-aligned domain coverage",
     ),
     Control(
-        id="HITRUST-11.a",
-        framework="HITRUST",
+        id="HITRUST-DOMAIN-INCIDENT",
+        framework="HITRUST Domains",
         name="Incident Management",
-        description="Information security incident management procedures",
+        description="Incident response procedures align to the HITRUST incident response domain",
         severity="critical",
         doc_types=["PLAN", "PLAYBOOK", "PROCEDURE"],
-        suggested_action="Build incident response plan and playbooks",
+        suggested_action="Build incident response plan and playbooks for HITRUST-aligned domain coverage",
     ),
 
     # ── ISO 27001 ──────────────────────────────────────────────────────────────
@@ -345,11 +345,11 @@ CONTROL_REGISTRY: list[Control] = [
 # Controls that map across multiple frameworks (cross-reference table)
 CROSS_FRAMEWORK_MAP: dict[str, list[str]] = {
     # Incident response appears in all four primary frameworks
-    "HIPAA-164.308(a)(6)": ["HITRUST-11.a", "NIST-PR.IP-9", "ISO-A.16.1"],
+    "HIPAA-164.308(a)(6)": ["HITRUST-DOMAIN-INCIDENT", "NIST-PR.IP-9", "ISO-A.16.1"],
     # Access control is universal
-    "PCI-7.1":             ["HIPAA-164.312(a)(1)", "HITRUST-01.a", "NIST-AC-2", "ISO-A.9.1"],
+    "PCI-7.1":             ["HIPAA-164.312(a)(1)", "HITRUST-DOMAIN-ACCESS", "NIST-AC-2", "ISO-A.9.1"],
     # Vendor management
-    "PCI-12.8":            ["HITRUST-06.d", "SOC2-CC9.2"],
+    "PCI-12.8":            ["HITRUST-DOMAIN-VENDOR", "SOC2-CC9.2"],
     # Awareness training
     "HIPAA-164.308(a)(5)": ["NIST-PR.AT-1"],
 }
@@ -543,9 +543,9 @@ if __name__ == "__main__":
             "HIPAA-164.312(a)(1)",
             "PCI-7.1",
             "PCI-12.1",
-            "HITRUST-01.a",
+            "HITRUST-DOMAIN-ACCESS",
         ],
-        frameworks=["HIPAA", "PCI DSS", "HITRUST", "NIST CSF"],
+        frameworks=["HIPAA", "PCI DSS", "HITRUST Domains", "NIST CSF"],
     )
 
     print(f"\nDocument: {report.document_name}")
