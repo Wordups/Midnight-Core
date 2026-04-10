@@ -546,16 +546,16 @@
       </div>
       <div class="metrics-row">
         <div class="metric-card green">
-          <div class="metric-top"><div><div class="metric-label">Policies processed</div><div class="metric-val green" id="m-policies">98</div></div><div class="metric-icon green"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
-          <div class="metric-sub"><div class="metric-sub-item"><span class="green">+12</span> last 7 days</div><div class="metric-sub-item"><span>14</span> frameworks</div></div>
+          <div class="metric-top"><div><div class="metric-label">Policies processed</div><div class="metric-val green" id="m-policies">0</div></div><div class="metric-icon green"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="metric-sub"><div class="metric-sub-item"><span class="green" id="m-policies-last-7">0</span> last 7 days</div><div class="metric-sub-item"><span id="m-frameworks">0</span> frameworks</div></div>
         </div>
         <div class="metric-card red">
-          <div class="metric-top"><div><div class="metric-label">Framework gaps found</div><div class="metric-val red" id="m-gaps">24</div></div><div class="metric-icon red"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 11v1" stroke="#ff5c5c" stroke-width="1.5" stroke-linecap="round"/><path d="M7 2L1 13h14L9 2H7z" stroke="#ff5c5c" stroke-width="1.2" stroke-linejoin="round"/></svg></div></div>
-          <div class="metric-sub"><div class="metric-sub-item"><span class="red">8 critical</span></div><div class="metric-sub-item"><span class="amber">11 medium</span></div></div>
+          <div class="metric-top"><div><div class="metric-label">Framework gaps found</div><div class="metric-val red" id="m-gaps">0</div></div><div class="metric-icon red"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 11v1" stroke="#ff5c5c" stroke-width="1.5" stroke-linecap="round"/><path d="M7 2L1 13h14L9 2H7z" stroke="#ff5c5c" stroke-width="1.2" stroke-linejoin="round"/></svg></div></div>
+          <div class="metric-sub"><div class="metric-sub-item"><span class="red" id="m-gaps-critical">0</span> critical</div><div class="metric-sub-item"><span class="amber" id="m-gaps-medium">0</span> medium</div></div>
         </div>
         <div class="metric-card amber">
-          <div class="metric-top"><div><div class="metric-label">Needs review</div><div class="metric-val amber" id="m-review">7</div></div><div class="metric-icon amber"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#f5a623" stroke-width="1.2"/><path d="M8 5v3" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.8" fill="#f5a623"/></svg></div></div>
-          <div class="metric-sub"><div class="metric-sub-item"><span class="red">3 critical</span></div><div class="metric-sub-item">owner assigned</div></div>
+          <div class="metric-top"><div><div class="metric-label">Needs review</div><div class="metric-val amber" id="m-review">0</div></div><div class="metric-icon amber"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#f5a623" stroke-width="1.2"/><path d="M8 5v3" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.8" fill="#f5a623"/></svg></div></div>
+          <div class="metric-sub"><div class="metric-sub-item"><span class="red" id="m-review-critical">0</span> critical</div><div class="metric-sub-item">owner assigned</div></div>
         </div>
       </div>
       <div class="main-grid">
@@ -1100,6 +1100,105 @@ function renderActivityRows(target, items) {
   }).join('');
 }
 
+function getOverviewGapPanel() {
+  return document.querySelector('#view-overview .main-grid .panel:last-child');
+}
+
+function getGapAnalysisPanel() {
+  return document.querySelector('#view-gaps .main-grid .panel:first-child');
+}
+
+function replaceOverviewGapItems(html) {
+  const panel = getOverviewGapPanel();
+  if (!panel) return;
+  const coverage = panel.querySelector('.fw-section');
+  if (!coverage) return;
+
+  let cursor = coverage.nextElementSibling;
+  while (cursor && cursor.classList && cursor.classList.contains('gap-item')) {
+    const next = cursor.nextElementSibling;
+    cursor.remove();
+    cursor = next;
+  }
+
+  let container = panel.querySelector('[data-overview-gaps="true"]');
+  if (!container) {
+    container = document.createElement('div');
+    container.dataset.overviewGaps = 'true';
+    coverage.insertAdjacentElement('afterend', container);
+  }
+  container.innerHTML = html;
+}
+
+function replaceGapAnalysisItems(html) {
+  const panel = getGapAnalysisPanel();
+  if (!panel) return;
+  const header = panel.querySelector('.panel-header');
+  if (!header) return;
+
+  let cursor = header.nextElementSibling;
+  while (cursor && cursor.classList && cursor.classList.contains('gap-item')) {
+    const next = cursor.nextElementSibling;
+    cursor.remove();
+    cursor = next;
+  }
+
+  let container = panel.querySelector('[data-gap-analysis="true"]');
+  if (!container) {
+    container = document.createElement('div');
+    container.dataset.gapAnalysis = 'true';
+    header.insertAdjacentElement('afterend', container);
+  }
+  container.innerHTML = html;
+}
+
+function renderCoverage(target, frameworks) {
+  if (!target) return;
+  if (!frameworks || !frameworks.length) {
+    target.innerHTML = `<div style="font-size:12px;color:var(--text2);">Coverage metrics will appear here when live framework coverage data is available.</div>`;
+    return;
+  }
+
+  target.innerHTML = frameworks.map(item => {
+    const pct = Math.max(0, Math.min(100, Number(item.coverage_pct || 0)));
+    const color = pct >= 80 ? '#3fd68c' : pct >= 50 ? '#f5a623' : '#ff5c5c';
+    return `<div class="fw-row"><div class="fw-name">${escapeHtml(item.framework || 'Framework')}</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:${pct}%;background:${color};"></div></div><div class="fw-pct" style="color:${color};">${pct}%</div></div>`;
+  }).join('');
+}
+
+function renderGapPanels(items) {
+  if (!items.length) {
+    const emptyHtml = `<div class="gap-item"><div class="gap-top"><span class="gap-control">No live gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a policy analysis or migration to populate framework gaps.</div><div class="gap-meta">Live dashboard connected</div></div>`;
+    replaceOverviewGapItems(emptyHtml);
+    replaceGapAnalysisItems(emptyHtml);
+    return;
+  }
+
+  const html = items.map(item => {
+    const severity = String(item.severity || 'medium').toLowerCase();
+    const badgeClass = severity === 'medium' ? 'critical-badge med' : 'critical-badge';
+    const frameworks = Array.isArray(item.affected_frameworks) && item.affected_frameworks.length
+      ? item.affected_frameworks.join(' · ')
+      : item.framework || 'Framework';
+    return `<div class="gap-item"><div class="gap-top"><span class="gap-control">${escapeHtml(item.control_id || item.id || 'Gap')}</span><span class="${badgeClass}">${escapeHtml(severity)}</span></div><div class="gap-desc">${escapeHtml(item.description || 'Gap detected')}</div><div class="gap-meta">${escapeHtml(frameworks)} · ${escapeHtml(item.suggested_action || 'Review')}</div></div>`;
+  }).join('');
+
+  replaceOverviewGapItems(html);
+  replaceGapAnalysisItems(html);
+}
+
+function primeDashboardUi() {
+  const overviewHeader = document.querySelector('#view-overview .main-grid .panel .table-header');
+  const libraryHeader = document.querySelector('#view-library .panel .table-header');
+  const activityHeader = document.querySelector('#view-overview .bottom-grid .panel .table-header');
+  renderDocumentRows(ensureRowContainerAfter(overviewHeader, 'table-row'), []);
+  renderDocumentRows(ensureRowContainerAfter(libraryHeader, 'table-row'), []);
+  renderActivityRows(ensureRowContainerAfter(activityHeader, 'activity-row'), []);
+  renderGapPanels([]);
+  renderCoverage(document.querySelector('#view-overview .fw-section'), []);
+  renderCoverage(document.querySelector('#view-gaps .fw-section'), []);
+}
+
 function ensureRowContainerAfter(headerEl, rowClass) {
   if (!headerEl) return null;
   let cursor = headerEl.nextElementSibling;
@@ -1508,9 +1607,27 @@ async function loadSummary() {
   document.getElementById('m-policies').textContent = data.policies_processed;
   document.getElementById('m-gaps').textContent     = data.gaps_total;
   document.getElementById('m-review').textContent   = data.needs_review_total;
+  document.getElementById('m-policies-last-7').textContent = data.policies_last_7_days || 0;
+  document.getElementById('m-frameworks').textContent = Array.isArray(data.frameworks) ? data.frameworks.length : 0;
+  document.getElementById('m-gaps-critical').textContent = data.gaps_critical || 0;
+  document.getElementById('m-gaps-medium').textContent = data.gaps_medium || 0;
+  document.getElementById('m-review-critical').textContent = data.needs_review_critical || 0;
   // Update Bird Eye status bar with live numbers
   const meta = document.getElementById('be-status-meta');
   if(meta) meta.textContent = `${data.policies_processed} docs analyzed · ${data.gaps_total} gaps detected`;
+  const bannerTitle = document.getElementById('dashboard-banner-title');
+  const bannerSub = document.getElementById('dashboard-banner-sub');
+  if (bannerTitle && bannerSub) {
+    if (data.gaps_total > 0) {
+      bannerTitle.textContent = `Midnight found ${data.gaps_total} live framework gap${data.gaps_total === 1 ? '' : 's'}`;
+      bannerSub.textContent = `${data.policies_processed} documents processed in your workspace`;
+    } else if (data.policies_processed > 0) {
+      bannerTitle.textContent = 'Your workspace artifacts are live';
+      bannerSub.textContent = `${data.policies_processed} generated document${data.policies_processed === 1 ? '' : 's'} available in the dashboard`;
+    }
+  }
+  renderCoverage(document.querySelector('#view-overview .fw-section'), data.frameworks || []);
+  renderCoverage(document.querySelector('#view-gaps .fw-section'), data.frameworks || []);
 }
 
 async function loadDocuments() {
@@ -1529,8 +1646,14 @@ async function loadActivity() {
   renderActivityRows(ensureRowContainerAfter(activityHeader, 'activity-row'), data.items);
 }
 
+async function loadGaps() {
+  const data = await apiFetch('/dashboard/gaps');
+  if (!data) return;
+  renderGapPanels(data.items || []);
+}
+
 async function refreshDashboardData() {
-  await Promise.all([loadSummary(), loadDocuments(), loadActivity()]);
+  await Promise.all([loadSummary(), loadDocuments(), loadActivity(), loadGaps()]);
 }
 
 document.querySelectorAll('.fw-bar-fill').forEach(bar => {
@@ -1556,11 +1679,12 @@ setTimeout(() => {
   const policies = document.getElementById('m-policies');
   const gaps     = document.getElementById('m-gaps');
   const review   = document.getElementById('m-review');
-  if(policies) countUp(policies, parseInt(policies.textContent) || 98, 1200);
-  if(gaps)     countUp(gaps,     parseInt(gaps.textContent)     || 24, 900);
-  if(review)   countUp(review,   parseInt(review.textContent)   || 7,  700);
+  if(policies) countUp(policies, parseInt(policies.textContent) || 0, 1200);
+  if(gaps)     countUp(gaps,     parseInt(gaps.textContent)     || 0, 900);
+  if(review)   countUp(review,   parseInt(review.textContent)   || 0, 700);
 }, 300);
 
+primeDashboardUi();
 ensureAuthenticated().then(refreshDashboardData).catch(() => {
   showToast('Authentication required to load dashboard data');
 });
