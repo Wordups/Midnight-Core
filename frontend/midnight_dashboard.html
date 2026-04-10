@@ -208,6 +208,10 @@
   .cluck-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
   .cluck-sub { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
   .cluck-cta { font-size: 11px; color: var(--accent); font-family: var(--font-mono); white-space: nowrap; font-weight: 600; }
+  .launcher-panel { background: linear-gradient(135deg, rgba(63,214,140,0.06) 0%, rgba(74,158,255,0.04) 100%); border: 1px solid rgba(63,214,140,0.16); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+  .launcher-title { font-family: var(--font-display); font-size: 14px; color: var(--text); margin-bottom: 6px; }
+  .launcher-sub { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 14px; }
+  .launcher-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
   /* FW BARS */
   .fw-section { padding: 16px 20px; }
@@ -460,9 +464,23 @@
 <nav class="sidebar">
   <div class="logo-area">
     <div class="logo-name">Midnight</div>
-    <div class="logo-sub">Compliance Platform</div>
+    <div class="logo-sub">Enterprise Policy Intelligence Engine</div>
   </div>
   <div class="nav-section">
+    <div class="nav-label">Toolbox</div>
+    <div class="nav-item" id="nav-migrate" onclick="showView('migrate', this, 'Migrate Document')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Migrate Document
+    </div>
+    <div class="nav-item" id="nav-create" onclick="showView('create', this, 'Create Policy')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Create Policy
+    </div>
+    <div class="nav-item" id="nav-birdtalk" onclick="showView('birdtalk', this, 'Bird Talk')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M13 5.5C13 8.5 10.5 11 8 12.5 5.5 11 3 8.5 3 5.5A5 5 0 0 1 8 1a5 5 0 0 1 5 4.5z" stroke="currentColor" stroke-width="1.2"/></svg>
+      Bird Talk
+    </div>
+    <div class="nav-spacer"></div>
     <div class="nav-label">Workspace</div>
     <div class="nav-item active" id="nav-overview" onclick="showView('overview', this, 'Overview')">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
@@ -476,20 +494,6 @@
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       Gap Analysis
       <span class="nav-badge">8</span>
-    </div>
-    <div class="nav-spacer"></div>
-    <div class="nav-label">Build</div>
-    <div class="nav-item" id="nav-create" onclick="showView('create', this, 'Create Policy')">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-      Create Policy
-    </div>
-    <div class="nav-item" id="nav-migrate" onclick="showView('migrate', this, 'Migrate Document')">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Migrate Document
-    </div>
-    <div class="nav-item" id="nav-birdtalk" onclick="showView('birdtalk', this, 'Bird Talk')">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M13 5.5C13 8.5 10.5 11 8 12.5 5.5 11 3 8.5 3 5.5A5 5 0 0 1 8 1a5 5 0 0 1 5 4.5z" stroke="currentColor" stroke-width="1.2"/></svg>
-      Bird Talk
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-label">Reports</div>
@@ -524,7 +528,7 @@
     <div class="page-title" id="page-title">Overview</div>
     <div class="topbar-right">
       <div class="org-tag"><div class="org-dot"></div>Acme Corp · Healthcare</div>
-      <button class="run-btn" id="topbar-btn" onclick="handleTopbarBtn()">+ New Analysis</button>
+      <button class="run-btn" id="topbar-btn" onclick="handleTopbarBtn()">Open Tool</button>
     </div>
   </div>
 
@@ -534,15 +538,24 @@
       <div class="bird-eye-status-bar">
         <div class="bird-eye-pulse"></div>
         <div class="bird-eye-status-text"><strong>Bird Eye</strong> · Document Intelligence Engine · Active</div>
-        <div class="bird-eye-status-meta" id="be-status-meta">98 docs analyzed · 24 gaps detected</div>
+        <div class="bird-eye-status-meta" id="be-status-meta">Toolbox active · waiting for live workspace activity</div>
       </div>
       <div class="cluck-banner" onclick="showView('birdtalk', document.getElementById('nav-birdtalk'), 'Bird Talk')">
         <div class="cluck-emoji">🐔</div>
         <div class="cluck-text">
           <div class="cluck-title" id="dashboard-banner-title">Your live workspace activity will appear here</div>
-          <div class="cluck-sub">HIPAA · PCI DSS · HITRUST — ask me what to do first</div>
+          <div class="cluck-sub">Start in Migrate, Create, or Bird Talk — outputs will persist here automatically</div>
         </div>
         <div class="cluck-cta">Ask Midnight →</div>
+      </div>
+      <div class="launcher-panel">
+        <div class="launcher-title">Launch The Tool Workspace</div>
+        <div class="launcher-sub">Use the dashboard as home. Open the tool when you want to migrate a document, create a policy, or work through Bird Talk.</div>
+        <div class="launcher-actions">
+          <button class="run-btn" type="button" onclick="showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document')">Migrate</button>
+          <button class="run-btn" type="button" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')">Create</button>
+          <button class="run-btn" type="button" onclick="showView('birdtalk', document.getElementById('nav-birdtalk'), 'Bird Talk')">Bird Talk</button>
+        </div>
       </div>
       <div class="metrics-row">
         <div class="metric-card green">
@@ -555,7 +568,7 @@
         </div>
         <div class="metric-card amber">
           <div class="metric-top"><div><div class="metric-label">Needs review</div><div class="metric-val amber" id="m-review">0</div></div><div class="metric-icon amber"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#f5a623" stroke-width="1.2"/><path d="M8 5v3" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.8" fill="#f5a623"/></svg></div></div>
-          <div class="metric-sub"><div class="metric-sub-item"><span class="red" id="m-review-critical">0</span> critical</div><div class="metric-sub-item">owner assigned</div></div>
+          <div class="metric-sub"><div class="metric-sub-item"><span class="red" id="m-review-critical">0</span> critical</div><div class="metric-sub-item">live status</div></div>
         </div>
       </div>
       <div class="main-grid">
@@ -569,44 +582,29 @@
           </div>
           <div class="tabs"><div class="tab active" onclick="setTab(this)">In Progress</div><div class="tab" onclick="setTab(this)">Needs Review</div><div class="tab" onclick="setTab(this)">Completed</div><div class="tab" onclick="setTab(this)">All</div></div>
           <div class="table-header"><span>Policy</span><span>Status</span><span>Owner</span><span style="text-align:right">Actions</span></div>
-          <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><span class="doc-type-pill policy">POLICY</span><span style="color:var(--text);font-size:13px;">Access Control Policy</span></div><div><span class="status-badge progress">In Progress</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>Joe Bailey</div><div class="actions-cell"><div class="action-btn" onclick="showToast('Editing...')">✎</div><div class="action-btn" onclick="showToast('Downloading...')">↓</div></div></div>
-          <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><span class="doc-type-pill plan">PLAN</span><span style="color:var(--text);font-size:13px;">Incident Response Plan</span></div><div><span class="status-badge review">Review</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(138,100,255,0.15);color:#8a64ff;">SP</div>Sari Patel</div><div class="actions-cell"><div class="action-btn" onclick="showToast('Editing...')">✎</div><div class="action-btn" onclick="showToast('Downloading...')">↓</div></div></div>
-          <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span class="doc-type-pill policy">POLICY</span><span style="color:var(--text);font-size:13px;">Vendor Management Policy</span></div><div><span class="status-badge progress">In Progress</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>Joe Bailey</div><div class="actions-cell"><div class="action-btn" onclick="showToast('Editing...')">✎</div><div class="action-btn" onclick="showToast('Downloading...')">↓</div></div></div>
-          <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><span class="doc-type-pill standard">STANDARD</span><span style="color:var(--text);font-size:13px;">Password & MFA Standard</span></div><div><span class="status-badge ready">Ready</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div>A. Hoffman</div><div class="actions-cell"><div class="action-btn" onclick="showToast('Editing...')">✎</div><div class="action-btn" onclick="showToast('Downloading...')">↓</div></div></div>
-          <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span class="doc-type-pill playbook">PLAYBOOK</span><span style="color:var(--text);font-size:13px;">Phishing Response Playbook</span></div><div><span class="status-badge draft">Draft</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(245,166,35,0.15);color:var(--amber);">JB</div>Joe Bailey</div><div class="actions-cell"><div class="action-btn" onclick="showToast('Editing...')">✎</div><div class="action-btn" onclick="showToast('Downloading...')">↓</div></div></div>
-          <div style="padding:14px 20px 8px;font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.07em;">Past 7 days activity</div>
-          <div class="mini-chart"><div class="bar blue" style="height:28px;"></div><div class="bar blue" style="height:18px;"></div><div class="bar blue" style="height:35px;"></div><div class="bar red" style="height:12px;"></div><div class="bar blue" style="height:40px;"></div><div class="bar red" style="height:8px;"></div><div class="bar blue" style="height:22px;"></div></div>
+          <div data-dynamic-container="true"></div>
         </div>
         <div class="panel">
           <div class="panel-header"><div class="panel-title">Framework Gaps</div><div class="panel-action" onclick="showView('gaps', document.getElementById('nav-gaps'), 'Gap Analysis')">View all →</div></div>
           <div class="fw-section" style="border-bottom:1px solid var(--border);">
-            <div class="fw-row"><div class="fw-name">HIPAA</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:78%;background:#3fd68c;"></div></div><div class="fw-pct" style="color:#3fd68c;">78%</div></div>
-            <div class="fw-row"><div class="fw-name">HITRUST</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:52%;background:#f5a623;"></div></div><div class="fw-pct" style="color:#f5a623;">52%</div></div>
-            <div class="fw-row"><div class="fw-name">PCI DSS</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:44%;background:#ff5c5c;"></div></div><div class="fw-pct" style="color:#ff5c5c;">44%</div></div>
-            <div class="fw-row"><div class="fw-name">NIST CSF</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:65%;background:#f5a623;"></div></div><div class="fw-pct" style="color:#f5a623;">65%</div></div>
-            <div class="fw-row"><div class="fw-name">SOC 2</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:30%;background:#ff5c5c;"></div></div><div class="fw-pct" style="color:#ff5c5c;">30%</div></div>
+            <div style="font-size:12px;color:var(--text2);">Coverage metrics will appear here when live framework coverage data is available.</div>
           </div>
-          <div class="gap-item" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')"><div class="gap-top"><span class="gap-control">NIST PR.DS-5</span><span class="critical-badge">Critical</span></div><div class="gap-desc">No incident response plan detected</div><div class="gap-meta">HIPAA · HITRUST · NIST · → Build now</div></div>
-          <div class="gap-item" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')"><div class="gap-top"><span class="gap-control">PCI DSS 3.5.1</span><span class="critical-badge">Critical</span></div><div class="gap-desc">Vendor risk management policy missing</div><div class="gap-meta">PCI DSS · HITRUST · → Build now</div></div>
-          <div class="gap-item"><div class="gap-top"><span class="gap-control">HIPAA 164.308(a)(5)</span><span class="critical-badge">Critical</span></div><div class="gap-desc">Security awareness training gap detected</div><div class="gap-meta">HIPAA · ISO 27001 · → Review</div></div>
-          <div class="gap-item"><div class="gap-top"><span class="gap-control">ISO 27001 A.8.1</span><span class="critical-badge med">Medium</span></div><div class="gap-desc">Lacks clear user responsibility definition</div><div class="gap-meta">ISO 27001 · NIST AC-2 · → Review</div></div>
+          <div data-overview-gaps="true">
+            <div class="gap-item"><div class="gap-top"><span class="gap-control">No live gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a migration or analysis to populate framework gaps for this workspace.</div><div class="gap-meta">Live dashboard connected</div></div>
+          </div>
         </div>
       </div>
       <div class="bottom-grid">
         <div class="panel">
           <div class="panel-header"><div class="panel-title">Recent Activity</div><div class="panel-action">View all →</div></div>
           <div class="table-header" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><span>Time</span><span>User</span><span>Action</span><span>File / Policy</span><span>Result</span></div>
-          <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">2 min ago</div><div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>Joe Bailey</div><div style="color:var(--text2);">Uploaded</div><div style="color:var(--text2);">Incident Response Plan</div><div class="result-cell ok">● Audit-ready</div></div>
-          <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">8 min ago</div><div class="user-cell"><div class="avatar" style="background:rgba(138,100,255,0.15);color:#8a64ff;">SP</div>Sari Patel</div><div style="color:var(--text2);">Transformed</div><div style="color:var(--text2);">Access Control Policy</div><div class="result-cell ok">● Audit-ready</div></div>
-          <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">14 min ago</div><div class="user-cell"><div class="avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div>A. Hoffman</div><div style="color:var(--text2);">Downloaded</div><div style="color:var(--text2);">GRC Summary</div><div class="result-cell ok">● Audit-ready</div></div>
-          <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">1 hr ago</div><div class="user-cell"><div class="avatar" style="background:rgba(245,166,35,0.15);color:var(--amber);">JB</div>Joe Bailey</div><div style="color:var(--text2);">Assigned reviewer</div><div style="color:var(--text2);">Vendor Risk Policy</div><div class="result-cell warn">● Needs review</div></div>
+          <div data-dynamic-container="true">
+            <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">now</div><div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">ME</div>You</div><div style="color:var(--text2);">Waiting</div><div style="color:var(--text2);">No activity yet</div><div class="result-cell warn">● Idle</div></div>
+          </div>
         </div>
         <div class="panel">
           <div class="panel-header"><div class="panel-title">Activity Feed</div><div class="panel-action">View all →</div></div>
-          <div class="feed-item"><div class="feed-avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div><div class="feed-body"><div class="feed-action">Uploaded document</div><div class="feed-detail">Incident Response Plan · GRC mapping applied</div></div><div class="feed-time">1m ago</div></div>
-          <div class="feed-item"><div class="feed-avatar" style="background:rgba(138,100,255,0.15);color:#8a64ff;">SP</div><div class="feed-body"><div class="feed-action">Transformed Policy</div><div class="feed-detail">Access Control Policy · Framework mapped</div></div><div class="feed-time">5m ago</div></div>
-          <div class="feed-item"><div class="feed-avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div><div class="feed-body"><div class="feed-action">Download GRC Summary</div><div class="feed-detail">57-page GRC summary · HIPAA + PCI</div></div><div class="feed-time">8m ago</div></div>
-          <div style="padding:14px 20px;"><button class="run-btn" style="width:100%;padding:10px;font-size:12px;border-radius:8px;" onclick="showToast('Exporting executive report...')">Export Executive Report →</button></div>
+          <div style="padding:16px 20px;color:var(--text2);font-size:12px;line-height:1.6;">Live activity will appear here after you create, migrate, or download workspace artifacts.</div>
         </div>
       </div>
     </div>
@@ -647,11 +645,9 @@
             <div class="form-section-title">Compliance Frameworks</div>
             <div class="fw-checkboxes" id="cp-frameworks">
               <label class="fw-check selected"><input type="checkbox" value="HIPAA" checked>HIPAA</label>
-              <label class="fw-check selected"><input type="checkbox" value="HiTrust" checked>HiTrust</label>
+              <label class="fw-check selected"><input type="checkbox" value="HITRUST" checked>HiTrust Domains</label>
               <label class="fw-check"><input type="checkbox" value="PCI DSS">PCI DSS</label>
-              <label class="fw-check"><input type="checkbox" value="ISO 27001">ISO 27001</label>
               <label class="fw-check"><input type="checkbox" value="NIST CSF">NIST CSF</label>
-              <label class="fw-check"><input type="checkbox" value="CoBIT">CoBIT</label>
               <label class="fw-check"><input type="checkbox" value="SOC 2">SOC 2</label>
             </div>
           </div>
@@ -664,7 +660,7 @@
             <div class="output-text" id="cp-out-text"></div>
             <div class="output-actions" id="cp-out-actions" style="display:none;">
               <button class="output-btn primary" id="cp-download-btn" onclick="downloadOutput('cp')">Download .docx</button>
-              <button class="output-btn" onclick="showToast('Downloading GRC Summary...')">Download GRC Summary</button>
+              <button class="output-btn" onclick="showView('grc', document.getElementById('nav-grc'), 'GRC Summary')">Open GRC Summary</button>
               <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
             </div>
           </div>
@@ -777,9 +773,8 @@
             <div class="form-section-title" style="margin-top:8px;">Frameworks to Map</div>
             <div class="fw-checkboxes" id="mg-frameworks">
               <label class="fw-check selected"><input type="checkbox" value="HIPAA" checked>HIPAA</label>
-              <label class="fw-check selected"><input type="checkbox" value="HiTrust" checked>HiTrust</label>
+              <label class="fw-check selected"><input type="checkbox" value="HITRUST" checked>HiTrust Domains</label>
               <label class="fw-check"><input type="checkbox" value="PCI DSS">PCI DSS</label>
-              <label class="fw-check"><input type="checkbox" value="ISO 27001">ISO 27001</label>
               <label class="fw-check"><input type="checkbox" value="NIST CSF">NIST CSF</label>
               <label class="fw-check"><input type="checkbox" value="SOC 2">SOC 2</label>
             </div>
@@ -794,7 +789,7 @@
             <div class="output-text" id="mg-out-text"></div>
             <div class="output-actions" id="mg-out-actions" style="display:none;">
               <button class="output-btn primary" id="mg-download-btn" onclick="downloadOutput('mg')">Download .docx</button>
-              <button class="output-btn" onclick="showToast('Downloading GRC Summary...')">Download GRC Summary</button>
+              <button class="output-btn" onclick="showView('grc', document.getElementById('nav-grc'), 'GRC Summary')">Open GRC Summary</button>
               <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
             </div>
           </div>
@@ -835,21 +830,14 @@
       <div class="main-grid">
         <div class="panel">
           <div class="panel-header"><div class="panel-title">All Gaps</div><div style="display:flex;align-items:center;gap:10px;"><span class="be-powered-tag">Bird Eye</span><div class="panel-action">Export →</div></div></div>
-          <div class="gap-item"><div class="gap-top"><span class="gap-control">NIST PR.DS-5</span><span class="critical-badge">Critical</span></div><div class="gap-desc">No incident response plan detected</div><div class="gap-meta">HIPAA · HITRUST · NIST · <span style="color:var(--accent);cursor:pointer;" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')">→ Build now</span></div></div>
-          <div class="gap-item"><div class="gap-top"><span class="gap-control">PCI DSS 3.5.1</span><span class="critical-badge">Critical</span></div><div class="gap-desc">Vendor risk management policy missing</div><div class="gap-meta">PCI DSS · HITRUST · <span style="color:var(--accent);cursor:pointer;" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')">→ Build now</span></div></div>
-          <div class="gap-item"><div class="gap-top"><span class="gap-control">HIPAA 164.308(a)(5)</span><span class="critical-badge">Critical</span></div><div class="gap-desc">Security awareness training gap detected</div><div class="gap-meta">HIPAA · ISO 27001 · → Review</div></div>
-          <div class="gap-item"><div class="gap-top"><span class="gap-control">ISO 27001 A.8.1</span><span class="critical-badge med">Medium</span></div><div class="gap-desc">Lacks clear user responsibility definition</div><div class="gap-meta">ISO 27001 · NIST AC-2 · → Review</div></div>
-          <div class="gap-item"><div class="gap-top"><span class="gap-control">SOC 2 CC6.1</span><span class="critical-badge med">Medium</span></div><div class="gap-desc">Logical access controls not documented</div><div class="gap-meta">SOC 2 · ISO 27001 · → Review</div></div>
+          <div data-gap-analysis="true">
+            <div class="gap-item"><div class="gap-top"><span class="gap-control">No live gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a policy analysis or migration to populate this view.</div><div class="gap-meta">Live dashboard connected</div></div>
+          </div>
         </div>
         <div class="panel">
           <div class="panel-header"><div class="panel-title">Coverage</div></div>
           <div class="fw-section">
-            <div class="fw-row"><div class="fw-name">HIPAA</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:78%;background:#3fd68c;"></div></div><div class="fw-pct" style="color:#3fd68c;">78%</div></div>
-            <div class="fw-row"><div class="fw-name">HITRUST</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:52%;background:#f5a623;"></div></div><div class="fw-pct" style="color:#f5a623;">52%</div></div>
-            <div class="fw-row"><div class="fw-name">PCI DSS</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:44%;background:#ff5c5c;"></div></div><div class="fw-pct" style="color:#ff5c5c;">44%</div></div>
-            <div class="fw-row"><div class="fw-name">NIST CSF</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:65%;background:#f5a623;"></div></div><div class="fw-pct" style="color:#f5a623;">65%</div></div>
-            <div class="fw-row"><div class="fw-name">ISO 27001</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:58%;background:#f5a623;"></div></div><div class="fw-pct" style="color:#f5a623;">58%</div></div>
-            <div class="fw-row"><div class="fw-name">SOC 2</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:30%;background:#ff5c5c;"></div></div><div class="fw-pct" style="color:#ff5c5c;">30%</div></div>
+            <div style="font-size:12px;color:var(--text2);">Coverage metrics will appear here when live framework coverage data is available.</div>
           </div>
         </div>
       </div>
@@ -898,11 +886,9 @@
         </div>
         <div class="tabs"><div class="tab active" onclick="setTab(this)">All</div><div class="tab" onclick="setTab(this)">In Progress</div><div class="tab" onclick="setTab(this)">Needs Review</div><div class="tab" onclick="setTab(this)">Ready</div></div>
         <div class="table-header"><span>Policy</span><span>Status</span><span>Owner</span><span style="text-align:right">Actions</span></div>
-        <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><span class="doc-type-pill policy">POLICY</span><span style="color:var(--text);font-size:13px;">Access Control Policy</span></div><div><span class="status-badge progress">In Progress</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>Joe Bailey</div><div class="actions-cell"><div class="action-btn">✎</div><div class="action-btn">↓</div></div></div>
-        <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><span class="doc-type-pill plan">PLAN</span><span style="color:var(--text);font-size:13px;">Incident Response Plan</span></div><div><span class="status-badge review">Review</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(138,100,255,0.15);color:#8a64ff;">SP</div>Sari Patel</div><div class="actions-cell"><div class="action-btn">✎</div><div class="action-btn">↓</div></div></div>
-        <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span class="doc-type-pill policy">POLICY</span><span style="color:var(--text);font-size:13px;">Vendor Management Policy</span></div><div><span class="status-badge progress">In Progress</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">JB</div>Joe Bailey</div><div class="actions-cell"><div class="action-btn">✎</div><div class="action-btn">↓</div></div></div>
-        <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><span class="doc-type-pill standard">STANDARD</span><span style="color:var(--text);font-size:13px;">Password & MFA Standard</span></div><div><span class="status-badge ready">Ready</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(63,214,140,0.15);color:var(--green);">AH</div>A. Hoffman</div><div class="actions-cell"><div class="action-btn">✎</div><div class="action-btn">↓</div></div></div>
-        <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span class="doc-type-pill playbook">PLAYBOOK</span><span style="color:var(--text);font-size:13px;">Phishing Response Playbook</span></div><div><span class="status-badge draft">Draft</span></div><div class="owner-cell"><div class="avatar" style="background:rgba(245,166,35,0.15);color:var(--amber);">JB</div>Joe Bailey</div><div class="actions-cell"><div class="action-btn">✎</div><div class="action-btn">↓</div></div></div>
+        <div data-dynamic-container="true">
+          <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span style="color:var(--text2);font-size:13px;">No generated outputs yet</span></div><div><span class="status-badge draft">Empty</span></div><div class="owner-cell">Personal Workspace</div><div class="actions-cell"></div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -936,7 +922,8 @@ function showView(viewId, navEl, title) {
 
 function handleTopbarBtn() {
   const title = document.getElementById('page-title').textContent;
-  if(title === 'Create Policy') createPolicy();
+  if(title === 'Overview') showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document');
+  else if(title === 'Create Policy') createPolicy();
   else if(title === 'Migrate Document') migrateDocument();
   else if(title === 'Generate Summary') showToast('Generating GRC Summary...');
   else showView('create', document.getElementById('nav-create'), 'Create Policy');
