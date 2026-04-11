@@ -100,53 +100,6 @@ def _strip_json_fences(raw: str) -> str:
     return raw.replace("```json", "").replace("```", "").strip()
 
 
-JSON_REPAIR_PROMPT = (
-    "repair malformed JSON only, return valid JSON only, preserve meaning, "
-    "no markdown, no commentary"
-)
-
-
-def _parse_model_json(
-    *,
-    client,
-    raw_output: str,
-    max_tokens: int,
-    context_label: str,
-) -> dict:
-    cleaned_output = _strip_json_fences(raw_output)
-
-    try:
-        return json.loads(cleaned_output)
-    except json.JSONDecodeError:
-        repair_input = (
-            f"{JSON_REPAIR_PROMPT}\n\n"
-            "Malformed JSON:\n"
-            f"{cleaned_output}"
-        )
-
-        try:
-            repair_message = client.messages.create(
-                model=ANTHROPIC_MODEL,
-                max_tokens=max_tokens,
-                system=JSON_REPAIR_PROMPT,
-                messages=[{"role": "user", "content": repair_input}],
-            )
-        except Exception as exc:  # pragma: no cover - runtime provider failure
-            raise HTTPException(
-                status_code=500,
-                detail=f"{context_label} JSON repair failed: {exc}",
-            ) from exc
-
-        repaired_output = _strip_json_fences(repair_message.content[0].text)
-        try:
-            return json.loads(repaired_output)
-        except json.JSONDecodeError as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"{context_label} JSON repair failed: {exc}",
-            ) from exc
-
-
 def _build_preview_text(policy_data: dict) -> str:
     for key in ("purpose", "scope", "policy_statement"):
         candidate = policy_data.get(key)
@@ -298,7 +251,7 @@ async def _extract_policy_data(
         f"FRAMEWORKS TO MAP: {', '.join(normalized_frameworks)}\n"
         f"FRAMEWORK CONTROLS REFERENCE:\n{chr(10).join(fw_context)}\n\n"
         f"MAPPING RULES: {mapping_rules}\n\n"
-        f"SOURCE CONTENT:\n---\n{raw_text[:8000]}\n---\n\n"
+        f"SOURCE CONTENT:\n---\n{raw_text[:14000]}\n---\n\n"
         "Reconstruct this policy into the required JSON structure. Return only JSON."
     )
 
@@ -309,12 +262,7 @@ async def _extract_policy_data(
         system=MIGRATION_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_msg}],
     )
-    return _parse_model_json(
-        client=client,
-        raw_output=message.content[0].text,
-        max_tokens=4096,
-        context_label="Claude preview JSON",
-    )
+    return json.loads(_strip_json_fences(message.content[0].text))
 
 
 CREATE_SYSTEM_PROMPT = """You are a policy creation engine for Midnight, Takeoff LLC's enterprise compliance platform.
@@ -391,12 +339,7 @@ async def _generate_policy_data(request: CreatePolicyRequest) -> dict:
         system=CREATE_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_msg}],
     )
-    return _parse_model_json(
-        client=client,
-        raw_output=message.content[0].text,
-        max_tokens=4096,
-        context_label="Claude create JSON",
-    )
+    return json.loads(_strip_json_fences(message.content[0].text))
 
 
 def _build_docx(policy_data: dict, template_name: str) -> bytes:
