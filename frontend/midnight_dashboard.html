@@ -983,48 +983,27 @@ function showToast(msg, isError = false) {
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────────────────────────────────────
-async function ensureAuthenticated(forcePrompt = false) {
-  if (authReady && !forcePrompt) return authReady;
-
-  authReady = (async () => {
-    if (!forcePrompt) {
-      try {
-        const session = await fetch(API + '/auth/session', { credentials: 'include' });
-        if (session.ok) {
-          const data = await session.json();
-          if (data.authenticated) return true;
-        }
-      } catch (_) { /* no auth endpoint — proceed unauthenticated */ }
+async function ensureAuthenticated() {
+  // Check if we have a valid session cookie
+  try {
+    const res = await fetch(API + '/auth/session', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated) return true;
     }
-
-    const password = window.prompt('Enter your Midnight access password');
-    if (!password) throw new Error('Authentication cancelled');
-
-    const login = await fetch(API + '/auth/login', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-
-    if (!login.ok) {
-      authReady = null;
-      throw new Error('Authentication failed — check your password');
-    }
-    return true;
-  })();
-
-  return authReady;
+  } catch (_) {}
+  // No valid session — redirect to login
+  window.location.replace('/login.html');
+  throw new Error('Redirecting to login');
 }
 
-async function apiRequest(path, options = {}, promptOnAuth = true) {
-  // Try without auth first; if 401, prompt and retry once
-  let response = await fetch(API + path, { credentials: 'include', ...options });
+async function apiRequest(path, options = {}) {
+  const response = await fetch(API + path, { credentials: 'include', ...options });
 
-  if (response.status === 401 && promptOnAuth) {
-    authReady = null;
-    await ensureAuthenticated(true);
-    response = await fetch(API + path, { credentials: 'include', ...options });
+  if (response.status === 401) {
+    // Session expired or invalid — redirect to login
+    window.location.replace('/login.html');
+    throw new Error('Session expired — redirecting to login');
   }
 
   return response;
@@ -2041,8 +2020,12 @@ async function downloadFromEditor(prefix) {
 // ─────────────────────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────────────────────
-// Silent dashboard load — no auth prompt on page open
-refreshDashboardData().catch(() => {});
+// Check session on load — redirect to login if not authenticated
+ensureAuthenticated().then(() => {
+  refreshDashboardData().catch(() => {});
+}).catch(() => {
+  // ensureAuthenticated already redirected to /login.html
+});
 </script>
 </body>
 </html>
