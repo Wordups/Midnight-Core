@@ -376,7 +376,7 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
     <button class="nav-link" id="nav-enterprise" onclick="goTo('enterprise')">Enterprise</button>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
-    <a href="/midnight_dashboard.html" style="font-family:var(--body);font-size:13px;font-weight:500;color:var(--t2);padding:7px 16px;border-radius:6px;text-decoration:none;transition:color .15s,background .15s;" onmouseover="this.style.color='var(--t0)';this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.color='var(--t2)';this.style.background='none'">Sign In</a>
+    <a href="/login.html" style="font-family:var(--body);font-size:13px;font-weight:500;color:var(--t2);padding:7px 16px;border-radius:6px;text-decoration:none;transition:color .15s,background .15s;" onmouseover="this.style.color='var(--t0)';this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.color='var(--t2)';this.style.background='none'">Sign In</a>
     <button class="nav-cta" onclick="goTo('enterprise')">Request Access →</button>
   </div>
 </nav>
@@ -821,36 +821,20 @@ let btStarted = false;
 const API = window.location.origin;
 let btAuthReady = null;
 
-async function ensureBirdTalkAuth(forcePrompt = false) {
-  if (btAuthReady && !forcePrompt) return btAuthReady;
-
+async function ensureBirdTalkAuth() {
+  if (btAuthReady) return btAuthReady;
   btAuthReady = (async () => {
-    if (!forcePrompt) {
+    try {
       const session = await fetch(API + '/auth/session', { credentials: 'include' });
       if (session.ok) {
         const data = await session.json();
         if (data.authenticated) return true;
       }
-    }
-
-    const password = window.prompt('Enter your Midnight access password to use Bird Talk');
-    if (!password) throw new Error('Authentication cancelled');
-
-    const login = await fetch(API + '/auth/login', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-
-    if (!login.ok) {
-      btAuthReady = null;
-      throw new Error('Authentication failed');
-    }
-
-    return true;
+    } catch (_) {}
+    // Not signed in — redirect to login
+    window.location.href = '/login.html';
+    throw new Error('Redirecting to login');
   })();
-
   return btAuthReady;
 }
 
@@ -917,17 +901,9 @@ async function sendBT() {
       })
     });
     if (res.status === 401) {
-      btAuthReady = null;
-      await ensureBirdTalkAuth(true);
-      res = await fetch(API + '/pipeline/birdsong', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system: BT_SYSTEM,
-          messages: btHistory
-        })
-      });
+      // Session expired — redirect to login
+      window.location.href = '/login.html';
+      return;
     }
     if (!res.ok) throw new Error('Bird Talk request failed');
     const data = await res.json();
