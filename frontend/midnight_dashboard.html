@@ -77,6 +77,12 @@
   .run-btn { background: var(--accent); color: #000; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; box-shadow: 0 0 16px rgba(0,212,245,0.3); }
   .run-btn:hover { opacity: 0.9; box-shadow: 0 0 24px rgba(0,212,245,0.5); transform: translateY(-1px); }
   .run-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; transform: none; }
+  .topbar-profile-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); border-radius: 999px; padding: 5px 12px 5px 7px; cursor: pointer; font-size: 12px; font-family: var(--font-body); transition: all 0.18s; }
+  .topbar-profile-btn:hover { color: var(--text); border-color: rgba(0,212,245,0.28); box-shadow: 0 0 0 3px rgba(0,212,245,0.08); }
+  .topbar-profile-avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(0,212,245,0.24), rgba(0,212,245,0.08)); border: 1px solid rgba(0,212,245,0.35); color: var(--text); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; font-family: var(--font-mono); flex-shrink: 0; }
+  .topbar-profile-copy { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; }
+  .topbar-profile-name { font-size: 11px; color: var(--text); }
+  .topbar-profile-meta { font-size: 9px; color: var(--text3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
 
   /* VIEWS */
   .view { display: none; }
@@ -262,6 +268,39 @@
   .output-btn.primary:hover { opacity: 0.85; }
   .output-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* PROFILE */
+  .profile-view { max-width: 1040px; }
+  .profile-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); gap: 16px; }
+  .profile-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+  .profile-hero { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 22px; }
+  .profile-avatar-large { width: 68px; height: 68px; border-radius: 20px; background: linear-gradient(135deg, rgba(0,212,245,0.22), rgba(0,212,245,0.05)); border: 1px solid rgba(0,212,245,0.28); display: flex; align-items: center; justify-content: center; color: var(--text); font-family: var(--font-display); font-size: 30px; letter-spacing: 0.06em; flex-shrink: 0; box-shadow: 0 0 24px rgba(0,212,245,0.08); }
+  .profile-kicker { font-size: 10px; color: var(--accent); font-family: var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+  .profile-heading { font-family: var(--font-display); font-size: 28px; color: var(--text); line-height: 0.95; margin-bottom: 6px; }
+  .profile-subcopy { font-size: 13px; color: var(--text2); line-height: 1.6; max-width: 540px; }
+  .profile-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .profile-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--blue-bg); border: 1px solid rgba(0,212,245,0.18); color: var(--text2); font-size: 11px; font-family: var(--font-mono); }
+  .profile-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px rgba(0,212,245,0.55); }
+  .profile-stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+  .profile-stat { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 14px 15px; }
+  .profile-stat-label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+  .profile-stat-value { font-size: 13px; color: var(--text); line-height: 1.5; word-break: break-word; }
+  .profile-settings-copy { margin-bottom: 18px; }
+  .profile-settings-title { font-family: var(--font-display); font-size: 18px; color: var(--text); margin-bottom: 4px; }
+  .profile-settings-sub { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .profile-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  .profile-note { margin-top: 18px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(0,212,245,0.12); background: rgba(0,212,245,0.05); font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .profile-note strong { color: var(--text); }
+  @media (max-width: 1020px) {
+    .profile-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .topbar { padding: 14px 18px; }
+    .content { padding: 20px 18px; }
+    .profile-hero { flex-direction: column; }
+    .profile-stat-grid { grid-template-columns: 1fr; }
+    .topbar-profile-copy { display: none; }
+  }
+
   /* SECTION EDITOR */
   .editor-card { background: var(--bg2); border: 1px solid var(--border2); border-radius: 14px; margin-top: 20px; overflow: hidden; }
   .editor-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--bg3); }
@@ -439,6 +478,12 @@
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M4 10l2.5-3L9 9l2-2.5L13 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
       GRC Summary
     </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-label">Account</div>
+    <div class="nav-item" id="nav-profile" onclick="showView('profile', this, 'Profile & Settings')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 13c.7-2.2 2.5-3.5 5-3.5s4.3 1.3 5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Profile & Settings
+    </div>
   </div>
   <div class="bird-eye-sidebar-tag">
     <div class="bird-eye-sidebar-dot"></div>
@@ -460,6 +505,13 @@
     <div class="page-title" id="page-title">Overview</div>
     <div class="topbar-right">
       <div class="org-tag"><div class="org-dot"></div><span id="org-label">Workspace · Ready</span></div>
+      <button class="topbar-profile-btn" id="topbar-profile-btn" onclick="showView('profile', document.getElementById('nav-profile'), 'Profile & Settings')">
+        <div class="topbar-profile-avatar" id="topbar-profile-avatar">MW</div>
+        <div class="topbar-profile-copy">
+          <span class="topbar-profile-name" id="topbar-profile-name">Workspace Owner</span>
+          <span class="topbar-profile-meta">Profile</span>
+        </div>
+      </button>
       <button class="run-btn" id="topbar-btn" onclick="handleTopbarBtn()">Open Tool</button>
     </div>
   </div>
@@ -722,7 +774,7 @@
             <div class="form-row">
               <div class="form-group"><label class="form-label">Industry</label>
                 <select class="form-select" id="mg-industry">
-                  <option>Healthcare</option><option>Financial Services</option><option>Technology / SaaS</option><option>Legal</option><option>Insurance</option><option>Other</option>
+                  <option>Healthcare</option><option>Financial Services</option><option>Technology / SaaS</option><option>Legal</option><option>Insurance</option><option>Government</option><option>Other</option>
                 </select>
               </div>
               <div class="form-group"><label class="form-label">Target Template</label>
@@ -857,7 +909,7 @@
             <div class="form-section-title">Summary Scope</div>
             <div class="form-row">
               <div class="form-group"><label class="form-label">Organization Name</label><input class="form-input" id="grc-org" placeholder="e.g. Acme Corp"></div>
-              <div class="form-group"><label class="form-label">Industry</label><select class="form-select" id="grc-industry"><option>Healthcare</option><option>Financial Services</option><option>Technology / SaaS</option><option>Legal</option><option>Insurance</option><option>Other</option></select></div>
+              <div class="form-group"><label class="form-label">Industry</label><select class="form-select" id="grc-industry"><option>Healthcare</option><option>Financial Services</option><option>Technology / SaaS</option><option>Legal</option><option>Insurance</option><option>Government</option><option>Other</option></select></div>
             </div>
             <div class="form-section-title" style="margin-top:8px;">Frameworks to Include</div>
             <div class="fw-checkboxes" id="grc-frameworks">
@@ -884,6 +936,104 @@
             <div class="output-actions" id="grc-out-actions" style="display:none;">
               <button class="output-btn primary" id="grc-download-btn" onclick="downloadOutput('grc')">Download PDF</button>
               <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCOUNT -->
+  <div class="view" id="view-profile">
+    <div class="content">
+      <div class="profile-view">
+        <div class="build-header">
+          <div class="build-title">Profile & Settings</div>
+          <div class="build-sub">Manage your owner profile, workspace defaults, and the values Midnight uses to prefill new runs.</div>
+        </div>
+        <div class="profile-grid">
+          <div class="profile-card">
+            <div class="profile-hero">
+              <div class="profile-avatar-large" id="profile-avatar-large">MW</div>
+              <div>
+                <div class="profile-kicker">Owner Account</div>
+                <div class="profile-heading" id="profile-heading">Workspace Owner</div>
+                <div class="profile-subcopy" id="profile-subcopy">This workspace is running on a single-owner session. Your saved defaults flow into Create, Migrate, GRC Summary, and the dashboard shell.</div>
+                <div class="profile-meta-row">
+                  <span class="profile-pill" id="profile-role-pill">Owner</span>
+                  <span class="profile-pill" id="profile-env-pill">Environment</span>
+                </div>
+              </div>
+            </div>
+            <div class="profile-stat-grid">
+              <div class="profile-stat">
+                <div class="profile-stat-label">Email</div>
+                <div class="profile-stat-value" id="profile-email">admin@midnight.ai</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-label">Workspace ID</div>
+                <div class="profile-stat-value" id="profile-workspace">personal</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-label">Organization</div>
+                <div class="profile-stat-value" id="profile-organization-display">Midnight Workspace</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-label">Session Status</div>
+                <div class="profile-stat-value" id="profile-session-status">Authenticated</div>
+              </div>
+            </div>
+            <div class="profile-note">
+              <strong>What saves here:</strong> display name, workspace label, default industry, default policy owner, and your default GRC organization. Midnight uses those values to keep the tool feeling like your workspace instead of a blank form every time.
+            </div>
+          </div>
+          <div class="profile-card">
+            <div class="profile-settings-copy">
+              <div class="profile-settings-title">Workspace Defaults</div>
+              <div class="profile-settings-sub">These preferences are browser-saved for now, so they are fast and safe to adjust without adding a fake user system behind the scenes.</div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="profile-display-name">Display Name</label>
+                <input class="form-input" id="profile-display-name" placeholder="e.g. Brandon Word">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="profile-title">Title / Role Label</label>
+                <input class="form-input" id="profile-title" placeholder="e.g. Founder & Compliance Lead">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="profile-organization">Organization Name</label>
+                <input class="form-input" id="profile-organization" placeholder="e.g. Takeoff LLC">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="profile-default-industry">Default Industry</label>
+                <select class="form-select" id="profile-default-industry">
+                  <option>Healthcare</option>
+                  <option>Financial Services</option>
+                  <option>Technology / SaaS</option>
+                  <option>Legal</option>
+                  <option>Insurance</option>
+                  <option>Government</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="profile-default-owner">Default Policy Owner</label>
+                <input class="form-input" id="profile-default-owner" placeholder="e.g. Compliance Team">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="profile-default-grc-org">Default GRC Organization</label>
+                <input class="form-input" id="profile-default-grc-org" placeholder="e.g. Takeoff LLC">
+              </div>
+            </div>
+            <div class="profile-actions">
+              <button class="run-btn" onclick="saveProfileSettings()">Save Settings</button>
+              <button class="output-btn" onclick="resetProfileSettings()">Reset Defaults</button>
+              <button class="output-btn" onclick="logoutUser()">Sign Out</button>
             </div>
           </div>
         </div>
@@ -926,6 +1076,17 @@ let authReady = null;
 
 // Per-key download state: { url, filename, preview }
 const outputDownloads = { cp: null, mg: null, grc: null };
+const PROFILE_SETTINGS_KEY = 'midnight_profile_settings_v1';
+const PROFILE_DEFAULTS = {
+  display_name: '',
+  title: 'Owner',
+  organization_name: '',
+  default_industry: 'Healthcare',
+  default_policy_owner: '',
+  default_grc_org: '',
+};
+let sessionProfile = null;
+let profileSettings = { ...PROFILE_DEFAULTS };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NAVIGATION
@@ -943,6 +1104,7 @@ function showView(viewId, navEl, title) {
     birdtalk: null,
     gaps: null,
     grc: 'Generate Summary',
+    profile: null,
     library: null,
     overview: 'Open Tool',
   };
@@ -984,15 +1146,18 @@ function showToast(msg, isError = false) {
 // AUTH
 // ─────────────────────────────────────────────────────────────────────────────
 async function ensureAuthenticated() {
-  // Check if we have a valid session cookie
   try {
     const res = await fetch(API + '/auth/session', { credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
-      if (data.authenticated) return true;
+      if (data.authenticated) {
+        sessionProfile = data;
+        profileSettings = loadProfileSettings();
+        applyProfileSettingsToUI({ force: true });
+        return true;
+      }
     }
   } catch (_) {}
-  // No valid session — redirect to login
   window.location.replace('/login.html');
   throw new Error('Redirecting to login');
 }
@@ -1001,12 +1166,161 @@ async function apiRequest(path, options = {}) {
   const response = await fetch(API + path, { credentials: 'include', ...options });
 
   if (response.status === 401) {
-    // Session expired or invalid — redirect to login
     window.location.replace('/login.html');
     throw new Error('Session expired — redirecting to login');
   }
 
   return response;
+}
+
+function getSessionDefaults() {
+  const displayName = (sessionProfile?.display_name || 'Workspace Owner').trim();
+  const orgName = (sessionProfile?.organization_name || 'Midnight Workspace').trim();
+  return {
+    display_name: displayName,
+    title: sessionProfile?.role || 'Owner',
+    organization_name: orgName,
+    default_industry: 'Healthcare',
+    default_policy_owner: displayName || 'Compliance Team',
+    default_grc_org: orgName,
+  };
+}
+
+function resolveProfileValue(value, fallback) {
+  const normalized = String(value || '').trim();
+  return normalized || fallback;
+}
+
+function getProfileSettings() {
+  const defaults = getSessionDefaults();
+  return {
+    display_name: resolveProfileValue(profileSettings.display_name, defaults.display_name),
+    title: resolveProfileValue(profileSettings.title, defaults.title),
+    organization_name: resolveProfileValue(profileSettings.organization_name, defaults.organization_name),
+    default_industry: resolveProfileValue(profileSettings.default_industry, defaults.default_industry),
+    default_policy_owner: resolveProfileValue(profileSettings.default_policy_owner, defaults.default_policy_owner),
+    default_grc_org: resolveProfileValue(profileSettings.default_grc_org, defaults.default_grc_org),
+  };
+}
+
+function loadProfileSettings() {
+  try {
+    const raw = localStorage.getItem(PROFILE_SETTINGS_KEY);
+    if (!raw) return { ...PROFILE_DEFAULTS };
+    const parsed = JSON.parse(raw);
+    return { ...PROFILE_DEFAULTS, ...(parsed || {}) };
+  } catch (_) {
+    return { ...PROFILE_DEFAULTS };
+  }
+}
+
+function saveStoredProfileSettings(settings) {
+  profileSettings = { ...PROFILE_DEFAULTS, ...settings };
+  try {
+    localStorage.setItem(PROFILE_SETTINGS_KEY, JSON.stringify(profileSettings));
+  } catch (_) {}
+}
+
+function setInputIfIdle(id, value, force = false) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (force || !el.value.trim()) el.value = value || '';
+}
+
+function setSelectValue(id, value, force = false) {
+  const el = document.getElementById(id);
+  if (!el || !value) return;
+  if (force || !el.value) el.value = value;
+}
+
+function getInitials(name) {
+  const parts = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (!parts.length) return 'MW';
+  return parts.map(part => part[0].toUpperCase()).join('');
+}
+
+function applyProfileSettingsToUI({ force = false } = {}) {
+  const settings = getProfileSettings();
+  const displayName = settings.display_name || 'Workspace Owner';
+  const orgName = settings.organization_name || 'Midnight Workspace';
+  const title = settings.title || (sessionProfile?.role || 'Owner');
+  const initials = getInitials(displayName);
+
+  const orgLabel = document.getElementById('org-label');
+  if (orgLabel) orgLabel.textContent = `${orgName} · Ready`;
+
+  const topbarAvatar = document.getElementById('topbar-profile-avatar');
+  if (topbarAvatar) topbarAvatar.textContent = initials;
+  const topbarName = document.getElementById('topbar-profile-name');
+  if (topbarName) topbarName.textContent = displayName;
+
+  const profileAvatar = document.getElementById('profile-avatar-large');
+  if (profileAvatar) profileAvatar.textContent = initials;
+  const profileHeading = document.getElementById('profile-heading');
+  if (profileHeading) profileHeading.textContent = displayName;
+  const profileEmail = document.getElementById('profile-email');
+  if (profileEmail) profileEmail.textContent = sessionProfile?.email || 'admin@midnight.ai';
+  const profileWorkspace = document.getElementById('profile-workspace');
+  if (profileWorkspace) profileWorkspace.textContent = sessionProfile?.workspace_id || 'personal';
+  const profileOrgDisplay = document.getElementById('profile-organization-display');
+  if (profileOrgDisplay) profileOrgDisplay.textContent = orgName;
+  const profileRole = document.getElementById('profile-role-pill');
+  if (profileRole) profileRole.textContent = title;
+  const profileEnv = document.getElementById('profile-env-pill');
+  if (profileEnv) profileEnv.textContent = (sessionProfile?.environment || 'development').toUpperCase();
+  const profileSession = document.getElementById('profile-session-status');
+  if (profileSession) profileSession.textContent = sessionProfile?.authenticated ? 'Authenticated' : 'Offline';
+
+  setInputIfIdle('profile-display-name', settings.display_name, force);
+  setInputIfIdle('profile-title', settings.title, force);
+  setInputIfIdle('profile-organization', settings.organization_name, force);
+  setSelectValue('profile-default-industry', settings.default_industry, true);
+  setInputIfIdle('profile-default-owner', settings.default_policy_owner, force);
+  setInputIfIdle('profile-default-grc-org', settings.default_grc_org, force);
+
+  setInputIfIdle('cp-owner', settings.default_policy_owner, force);
+  setSelectValue('cp-industry', settings.default_industry, force);
+  setSelectValue('mg-industry', settings.default_industry, force);
+  setSelectValue('grc-industry', settings.default_industry, force);
+  setInputIfIdle('grc-org', settings.default_grc_org || orgName, force);
+}
+
+function readProfileForm() {
+  return {
+    display_name: (document.getElementById('profile-display-name')?.value || '').trim(),
+    title: (document.getElementById('profile-title')?.value || '').trim(),
+    organization_name: (document.getElementById('profile-organization')?.value || '').trim(),
+    default_industry: document.getElementById('profile-default-industry')?.value || 'Healthcare',
+    default_policy_owner: (document.getElementById('profile-default-owner')?.value || '').trim(),
+    default_grc_org: (document.getElementById('profile-default-grc-org')?.value || '').trim(),
+  };
+}
+
+function saveProfileSettings() {
+  const settings = readProfileForm();
+  saveStoredProfileSettings(settings);
+  applyProfileSettingsToUI({ force: true });
+  showToast('Profile settings saved');
+}
+
+function resetProfileSettings() {
+  try {
+    localStorage.removeItem(PROFILE_SETTINGS_KEY);
+  } catch (_) {}
+  profileSettings = { ...PROFILE_DEFAULTS };
+  applyProfileSettingsToUI({ force: true });
+  showToast('Profile settings reset');
+}
+
+async function logoutUser() {
+  try {
+    await fetch(API + '/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (_) {}
+  window.location.replace('/login.html');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
