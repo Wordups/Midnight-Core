@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Midnight — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #050a12;
+  --s1: #080e18;
+  --s2: #0b1420;
+  --s3: #0f1c2e;
+  --b0: rgba(255,255,255,0.05);
+  --b1: rgba(255,255,255,0.09);
+  --b2: rgba(255,255,255,0.16);
+  --t0: #ffffff;
+  --t1: #dde8f7;
+  --t2: #7d95b5;
+  --t3: #3d5470;
+  --cyan: #00d4f5;
+  --cyan-bg: rgba(0,212,245,0.07);
+  --cyan-bd: rgba(0,212,245,0.2);
+  --green: #00e89a;
+  --red: #ff6b35;
+  --display: 'Bebas Neue', display;
+  --body: 'Outfit', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--body);
+  background: var(--bg);
+  color: var(--t1);
+  overflow: hidden;
+}
+
+/* Background grid + glow */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 70% 60% at 50% -10%, rgba(0,212,245,0.1) 0%, transparent 65%),
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.scene {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 48px 44px 44px;
+  background: var(--s1);
+  border: 1px solid var(--cyan-bd);
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px rgba(0,212,245,0.04),
+    0 32px 64px rgba(0,0,0,0.6),
+    0 0 80px rgba(0,212,245,0.06);
+  animation: cardIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Logo */
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--cyan);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(0,212,245,0.4);
+}
+.logo-icon svg { width: 18px; height: 18px; }
+.logo-text { flex: 1; }
+.logo-name {
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: 0.1em;
+  color: var(--t0);
+  line-height: 1;
+}
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+/* Headline */
+.headline {
+  font-family: var(--display);
+  font-size: 34px;
+  letter-spacing: 0.04em;
+  color: var(--t0);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.subline {
+  font-size: 13px;
+  color: var(--t2);
+  font-weight: 300;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+/* Form */
+.field { margin-bottom: 16px; }
+.field-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 7px;
+}
+.field-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--s2);
+  border: 1px solid var(--b1);
+  border-radius: 10px;
+  color: var(--t0);
+  font-size: 14px;
+  font-family: var(--body);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,212,245,0.1);
+}
+.field-input::placeholder { color: var(--t3); }
+.field-input.error {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
+}
+
+/* Error message */
+.error-msg {
+  display: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--red);
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: rgba(255,107,53,0.07);
+  border: 1px solid rgba(255,107,53,0.2);
+  border-radius: 7px;
+}
+.error-msg.show { display: block; }
+
+/* Submit */
+.submit-btn {
+  width: 100%;
+  padding: 13px;
+  margin-top: 24px;
+  background: var(--cyan);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 24px rgba(0,212,245,0.35);
+  position: relative;
+  overflow: hidden;
+}
+.submit-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 0 32px rgba(0,212,245,0.5);
+}
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.submit-btn .btn-text { transition: opacity 0.15s; }
+.submit-btn.loading .btn-text { opacity: 0; }
+.submit-btn .spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.submit-btn.loading .spinner { opacity: 1; }
+.spinner-ring {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Footer */
+.card-footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--b0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.06em;
+}
+.footer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 4px var(--green); opacity: 1; }
+  50%      { box-shadow: 0 0 10px var(--green); opacity: 0.7; }
+}
+.footer-version {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.08em;
+}
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="card">
+
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 18 18" fill="none">
+          <path d="M2 9h14M9 2l7 7-7 7" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-name">MIDNIGHT</div>
+        <div class="logo-sub">Enterprise Policy Intelligence</div>
+      </div>
+    </div>
+
+    <div class="headline">SIGN IN</div>
+    <div class="subline">Enter your credentials to access your compliance workspace.</div>
+
+    <div class="field">
+      <label class="field-label" for="login-email">Email</label>
+      <input
+        class="field-input"
+        type="email"
+        id="login-email"
+        placeholder="you@organization.com"
+        autocomplete="email"
+        onkeydown="if(event.key==='Enter') handleLogin()"
+      >
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="login-password">Password</label>
+      <input
+        class="field-input"
+        type="password"
+        id="login-password"
+        placeholder="••••••••••••"
+        autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') handleLogin()"
+      >
+    </div>
+
+    <div class="error-msg" id="login-error">Incorrect credentials. Please try again.</div>
+
+    <button class="submit-btn" id="login-btn" onclick="handleLogin()">
+      <span class="btn-text">Sign In →</span>
+      <span class="spinner"><span class="spinner-ring"></span></span>
+    </button>
+
+    <div class="card-footer">
+      <div class="footer-badge">
+        <div class="footer-dot"></div>
+        <span>Secure workspace</span>
+      </div>
+      <div class="footer-version">Core v2.0</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+// If already authenticated, go straight to dashboard
+(async () => {
+  try {
+    const res = await fetch(API + '/auth/session', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated) {
+        window.location.replace('/midnight_dashboard.html');
+        return;
+      }
+    }
+  } catch (_) {}
+})();
+
+async function handleLogin() {
+  const emailEl    = document.getElementById('login-email');
+  const passwordEl = document.getElementById('login-password');
+  const btn        = document.getElementById('login-btn');
+  const errorEl    = document.getElementById('login-error');
+
+  const email    = emailEl.value.trim();
+  const password = passwordEl.value;
+
+  // Clear previous errors
+  errorEl.classList.remove('show');
+  emailEl.classList.remove('error');
+  passwordEl.classList.remove('error');
+
+  if (!email) {
+    emailEl.classList.add('error');
+    emailEl.focus();
+    return;
+  }
+  if (!password) {
+    passwordEl.classList.add('error');
+    passwordEl.focus();
+    return;
+  }
+
+  // Loading state
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  try {
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (res.ok) {
+      // Success — go to dashboard
+      window.location.replace('/midnight_dashboard.html');
+    } else {
+      // Wrong credentials
+      passwordEl.classList.add('error');
+      errorEl.classList.add('show');
+      passwordEl.value = '';
+      passwordEl.focus();
+    }
+  } catch (_) {
+    errorEl.textContent = 'Connection error. Check your network and try again.';
+    errorEl.classList.add('show');
+  }
+
+  btn.disabled = false;
+  btn.classList.remove('loading');
+}
+</script>
+</body>
+</html>
