@@ -162,7 +162,7 @@ async def session_status(request: Request):
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/login.html")
+    return RedirectResponse(url="/index.html")
 
 
 # ── Static files (frontend) ───────────────────────────────────────────────────
