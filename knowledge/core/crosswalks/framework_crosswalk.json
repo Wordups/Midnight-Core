@@ -1,0 +1,117 @@
+{
+  "id": "core.crosswalks",
+  "name": "Framework Crosswalks",
+  "description": "Control equivalence mapping across major frameworks. Use this to avoid duplicate work when a policy needs to satisfy multiple frameworks.",
+  "crosswalks": [
+    {
+      "control_theme": "Access Control Policy",
+      "nist_800_53": "AC-1",
+      "nist_csf": "PR.AC-1",
+      "hipaa": "164.308(a)(3)",
+      "hitrust": "01.a",
+      "pci_dss": "7.1",
+      "iso_27001": "A.9.1.1",
+      "soc2": "CC6.1",
+      "cmmc": "AC.1.001"
+    },
+    {
+      "control_theme": "User Account Management",
+      "nist_800_53": "AC-2",
+      "nist_csf": "PR.AC-4",
+      "hipaa": "164.308(a)(3)(ii)(C)",
+      "hitrust": "01.b",
+      "pci_dss": "8.1",
+      "iso_27001": "A.9.2.1",
+      "soc2": "CC6.2",
+      "cmmc": "AC.1.002"
+    },
+    {
+      "control_theme": "Audit Logging",
+      "nist_800_53": "AU-2",
+      "nist_csf": "DE.CM-1",
+      "hipaa": "164.312(b)",
+      "hitrust": "09.ab",
+      "pci_dss": "10.1",
+      "iso_27001": "A.12.4.1",
+      "soc2": "CC7.1",
+      "cmmc": "AU.2.041"
+    },
+    {
+      "control_theme": "Incident Response",
+      "nist_800_53": "IR-4",
+      "nist_csf": "RS.RP-1",
+      "hipaa": "164.308(a)(6)",
+      "hitrust": "11.a",
+      "pci_dss": "12.10",
+      "iso_27001": "A.16.1.5",
+      "soc2": "CC7.3",
+      "cmmc": "IR.2.092"
+    },
+    {
+      "control_theme": "Risk Assessment",
+      "nist_800_53": "RA-3",
+      "nist_csf": "ID.RA-1",
+      "hipaa": "164.308(a)(1)(ii)(A)",
+      "hitrust": "03.a",
+      "pci_dss": "12.2",
+      "iso_27001": "A.8.2.1",
+      "soc2": "CC3.1",
+      "cmmc": "RM.2.141"
+    },
+    {
+      "control_theme": "Encryption at Rest",
+      "nist_800_53": "SC-28",
+      "nist_csf": "PR.DS-1",
+      "hipaa": "164.312(a)(2)(iv)",
+      "hitrust": "09.ab",
+      "pci_dss": "3.4",
+      "iso_27001": "A.10.1.1",
+      "soc2": "CC6.7",
+      "cmmc": "SC.3.177"
+    },
+    {
+      "control_theme": "Encryption in Transit",
+      "nist_800_53": "SC-8",
+      "nist_csf": "PR.DS-2",
+      "hipaa": "164.312(e)(1)",
+      "hitrust": "09.aa",
+      "pci_dss": "4.1",
+      "iso_27001": "A.13.2.3",
+      "soc2": "CC6.7",
+      "cmmc": "SC.3.185"
+    },
+    {
+      "control_theme": "Vulnerability Management",
+      "nist_800_53": "RA-5",
+      "nist_csf": "DE.CM-8",
+      "hipaa": "164.308(a)(1)(ii)(B)",
+      "hitrust": "10.m",
+      "pci_dss": "11.2",
+      "iso_27001": "A.12.6.1",
+      "soc2": "CC7.1",
+      "cmmc": "RM.2.142"
+    },
+    {
+      "control_theme": "Vendor / Third Party Risk",
+      "nist_800_53": "SA-4",
+      "nist_csf": "ID.SC-2",
+      "hipaa": "164.308(b)(1)",
+      "hitrust": "05.i",
+      "pci_dss": "12.8",
+      "iso_27001": "A.15.1.1",
+      "soc2": "CC9.2",
+      "cmmc": "CM.2.061"
+    },
+    {
+      "control_theme": "Security Awareness Training",
+      "nist_800_53": "AT-2",
+      "nist_csf": "PR.AT-1",
+      "hipaa": "164.308(a)(5)",
+      "hitrust": "01.e",
+      "pci_dss": "12.6",
+      "iso_27001": "A.7.2.2",
+      "soc2": "CC1.4",
+      "cmmc": "AT.2.056"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "id": "core.federal",
+  "name": "Federal Core",
+  "description": "Foundation control language. All sector overlays inherit from this. Based on NIST SP 800-53, NIST CSF 2.0, and common evidence model.",
+  "frameworks": ["NIST CSF 2.0", "NIST SP 800-53", "FedRAMP", "CMMC", "RMF"],
+  "control_families": [
+    {
+      "id": "AC",
+      "name": "Access Control",
+      "controls": [
+        "AC-1 — Access Control Policy and Procedures",
+        "AC-2 — Account Management",
+        "AC-3 — Access Enforcement",
+        "AC-6 — Least Privilege",
+        "AC-17 — Remote Access",
+        "AC-22 — Publicly Accessible Content"
+      ]
+    },
+    {
+      "id": "AU",
+      "name": "Audit and Accountability",
+      "controls": [
+        "AU-2 — Event Logging",
+        "AU-3 — Content of Audit Records",
+        "AU-6 — Audit Record Review, Analysis, and Reporting",
+        "AU-9 — Protection of Audit Information",
+        "AU-12 — Audit Record Generation"
+      ]
+    },
+    {
+      "id": "CM",
+      "name": "Configuration Management",
+      "controls": [
+        "CM-2 — Baseline Configuration",
+        "CM-6 — Configuration Settings",
+        "CM-7 — Least Functionality",
+        "CM-8 — System Component Inventory"
+      ]
+    },
+    {
+      "id": "CP",
+      "name": "Contingency Planning",
+      "controls": [
+        "CP-2 — Contingency Plan",
+        "CP-4 — Contingency Plan Testing",
+        "CP-9 — System Backup",
+        "CP-10 — System Recovery and Reconstitution"
+      ]
+    },
+    {
+      "id": "IA",
+      "name": "Identification and Authentication",
+      "controls": [
+        "IA-2 — Identification and Authentication (Organizational Users)",
+        "IA-5 — Authenticator Management",
+        "IA-8 — Identification and Authentication (Non-Organizational Users)"
+      ]
+    },
+    {
+      "id": "IR",
+      "name": "Incident Response",
+      "controls": [
+        "IR-1 — Incident Response Policy and Procedures",
+        "IR-4 — Incident Handling",
+        "IR-5 — Incident Monitoring",
+        "IR-6 — Incident Reporting",
+        "IR-8 — Incident Response Plan"
+      ]
+    },
+    {
+      "id": "PL",
+      "name": "Planning",
+      "controls": [
+        "PL-1 — Policy and Procedures",
+        "PL-2 — System Security and Privacy Plans",
+        "PL-4 — Rules of Behavior"
+      ]
+    },
+    {
+      "id": "PS",
+      "name": "Personnel Security",
+      "controls": [
+        "PS-3 — Personnel Screening",
+        "PS-4 — Personnel Termination",
+        "PS-6 — Access Agreements",
+        "PS-7 — External Personnel Security"
+      ]
+    },
+    {
+      "id": "RA",
+      "name": "Risk Assessment",
+      "controls": [
+        "RA-2 — Security Categorization",
+        "RA-3 — Risk Assessment",
+        "RA-5 — Vulnerability Monitoring and Scanning"
+      ]
+    },
+    {
+      "id": "SA",
+      "name": "System and Services Acquisition",
+      "controls": [
+        "SA-4 — Acquisition Process",
+        "SA-8 — Security and Privacy Engineering Principles",
+        "SA-11 — Developer Testing and Evaluation"
+      ]
+    },
+    {
+      "id": "SC",
+      "name": "System and Communications Protection",
+      "controls": [
+        "SC-7 — Boundary Protection",
+        "SC-8 — Transmission Confidentiality and Integrity",
+        "SC-12 — Cryptographic Key Establishment and Management",
+        "SC-28 — Protection of Information at Rest"
+      ]
+    },
+    {
+      "id": "SI",
+      "name": "System and Information Integrity",
+      "controls": [
+        "SI-2 — Flaw Remediation",
+        "SI-3 — Malicious Code Protection",
+        "SI-4 — System Monitoring",
+        "SI-10 — Information Input Validation"
+      ]
+    }
+  ],
+  "evidence_model": {
+    "policies": "Written policy documents covering each control family",
+    "procedures": "SOPs implementing policy requirements",
+    "artifacts": "Screenshots, logs, configs, tickets proving controls operate",
+    "attestations": "Signed acknowledgements, training completions, vendor agreements"
+  }
+}

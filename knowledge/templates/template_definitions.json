@@ -1,0 +1,340 @@
+{
+  "templates": {
+    "generic_policy": {
+      "id": "generic_policy",
+      "name": "Policy",
+      "description": "Authoritative statement of organizational intent. Sets the rule. Procedures implement it.",
+      "use_when": "Establishing organizational rules, requirements, or positions on a topic. The 'what and why'.",
+      "standard_sections": [
+        {
+          "key": "purpose",
+          "label": "Purpose",
+          "required": true,
+          "description": "Why this policy exists. 2-4 sentences. References the risk or regulatory driver.",
+          "example": "This policy establishes requirements for controlling access to [Organization]'s information systems to protect against unauthorized access, data breaches, and compliance violations."
+        },
+        {
+          "key": "scope",
+          "label": "Scope",
+          "required": true,
+          "description": "Who and what this applies to. Systems, people, locations, data types.",
+          "example": "This policy applies to all employees, contractors, vendors, and third parties with access to [Organization] systems and data."
+        },
+        {
+          "key": "policy_statement",
+          "label": "Policy Statement",
+          "required": true,
+          "description": "The core rule in plain language. What is required, prohibited, or restricted.",
+          "example": "It is the policy of [Organization] that all access to information systems shall be granted on a least-privilege basis and reviewed no less than annually."
+        },
+        {
+          "key": "roles_responsibilities",
+          "label": "Roles & Responsibilities",
+          "required": true,
+          "description": "Who owns, enforces, and complies with this policy. RACI-style.",
+          "example": "CISO: policy ownership. IT: implementation. HR: workforce sanctions. All Staff: compliance."
+        },
+        {
+          "key": "procedures",
+          "label": "Procedures",
+          "required": false,
+          "description": "High-level how. Detailed steps belong in a SOP, not here.",
+          "example": "Access requests must be submitted via the ticketing system and approved by the data owner before provisioning."
+        },
+        {
+          "key": "definitions",
+          "label": "Definitions",
+          "required": false,
+          "description": "Key terms used in this policy that need precise meaning.",
+          "example": "Least Privilege: granting only the minimum access rights necessary to perform assigned job functions."
+        },
+        {
+          "key": "exceptions",
+          "label": "Exceptions",
+          "required": false,
+          "description": "How to request an exception. Who approves. How exceptions are tracked.",
+          "example": "Exceptions to this policy must be submitted to the CISO with business justification and approved in writing."
+        },
+        {
+          "key": "enforcement",
+          "label": "Enforcement",
+          "required": true,
+          "description": "Consequences for violations. References sanctions policy.",
+          "example": "Violations may result in disciplinary action up to and including termination and/or legal action."
+        },
+        {
+          "key": "references",
+          "label": "References",
+          "required": false,
+          "description": "Related policies, standards, regulations this policy supports.",
+          "example": "HIPAA 164.308(a)(3); NIST SP 800-53 AC-2; Access Control Standard"
+        },
+        {
+          "key": "revision_history",
+          "label": "Revision History",
+          "required": true,
+          "description": "Version, date, author, summary of changes.",
+          "example": "v1.0 | 01/01/2025 | J. Smith | Initial release"
+        }
+      ],
+      "sector_additions": {
+        "healthcare": ["sanctions_statement", "phi_applicability", "hipaa_citation_block"],
+        "payments": ["cde_scope_statement", "pci_requirement_citations"],
+        "saas": ["customer_data_applicability", "tsc_criteria_reference"]
+      }
+    },
+
+    "generic_sop": {
+      "id": "generic_sop",
+      "name": "Standard Operating Procedure (SOP)",
+      "description": "Step-by-step instructions for performing a specific task. Implements a policy. Tells people exactly what to do and when.",
+      "use_when": "Documenting a repeatable operational process. The 'how, step by step'.",
+      "standard_sections": [
+        {
+          "key": "purpose",
+          "label": "Purpose",
+          "required": true,
+          "description": "What process this SOP governs. One paragraph.",
+          "example": "This SOP describes the steps for provisioning and deprovisioning user access to [System]."
+        },
+        {
+          "key": "scope",
+          "label": "Scope",
+          "required": true,
+          "description": "Which systems, teams, and scenarios this SOP covers.",
+          "example": "Applies to all access provisioning requests for production systems."
+        },
+        {
+          "key": "roles_responsibilities",
+          "label": "Roles & Responsibilities",
+          "required": true,
+          "description": "Who performs each role in this procedure. Requestor, approver, executor, reviewer.",
+          "example": "Requestor: submits ticket. Manager: approves. IT Admin: provisions. Security: quarterly review."
+        },
+        {
+          "key": "prerequisites",
+          "label": "Prerequisites",
+          "required": false,
+          "description": "What must be true before starting this procedure.",
+          "example": "User must have a signed employment agreement. Manager must be identified in HRIS."
+        },
+        {
+          "key": "procedures",
+          "label": "Procedure Steps",
+          "required": true,
+          "description": "Numbered, sequential steps. Each step: who does what, how, expected outcome.",
+          "example": "1. Requestor submits access request in [Ticketing System] with business justification.\n2. Manager reviews and approves within 2 business days.\n3. IT Admin provisions access within 1 business day of approval.\n4. IT Admin closes ticket with confirmation."
+        },
+        {
+          "key": "exceptions",
+          "label": "Exceptions and Escalations",
+          "required": false,
+          "description": "What to do when the normal steps don't apply. Who to escalate to.",
+          "example": "Emergency access: contact on-call security team. Obtain verbal approval, document within 24 hours."
+        },
+        {
+          "key": "references",
+          "label": "Related Documents",
+          "required": false,
+          "description": "The policy this SOP implements. Related SOPs.",
+          "example": "Access Control Policy; Termination Checklist SOP"
+        },
+        {
+          "key": "revision_history",
+          "label": "Revision History",
+          "required": true,
+          "description": "Version, date, changes.",
+          "example": "v1.0 | 01/01/2025 | Initial release"
+        }
+      ]
+    },
+
+    "generic_playbook": {
+      "id": "generic_playbook",
+      "name": "Playbook",
+      "description": "Event-triggered response guide. Activated when a specific condition occurs — security incident, audit, breach, outage. Tells teams exactly how to respond.",
+      "use_when": "Preparing for and responding to specific events. IR playbooks, audit response, breach notification, DR activation.",
+      "standard_sections": [
+        {
+          "key": "purpose",
+          "label": "Purpose",
+          "required": true,
+          "description": "What event this playbook responds to and what outcome it achieves.",
+          "example": "This playbook guides the response to a suspected data breach involving PHI."
+        },
+        {
+          "key": "scope",
+          "label": "Trigger Conditions",
+          "required": true,
+          "description": "What triggers activation of this playbook. Specific, observable conditions.",
+          "example": "Activate when: unauthorized PHI access is confirmed OR suspected; ransomware is detected; external notification of breach is received."
+        },
+        {
+          "key": "roles_responsibilities",
+          "label": "Response Team & RACI",
+          "required": true,
+          "description": "Incident commander, responders, communications lead, legal, executive sponsor. Who decides what.",
+          "example": "Incident Commander: CISO. Technical Lead: Security Engineer. Communications: PR/Legal. Executive Sponsor: CEO."
+        },
+        {
+          "key": "procedures",
+          "label": "Response Runbook",
+          "required": true,
+          "description": "Phase-by-phase steps: Detect → Contain → Investigate → Notify → Recover → Review.",
+          "example": "Phase 1 - Contain (0-4hrs): Isolate affected systems. Preserve logs. Notify CISO.\nPhase 2 - Investigate (4-24hrs): Determine scope. Identify compromised data.\nPhase 3 - Notify (24-72hrs): Legal review. Regulatory notifications if required."
+        },
+        {
+          "key": "escalation_paths",
+          "label": "Escalation Paths",
+          "required": true,
+          "description": "Who to call at each severity level. Contact list with roles.",
+          "example": "Severity 1 (Critical): Notify CISO immediately. CISO notifies CEO within 1hr."
+        },
+        {
+          "key": "communication_templates",
+          "label": "Communication Templates",
+          "required": false,
+          "description": "Pre-drafted internal and external communications to adapt.",
+          "example": "Internal notification template. Customer notification template. Regulator notification template."
+        },
+        {
+          "key": "references",
+          "label": "Supporting Documents",
+          "required": false,
+          "description": "IR plan, BCP, contact list, legal counsel info.",
+          "example": "Incident Response Plan; Business Continuity Plan; Legal Counsel Contact"
+        },
+        {
+          "key": "revision_history",
+          "label": "Revision History",
+          "required": true,
+          "description": "Version, date, test results, changes.",
+          "example": "v1.0 | 01/01/2025 | Initial release. Tested 03/2025 — tabletop exercise."
+        }
+      ]
+    },
+
+    "generic_plan": {
+      "id": "generic_plan",
+      "name": "Plan",
+      "description": "Forward-looking document describing how the organization will achieve a security or compliance objective over time. BCP, DR Plan, Risk Management Plan, Security Program Plan.",
+      "use_when": "Documenting how the org will prepare for, manage, or recover from something. Forward-looking, program-level.",
+      "standard_sections": [
+        {
+          "key": "purpose",
+          "label": "Purpose and Objectives",
+          "required": true,
+          "description": "What this plan achieves. Measurable objectives.",
+          "example": "This Business Continuity Plan ensures [Organization] can maintain critical operations during a disruptive event with an RTO of 4 hours and RPO of 1 hour for critical systems."
+        },
+        {
+          "key": "scope",
+          "label": "Scope and Assumptions",
+          "required": true,
+          "description": "What systems, processes, locations are covered. Key assumptions the plan is built on.",
+          "example": "Covers all Tier 1 and Tier 2 systems. Assumes primary data center is unavailable. Assumes key personnel are reachable."
+        },
+        {
+          "key": "roles_responsibilities",
+          "label": "Roles & Responsibilities",
+          "required": true,
+          "description": "Who owns the plan, who activates it, who executes it.",
+          "example": "Plan Owner: CISO. Activation Authority: CEO or CISO. Recovery Teams: IT, Operations, HR."
+        },
+        {
+          "key": "risk_assessment",
+          "label": "Risk and Impact Assessment",
+          "required": false,
+          "description": "Threats this plan addresses. Business impact if not addressed.",
+          "example": "Key threats: ransomware, natural disaster, key personnel loss. Estimated impact per hour of downtime: $X."
+        },
+        {
+          "key": "procedures",
+          "label": "Recovery / Response Procedures",
+          "required": true,
+          "description": "Step-by-step procedures for activation, execution, and recovery. Organized by scenario or phase.",
+          "example": "Activation: Incident declared by CEO or CISO. Recovery Team lead notified within 15 min. War room established."
+        },
+        {
+          "key": "testing",
+          "label": "Testing and Maintenance Schedule",
+          "required": true,
+          "description": "How often the plan is tested, by whom, and how results are documented and actioned.",
+          "example": "Annual tabletop exercise (Q1). Annual failover test (Q3). Plan reviewed and updated annually or after activation."
+        },
+        {
+          "key": "references",
+          "label": "Supporting Documents",
+          "required": false,
+          "description": "System inventory, contact lists, vendor contracts, related plans.",
+          "example": "System Recovery Runbooks; Vendor Contact List; Incident Response Plan"
+        },
+        {
+          "key": "revision_history",
+          "label": "Revision History",
+          "required": true,
+          "description": "Version, date, test outcomes, changes.",
+          "example": "v1.0 | 01/01/2025 | Initial release. v1.1 | 04/2025 | Updated after tabletop."
+        }
+      ]
+    },
+
+    "generic_standard": {
+      "id": "generic_standard",
+      "name": "Standard",
+      "description": "Technical baseline. Defines specific, measurable requirements that implement a policy. Password standard, encryption standard, logging standard.",
+      "use_when": "Setting specific technical requirements underneath a policy. More prescriptive than a policy, less procedural than a SOP.",
+      "standard_sections": [
+        {
+          "key": "purpose",
+          "label": "Purpose",
+          "required": true,
+          "description": "What this standard governs and which policy it implements.",
+          "example": "This standard defines minimum password requirements for all [Organization] systems, implementing the Access Control Policy."
+        },
+        {
+          "key": "scope",
+          "label": "Applicability",
+          "required": true,
+          "description": "Which systems, accounts, and users this standard applies to. Any exclusions.",
+          "example": "Applies to all user accounts on [Organization] systems. Service accounts governed by Privileged Access Standard."
+        },
+        {
+          "key": "policy_statement",
+          "label": "Requirements",
+          "required": true,
+          "description": "Numbered, specific, measurable technical requirements. Each one testable.",
+          "example": "1. Passwords must be minimum 14 characters.\n2. Passwords must include uppercase, lowercase, number, and special character.\n3. Password reuse prohibited for last 12 passwords.\n4. MFA required for all remote access."
+        },
+        {
+          "key": "exceptions",
+          "label": "Exception Process",
+          "required": false,
+          "description": "How to get an exception to a specific requirement. Compensating controls.",
+          "example": "Legacy systems unable to meet MFA requirement must document compensating controls and receive CISO approval annually."
+        },
+        {
+          "key": "enforcement",
+          "label": "Compliance Measurement",
+          "required": true,
+          "description": "How compliance with this standard is measured and reported.",
+          "example": "Compliance assessed quarterly via automated scan. Non-compliant systems reported to system owner within 5 days."
+        },
+        {
+          "key": "references",
+          "label": "References",
+          "required": false,
+          "description": "Policy this implements. Related standards. Regulatory citations.",
+          "example": "Access Control Policy; NIST SP 800-63B; PCI DSS Requirement 8.3"
+        },
+        {
+          "key": "revision_history",
+          "label": "Revision History",
+          "required": true,
+          "description": "Version, date, changes.",
+          "example": "v1.0 | 01/01/2025 | Initial release"
+        }
+      ]
+    }
+  }
+}

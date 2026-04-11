@@ -1,0 +1,70 @@
+{
+  "id": "sector.healthcare",
+  "name": "Healthcare",
+  "inherits_from": "core.federal",
+  "description": "Base healthcare sector overlay. Applies to all covered entities and business associates under HIPAA. Subsector profiles (provider, payer, digital health) extend this.",
+  "primary_frameworks": ["HIPAA Security Rule", "HIPAA Privacy Rule", "HITRUST-aligned domains"],
+  "secondary_frameworks": ["NIST CSF", "SOC 2 Type II"],
+  "conditional_frameworks": {
+    "FedRAMP": "If serving federal health agencies (VA, CMS, DoD health)",
+    "CMMC": "If handling defense health data"
+  },
+  "priority_control_families": [
+    "Access Control (workforce access to PHI)",
+    "Audit Controls (PHI access logging)",
+    "Integrity (PHI not altered in transit)",
+    "Transmission Security (PHI in motion)",
+    "Contingency Planning (BCP/DR for PHI systems)",
+    "Workforce Training and Sanctions",
+    "Business Associate Management"
+  ],
+  "required_policy_set": [
+    "Access Control Policy",
+    "Workforce Clearance and Sanctions Policy",
+    "Security Awareness and Training Policy",
+    "Contingency / Business Continuity Plan",
+    "Incident Response Policy",
+    "Information Access Management Policy",
+    "Device and Media Controls Policy",
+    "Facility Access Controls Policy",
+    "Business Associate Agreement Policy",
+    "Breach Notification Policy",
+    "Minimum Necessary Policy",
+    "Privacy Notice Policy"
+  ],
+  "required_artifacts": [
+    "Annual risk assessment (164.308(a)(1))",
+    "Workforce training records",
+    "BAA inventory and signed agreements",
+    "Access control audit logs (90 days minimum)",
+    "Incident log and breach notification history",
+    "DR/BCP test results",
+    "Sanction policy acknowledgements",
+    "PHI data flow diagram"
+  ],
+  "sector_terminology": {
+    "organization": "Covered Entity",
+    "data": "Protected Health Information (PHI) / Electronic PHI (ePHI)",
+    "users": "Workforce Members",
+    "vendors": "Business Associates",
+    "breach": "HIPAA Breach",
+    "security_officer": "HIPAA Security Officer",
+    "privacy_officer": "HIPAA Privacy Officer"
+  },
+  "typical_gaps": [
+    "Missing or outdated risk analysis",
+    "BAA not executed with all applicable vendors",
+    "Access rights not reviewed on termination",
+    "Workforce sanctions policy not documented",
+    "Audit logs not reviewed on regular schedule",
+    "No formal contingency plan testing",
+    "Minimum necessary not defined for key workflows"
+  ],
+  "output_tone": "formal, regulatory, evidence-focused",
+  "document_patterns": {
+    "policy_header": "includes covered entity designation, HIPAA regulatory citations",
+    "policy_statement": "references workforce obligations and PHI handling requirements",
+    "enforcement": "references sanctions up to and including termination and regulatory referral",
+    "references": "always cites 45 CFR Part 164 subsections"
+  }
+}

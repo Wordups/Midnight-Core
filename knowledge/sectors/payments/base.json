@@ -1,0 +1,74 @@
+{
+  "id": "sector.payments",
+  "name": "Payments / Fintech",
+  "inherits_from": "core.federal",
+  "description": "Payment processors, card merchant platforms, fintechs handling cardholder data or financial transactions. PCI DSS is the primary driver.",
+  "primary_frameworks": ["PCI DSS v4.0"],
+  "secondary_frameworks": ["SOC 2 Type II", "NIST CSF"],
+  "conditional_frameworks": {
+    "SOX": "If publicly traded or preparing for IPO",
+    "GLBA": "If offering financial products to consumers",
+    "FedRAMP": "If serving federal agencies",
+    "SWIFT CSCF": "If participating in SWIFT network"
+  },
+  "priority_control_families": [
+    "Network segmentation (CDE isolation)",
+    "Access control to cardholder data environment",
+    "Key management (encryption of PANs)",
+    "Vulnerability management (quarterly scans, annual pen test)",
+    "Secure software development (SSDLC)",
+    "Logging and monitoring (all CDE access)",
+    "Third-party / service provider oversight"
+  ],
+  "required_policy_set": [
+    "Information Security Policy",
+    "Access Control Policy",
+    "Encryption and Key Management Policy",
+    "Network Security and Segmentation Policy",
+    "Vulnerability Management Policy",
+    "Secure Development Lifecycle Policy",
+    "Incident Response Policy",
+    "Third-Party / Service Provider Policy",
+    "Data Retention and Disposal Policy",
+    "Physical Security Policy",
+    "Change Management Policy",
+    "Acceptable Use Policy"
+  ],
+  "required_artifacts": [
+    "Network diagram showing CDE scope and segmentation",
+    "Asset inventory for CDE systems",
+    "Quarterly ASV vulnerability scan reports",
+    "Annual penetration test report",
+    "Key management procedures and custody records",
+    "Service provider inventory and compliance status",
+    "Change management tickets for CDE changes",
+    "Incident response test records",
+    "Security awareness training records",
+    "PA-DSS/P2PE documentation (if applicable)"
+  ],
+  "sector_terminology": {
+    "data": "Cardholder Data (CHD) / Primary Account Number (PAN)",
+    "environment": "Cardholder Data Environment (CDE)",
+    "users": "Employees / Authorized Personnel",
+    "vendors": "Service Providers",
+    "assessment": "Report on Compliance (ROC) / Self-Assessment Questionnaire (SAQ)",
+    "assessor": "Qualified Security Assessor (QSA)"
+  },
+  "typical_gaps": [
+    "CDE scope not formally defined or documented",
+    "Network segmentation not validated (reduces scope)",
+    "PAN stored beyond authorization reversal",
+    "Default credentials not changed on network devices",
+    "No formal key custodian process",
+    "Service provider PCI compliance not tracked",
+    "Code review not part of SSDLC",
+    "Quarterly scan remediation not tracked to closure"
+  ],
+  "output_tone": "technical, precise, evidence-driven",
+  "document_patterns": {
+    "policy_header": "includes PCI DSS version reference and CDE scope statement",
+    "policy_statement": "references cardholder data protection and CDE boundary",
+    "enforcement": "references potential card brand fines and assessment consequences",
+    "references": "always cites PCI DSS requirements by number (e.g., Requirement 7.1)"
+  }
+}

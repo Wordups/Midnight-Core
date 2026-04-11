@@ -1,0 +1,77 @@
+{
+  "id": "sector.saas",
+  "name": "SaaS / Cloud",
+  "inherits_from": "core.federal",
+  "description": "B2B SaaS, enterprise cloud platforms, developer tools, cloud infrastructure providers. SOC 2 is the baseline trust signal. FedRAMP if pursuing federal.",
+  "primary_frameworks": ["SOC 2 Type II", "NIST CSF 2.0"],
+  "secondary_frameworks": ["CSA CCM"],
+  "conditional_frameworks": {
+    "FedRAMP": "If selling to US federal agencies",
+    "CMMC": "If handling CUI for defense contractors",
+    "HIPAA": "If storing or processing customer PHI (BAA required)",
+    "PCI DSS": "If processing payments directly",
+    "GDPR": "If serving EU customers or processing EU personal data",
+    "CCPA": "If serving California consumers"
+  },
+  "priority_control_families": [
+    "Identity and access management (IAM, SSO, MFA)",
+    "Change management (code review, deployment controls)",
+    "Availability and reliability (SLAs, monitoring, DR)",
+    "Vendor / subprocessor risk management",
+    "Logging and detection",
+    "Secure SDLC and dependency management",
+    "Data classification and customer data isolation"
+  ],
+  "required_policy_set": [
+    "Information Security Policy",
+    "Access Control and IAM Policy",
+    "Change Management Policy",
+    "Availability and Business Continuity Policy",
+    "Incident Response Policy",
+    "Vendor and Subprocessor Management Policy",
+    "Data Classification Policy",
+    "Secure Development Lifecycle Policy",
+    "Vulnerability and Patch Management Policy",
+    "Acceptable Use Policy",
+    "Data Retention and Deletion Policy",
+    "Encryption Policy",
+    "Risk Management Policy"
+  ],
+  "required_artifacts": [
+    "SOC 2 Type II report (or readiness assessment)",
+    "Asset and system inventory",
+    "Vendor/subprocessor list with DPAs",
+    "Penetration test report (annual)",
+    "DR test results",
+    "Change management tickets with approvals",
+    "IAM access review records (quarterly)",
+    "Security training records",
+    "Incident post-mortems",
+    "SLA and uptime reporting"
+  ],
+  "sector_terminology": {
+    "data": "Customer Data",
+    "environment": "Production Environment / Cloud Infrastructure",
+    "users": "Employees / Contractors",
+    "vendors": "Subprocessors / Vendors",
+    "assessment": "SOC 2 Audit / Trust Services Criteria",
+    "assessor": "CPA Firm / Audit Firm"
+  },
+  "typical_gaps": [
+    "No formal data classification — all data treated the same",
+    "Vendor list exists but no DPAs or security reviews",
+    "MFA enforced for admins but not all staff",
+    "Incident response plan exists but never tested",
+    "No separation between prod and non-prod environments",
+    "Dependency scanning not in CI/CD pipeline",
+    "No formal offboarding access revocation process",
+    "Availability SLAs defined but no DR plan to back them"
+  ],
+  "output_tone": "professional, trust-focused, operationally specific",
+  "document_patterns": {
+    "policy_header": "includes Trust Services Criteria reference if SOC 2 targeted",
+    "policy_statement": "references customer data protection obligations",
+    "enforcement": "references employment consequences and customer contract obligations",
+    "references": "cites AICPA TSC criteria where relevant"
+  }
+}

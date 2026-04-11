@@ -1,0 +1,42 @@
+{
+  "id": "profile.healthcare.provider",
+  "name": "Healthcare Provider",
+  "inherits_from": "sector.healthcare",
+  "description": "Hospitals, clinics, physician practices, labs, imaging centers, home health. Direct patient care — highest PHI exposure, strongest workforce requirements.",
+  "additional_frameworks": ["Joint Commission", "CMS Conditions of Participation"],
+  "emphasis_areas": [
+    "Point-of-care access controls (EHR, clinical systems)",
+    "Emergency access procedures (break-glass)",
+    "Minimum necessary at care delivery level",
+    "Medical device security",
+    "Workforce sanction enforcement",
+    "Physical facility access (exam rooms, records rooms)"
+  ],
+  "additional_required_policies": [
+    "Emergency Access Procedure Policy",
+    "Medical Device Security Policy",
+    "Physical Safeguards Policy",
+    "Patient Rights Policy (privacy)",
+    "Research Data Use Policy (if applicable)"
+  ],
+  "additional_artifacts": [
+    "EHR access provisioning records",
+    "Emergency access log and justification records",
+    "Medical device inventory and patching records",
+    "Physical access badge logs",
+    "Sanction enforcement records"
+  ],
+  "typical_gaps": [
+    "Emergency access not logged or reviewed",
+    "Medical devices excluded from asset inventory",
+    "Shared workstation accounts in clinical areas",
+    "Workforce not trained on minimum necessary at role level",
+    "No formal process for access review post-termination"
+  ],
+  "output_language_additions": {
+    "data_subject": "Patient",
+    "primary_system": "Electronic Health Record (EHR)",
+    "access_context": "clinical care delivery",
+    "breach_context": "patient notification and HHS reporting"
+  }
+}

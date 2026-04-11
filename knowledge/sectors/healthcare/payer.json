@@ -1,0 +1,42 @@
+{
+  "id": "profile.healthcare.payer",
+  "name": "Healthcare Payer",
+  "inherits_from": "sector.healthcare",
+  "description": "Health insurance plans, managed care organizations, self-insured employers. Heavy data exchange with providers, claims processing, member data at scale.",
+  "additional_frameworks": ["NAIC Model Law", "State insurance regulations", "CMS Star Ratings (if Medicare)"],
+  "emphasis_areas": [
+    "Third-party data exchange controls (clearinghouses, EDI)",
+    "Claims data handling and minimum necessary",
+    "Member data segregation",
+    "Vendor and delegate oversight",
+    "Data use agreements for analytics and actuarial",
+    "Large-scale breach response capacity"
+  ],
+  "additional_required_policies": [
+    "Data Use and Reciprocal Support Agreement (DURSA) Policy",
+    "Claims Data Handling Policy",
+    "Delegate Oversight Policy",
+    "Member Data Segmentation Policy",
+    "Analytics and De-identification Policy"
+  ],
+  "additional_artifacts": [
+    "Delegate audit reports",
+    "Data exchange inventory (trading partners, clearinghouses)",
+    "De-identification certification records",
+    "Breach notification template and drill records",
+    "Member access request log"
+  ],
+  "typical_gaps": [
+    "Delegate monitoring program not formalized",
+    "Data use for analytics not covered by existing BAAs",
+    "No de-identification process documented",
+    "Claims data retained beyond minimum necessary period",
+    "Incomplete trading partner inventory"
+  ],
+  "output_language_additions": {
+    "data_subject": "Member",
+    "primary_system": "Claims Processing System / Member Portal",
+    "access_context": "claims adjudication and member services",
+    "breach_context": "member notification, HHS reporting, and state regulator notification"
+  }
+}
