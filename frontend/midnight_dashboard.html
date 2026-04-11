@@ -60,12 +60,10 @@
   .nav-icon { width: 16px; height: 16px; opacity: 0.6; flex-shrink: 0; transition: opacity 0.15s; }
   .nav-item.active .nav-icon { opacity: 1; filter: drop-shadow(0 0 4px rgba(63,214,140,0.5)); }
   .nav-item:hover .nav-icon { opacity: 0.9; }
-  .nav-badge { margin-left: auto; background: var(--red-bg); color: var(--red); font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 10px; font-family: var(--font-mono); animation: badge-pulse 3s ease-in-out infinite; }
-  @keyframes badge-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,92,92,0.3); } 50% { box-shadow: 0 0 0 4px rgba(255,92,92,0); } }
+  .nav-badge { margin-left: auto; background: var(--red-bg); color: var(--red); font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 10px; font-family: var(--font-mono); }
   .nav-spacer { height: 16px; }
   .mascot-area { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-  .mascot-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1c2a1a, #0f1f10); border: 1px solid rgba(63,214,140,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; box-shadow: 0 0 12px rgba(63,214,140,0.15); transition: box-shadow 0.3s; }
-  .mascot-avatar:hover { box-shadow: 0 0 20px rgba(63,214,140,0.3); }
+  .mascot-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1c2a1a, #0f1f10); border: 1px solid rgba(63,214,140,0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; box-shadow: 0 0 12px rgba(63,214,140,0.15); }
   .mascot-name { font-size: 12px; font-weight: 500; color: var(--text); font-family: var(--font-display); }
   .mascot-role { font-size: 10px; color: var(--accent); font-family: var(--font-mono); }
 
@@ -88,26 +86,22 @@
 
   /* METRIC CARDS */
   .metrics-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 20px; }
-  .metric-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; position: relative; overflow: hidden; transition: all 0.25s; cursor: default; }
+  .metric-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; position: relative; overflow: hidden; transition: all 0.25s; }
   .metric-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
   .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
-  .metric-card::after { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; border-radius: 50%; opacity: 0.06; pointer-events: none; }
-  .metric-card.green::before { background: linear-gradient(90deg, var(--green), rgba(63,214,140,0.4)); box-shadow: 0 0 12px rgba(63,214,140,0.6); }
-  .metric-card.green::after { background: var(--green); transform: translate(30%, -30%); }
-  .metric-card.amber::before { background: linear-gradient(90deg, var(--amber), rgba(245,166,35,0.4)); box-shadow: 0 0 12px rgba(245,166,35,0.6); }
-  .metric-card.amber::after { background: var(--amber); transform: translate(30%, -30%); }
-  .metric-card.red::before { background: linear-gradient(90deg, var(--red), rgba(255,92,92,0.4)); box-shadow: 0 0 12px rgba(255,92,92,0.6); }
-  .metric-card.red::after { background: var(--red); transform: translate(30%, -30%); }
+  .metric-card.green::before { background: linear-gradient(90deg, var(--green), rgba(63,214,140,0.4)); }
+  .metric-card.amber::before { background: linear-gradient(90deg, var(--amber), rgba(245,166,35,0.4)); }
+  .metric-card.red::before { background: linear-gradient(90deg, var(--red), rgba(255,92,92,0.4)); }
   .metric-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .metric-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-  .metric-icon.green { background: var(--green-bg); box-shadow: 0 0 12px rgba(63,214,140,0.15); }
-  .metric-icon.amber { background: var(--amber-bg); box-shadow: 0 0 12px rgba(245,166,35,0.15); }
-  .metric-icon.red { background: var(--red-bg); box-shadow: 0 0 12px rgba(255,92,92,0.15); }
+  .metric-icon.green { background: var(--green-bg); }
+  .metric-icon.amber { background: var(--amber-bg); }
+  .metric-icon.red { background: var(--red-bg); }
   .metric-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; font-family: var(--font-mono); margin-bottom: 6px; }
   .metric-val { font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
-  .metric-val.green { color: var(--green); text-shadow: 0 0 20px rgba(63,214,140,0.3); }
-  .metric-val.amber { color: var(--amber); text-shadow: 0 0 20px rgba(245,166,35,0.3); }
-  .metric-val.red { color: var(--red); text-shadow: 0 0 20px rgba(255,92,92,0.3); }
+  .metric-val.green { color: var(--green); }
+  .metric-val.amber { color: var(--amber); }
+  .metric-val.red { color: var(--red); }
   .metric-sub { display: flex; align-items: center; gap: 16px; }
   .metric-sub-item { font-size: 11px; color: var(--text3); }
   .metric-sub-item span { font-weight: 500; font-family: var(--font-mono); }
@@ -117,48 +111,47 @@
 
   /* PANELS */
   .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 16px; }
-  .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
-  .panel:hover { border-color: var(--border2); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: border-color 0.2s; }
+  .panel:hover { border-color: var(--border2); }
   .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%); }
   .panel-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: 0.02em; text-transform: uppercase; }
   .panel-action { font-size: 11px; color: var(--accent); cursor: pointer; font-family: var(--font-mono); opacity: 0.8; transition: all 0.15s; }
-  .panel-action:hover { opacity: 1; text-shadow: 0 0 8px rgba(63,214,140,0.5); }
+  .panel-action:hover { opacity: 1; }
 
   /* TABS */
   .tabs { display: flex; gap: 0; padding: 0 20px; border-bottom: 1px solid var(--border); }
-  .tab { font-size: 12px; padding: 10px 14px; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; font-weight: 400; white-space: nowrap; }
+  .tab { font-size: 12px; padding: 10px 14px; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
   .tab:hover { color: var(--text2); }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); text-shadow: 0 0 8px rgba(63,214,140,0.3); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
   /* TABLE */
   .table-header { display: grid; grid-template-columns: 2fr 1fr 1fr 100px; padding: 10px 20px; border-bottom: 1px solid var(--border); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; font-family: var(--font-mono); }
   .table-row { display: grid; grid-template-columns: 2fr 1fr 1fr 100px; padding: 12px 20px; border-bottom: 1px solid var(--border); align-items: center; transition: all 0.15s; cursor: pointer; }
   .table-row:last-child { border-bottom: none; }
-  .table-row:hover { background: linear-gradient(135deg, rgba(63,214,140,0.04) 0%, rgba(74,158,255,0.02) 100%); padding-left: 24px; }
+  .table-row:hover { background: rgba(63,214,140,0.04); padding-left: 24px; }
   .doc-name-cell { display: flex; align-items: center; gap: 10px; }
   .doc-checkbox { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .doc-checkbox.checked { background: var(--green-bg); border-color: var(--green); box-shadow: 0 0 6px rgba(63,214,140,0.2); }
+  .doc-checkbox.checked { background: var(--green-bg); border-color: var(--green); }
   .doc-type-pill { font-size: 9px; padding: 2px 7px; border-radius: 10px; font-family: var(--font-mono); font-weight: 500; flex-shrink: 0; }
   .doc-type-pill.policy { background: rgba(74,158,255,0.12); color: var(--blue); }
   .doc-type-pill.sop { background: rgba(138,100,255,0.12); color: #8a64ff; }
   .doc-type-pill.playbook { background: rgba(245,166,35,0.12); color: var(--amber); }
   .doc-type-pill.standard { background: rgba(63,214,140,0.12); color: var(--green); }
   .doc-type-pill.plan { background: rgba(255,92,92,0.12); color: var(--red); }
+  .doc-type-pill.pdf { background: rgba(245,166,35,0.12); color: var(--amber); }
   .status-badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-family: var(--font-mono); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
   .status-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
   .status-badge.ready { background: var(--green-bg); color: var(--green); }
-  .status-badge.ready::before { background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .status-badge.ready::before { background: var(--green); }
   .status-badge.review { background: var(--amber-bg); color: var(--amber); }
   .status-badge.review::before { background: var(--amber); }
   .status-badge.draft { background: var(--blue-bg); color: var(--blue); }
   .status-badge.draft::before { background: var(--blue); }
-  .status-badge.progress { background: rgba(138,100,255,0.1); color: #8a64ff; }
-  .status-badge.progress::before { background: #8a64ff; }
   .owner-cell { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); }
   .avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; flex-shrink: 0; }
   .actions-cell { display: flex; gap: 6px; justify-content: flex-end; }
-  .action-btn { width: 26px; height: 26px; border-radius: 6px; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
-  .action-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 8px rgba(63,214,140,0.2); }
+  .action-btn { width: 26px; height: 26px; border-radius: 6px; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 13px; }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   /* GAPS */
   .gap-item { padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; }
@@ -179,29 +172,25 @@
   .time-cell { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
   .user-cell { display: flex; align-items: center; gap: 8px; color: var(--text2); }
   .result-cell { font-family: var(--font-mono); font-size: 11px; }
-  .result-cell.ok { color: var(--green); text-shadow: 0 0 6px rgba(63,214,140,0.3); }
+  .result-cell.ok { color: var(--green); }
   .result-cell.warn { color: var(--amber); }
-  .feed-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
+  .feed-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); transition: all 0.15s; }
   .feed-item:hover { background: rgba(63,214,140,0.03); }
   .feed-item:last-child { border-bottom: none; }
-  .feed-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; margin-top: 1px; }
   .feed-body { flex: 1; }
   .feed-action { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
   .feed-detail { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
-  .feed-time { font-size: 10px; color: var(--text3); font-family: var(--font-mono); flex-shrink: 0; margin-top: 2px; }
 
   /* SEARCH */
   .search-wrap { position: relative; }
   .search-input { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px 6px 30px; font-size: 12px; color: var(--text); font-family: var(--font-body); outline: none; width: 160px; transition: all 0.15s; }
-  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(63,214,140,0.08); }
+  .search-input:focus { border-color: var(--accent); }
   .search-input::placeholder { color: var(--text3); }
   .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 11px; }
 
   /* CLUCK BANNER */
-  .cluck-banner { background: linear-gradient(135deg, rgba(63,214,140,0.06) 0%, rgba(74,158,255,0.04) 100%); border: 1px solid rgba(63,214,140,0.2); border-left: 3px solid var(--accent); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 20px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
-  .cluck-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 0%, rgba(63,214,140,0.03) 100%); opacity: 0; transition: opacity 0.2s; }
-  .cluck-banner:hover { border-color: rgba(63,214,140,0.4); border-left-color: var(--accent); box-shadow: 0 4px 20px rgba(63,214,140,0.1); transform: translateY(-1px); }
-  .cluck-banner:hover::after { opacity: 1; }
+  .cluck-banner { background: linear-gradient(135deg, rgba(63,214,140,0.06) 0%, rgba(74,158,255,0.04) 100%); border: 1px solid rgba(63,214,140,0.2); border-left: 3px solid var(--accent); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 20px; cursor: pointer; transition: all 0.2s; }
+  .cluck-banner:hover { border-color: rgba(63,214,140,0.4); transform: translateY(-1px); }
   .cluck-emoji { font-size: 28px; animation: wiggle 4s ease-in-out infinite; flex-shrink: 0; }
   @keyframes wiggle { 0%,85%,100% { transform: rotate(0); } 90% { transform: rotate(-8deg); } 95% { transform: rotate(8deg); } }
   .cluck-text { flex: 1; }
@@ -219,18 +208,8 @@
   .fw-row:last-child { margin-bottom: 0; }
   .fw-name { font-family: var(--font-mono); font-size: 11px; color: var(--text2); width: 70px; flex-shrink: 0; }
   .fw-bar-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
-  .fw-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
-  .fw-bar-fill::after { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 2.5s ease-in-out infinite; }
-  @keyframes shimmer { 0% { left: -100%; } 100% { left: 200%; } }
+  .fw-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
   .fw-pct { font-family: var(--font-mono); font-size: 11px; font-weight: 600; width: 34px; text-align: right; }
-
-  /* MINI CHART */
-  .mini-chart { display: flex; align-items: flex-end; gap: 3px; height: 40px; padding: 0 20px 16px; }
-  .bar { flex: 1; border-radius: 3px 3px 0 0; transition: all 0.3s; cursor: pointer; }
-  .bar.blue { background: rgba(74,158,255,0.4); }
-  .bar.blue:hover { background: var(--blue); box-shadow: 0 0 8px rgba(74,158,255,0.4); }
-  .bar.red { background: rgba(255,92,92,0.35); }
-  .bar.red:hover { background: var(--red); box-shadow: 0 0 8px rgba(255,92,92,0.4); }
 
   /* BUILD VIEW */
   .build-view { max-width: 800px; }
@@ -274,12 +253,14 @@
   .output-status { font-size: 10px; font-family: var(--font-mono); padding: 3px 8px; border-radius: 8px; }
   .output-status.generating { background: var(--amber-bg); color: var(--amber); }
   .output-status.done { background: var(--green-bg); color: var(--green); }
+  .output-status.error { background: var(--red-bg); color: var(--red); }
   .output-text { font-size: 12px; color: var(--text2); line-height: 1.7; white-space: pre-wrap; max-height: 320px; overflow-y: auto; font-family: var(--font-mono); }
-  .output-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .output-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
   .output-btn { padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: var(--bg4); color: var(--text2); font-family: var(--font-body); transition: all 0.15s; }
   .output-btn:hover { color: var(--text); border-color: var(--border2); }
   .output-btn.primary { background: var(--accent); color: #0a0c10; border-color: var(--accent); }
   .output-btn.primary:hover { opacity: 0.85; }
+  .output-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* PROGRESS */
   .progress-wrap { margin: 16px 0; }
@@ -317,25 +298,8 @@
   .bt-send-btn:hover { opacity: 0.85; }
   .bt-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* TOAST */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 10px; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; max-width: 280px; }
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
-
-  /* ── BIRD EYE RADAR ────────────────────────────────────── */
-  .bird-eye-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(10,12,16,0.92);
-    z-index: 998;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 24px;
-  }
+  /* BIRD EYE */
+  .bird-eye-overlay { display: none; position: fixed; inset: 0; background: rgba(10,12,16,0.92); z-index: 998; align-items: center; justify-content: center; flex-direction: column; gap: 24px; }
   .bird-eye-overlay.active { display: flex; }
   .radar-wrap { position: relative; width: 220px; height: 220px; }
   .radar-svg { width: 100%; height: 100%; }
@@ -343,23 +307,23 @@
   @keyframes radar-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   .radar-ping { animation: ping 2s ease-out infinite; transform-origin: center; }
   @keyframes ping { 0% { opacity: 1; r: 3; } 100% { opacity: 0; r: 14; } }
-  .bird-eye-label { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+  .bird-eye-label { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text); }
   .bird-eye-sub { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; animation: blink 1.2s ease-in-out infinite; }
   @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-  /* ── SCAN RESULT CARD ──────────────────────────────────── */
+  /* SCAN RESULT */
   .scan-result { display: none; background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
   .scan-result.active { display: block; }
   .scan-result-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
   .scan-result-title { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 14px; font-weight: 700; }
-  .scan-engine-badge { font-family: var(--font-mono); font-size: 10px; color: var(--accent); background: var(--green-bg); border: 1px solid rgba(63,214,140,0.2); border-radius: 4px; padding: 2px 7px; letter-spacing: 0.06em; }
+  .scan-engine-badge { font-family: var(--font-mono); font-size: 10px; color: var(--accent); background: var(--green-bg); border: 1px solid rgba(63,214,140,0.2); border-radius: 4px; padding: 2px 7px; }
   .scan-score-wrap { display: flex; align-items: center; gap: 8px; }
   .scan-score-num { font-family: var(--font-display); font-size: 28px; font-weight: 800; line-height: 1; }
   .scan-score-num.strong  { color: var(--green); }
   .scan-score-num.moderate{ color: var(--amber); }
   .scan-score-num.weak    { color: #f5a623; }
   .scan-score-num.critical{ color: var(--red); }
-  .scan-score-label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
+  .scan-score-label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; }
   .scan-score-label.strong  { color: var(--green); }
   .scan-score-label.moderate{ color: var(--amber); }
   .scan-score-label.weak    { color: #f5a623; }
@@ -368,7 +332,7 @@
   .scan-sections-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
   .scan-section-item { display: flex; align-items: center; gap: 7px; background: var(--bg3); border-radius: 7px; padding: 8px 10px; font-size: 12px; color: var(--text2); }
   .scan-section-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .scan-section-dot.complete { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .scan-section-dot.complete { background: var(--green); }
   .scan-section-dot.partial  { background: var(--amber); }
   .scan-section-dot.missing  { background: var(--red); }
   .scan-gaps { margin-bottom: 14px; }
@@ -376,86 +340,38 @@
   .scan-gap-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--red-bg); border: 1px solid rgba(255,92,92,0.15); border-radius: 7px; margin-bottom: 6px; font-size: 12px; }
   .scan-gap-item.high { background: var(--amber-bg); border-color: rgba(245,166,35,0.15); }
   .scan-gap-name { color: var(--text); font-weight: 500; }
-  .scan-gap-sev { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .scan-gap-sev { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; }
   .scan-gap-sev.critical { color: var(--red); }
   .scan-gap-sev.high     { color: var(--amber); }
   .scan-warning { background: rgba(255,92,92,0.06); border: 1px solid rgba(255,92,92,0.15); border-radius: 7px; padding: 10px 14px; font-size: 11px; color: var(--text2); line-height: 1.5; margin-bottom: 14px; }
   .scan-actions { display: flex; gap: 8px; }
-  .scan-proceed-btn { flex: 1; background: var(--accent); color: #0a0c10; border: none; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-body); transition: opacity 0.15s; }
+  .scan-proceed-btn { flex: 1; background: var(--accent); color: #0a0c10; border: none; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
   .scan-proceed-btn:hover { opacity: 0.85; }
-  .scan-dismiss-btn { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); padding: 10px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
-  .scan-dismiss-btn:hover { color: var(--text); }
+  .scan-dismiss-btn { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); padding: 10px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.15s; }
 
-  /* ── BIRD EYE ENGINE BRAND ─────────────────────────────── */
-  .bird-eye-status-bar {
-    display: flex; align-items: center; gap: 10px;
-    background: rgba(63,214,140,0.04);
-    border: 1px solid rgba(63,214,140,0.12);
-    border-radius: 8px;
-    padding: 8px 14px;
-    margin-bottom: 20px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-  .bird-eye-pulse {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    flex-shrink: 0;
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-  @keyframes pulse-glow {
-    0%,100% { box-shadow: 0 0 4px var(--green); opacity: 1; }
-    50%      { box-shadow: 0 0 10px var(--green); opacity: 0.7; }
-  }
-  .bird-eye-status-text { color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; }
-  .bird-eye-status-text strong { color: var(--accent); font-weight: 600; }
-  .bird-eye-status-meta { color: var(--text3); font-size: 10px; flex-shrink: 0; }
+  /* BIRD EYE STATUS */
+  .bird-eye-status-bar { display: flex; align-items: center; gap: 10px; background: rgba(63,214,140,0.04); border: 1px solid rgba(63,214,140,0.12); border-radius: 8px; padding: 8px 14px; margin-bottom: 20px; font-family: var(--font-mono); font-size: 11px; }
+  .bird-eye-pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); flex-shrink: 0; animation: pulse-glow 2s ease-in-out infinite; }
+  @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 4px var(--green); } 50% { box-shadow: 0 0 10px var(--green); } }
+  .bird-eye-status-text { color: var(--text2); flex: 1; }
+  .bird-eye-status-text strong { color: var(--accent); }
+  .bird-eye-status-meta { color: var(--text3); font-size: 10px; }
+  .be-powered-tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+  .be-powered-tag::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+  .bird-eye-sidebar-tag { margin: 8px 12px 4px; padding: 7px 10px; background: rgba(63,214,140,0.04); border: 1px solid rgba(63,214,140,0.1); border-radius: 8px; display: flex; align-items: center; gap: 8px; }
+  .bird-eye-sidebar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-glow 2s ease-in-out infinite; flex-shrink: 0; }
+  .bird-eye-sidebar-label { font-family: var(--font-mono); font-size: 10px; color: var(--accent); }
+  .bird-eye-sidebar-sub { font-size: 9px; color: var(--text3); font-family: var(--font-mono); margin-left: auto; }
 
-  .be-powered-tag {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-family: var(--font-mono); font-size: 10px;
-    color: var(--text3);
-    letter-spacing: 0.06em;
-  }
-  .be-powered-tag::before {
-    content: '';
-    display: inline-block;
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 4px var(--green);
-  }
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 10px; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; max-width: 320px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .toast.error .toast-dot { background: var(--red); }
 
-  .bird-eye-sidebar-tag {
-    margin: 8px 12px 4px;
-    padding: 7px 10px;
-    background: rgba(63,214,140,0.04);
-    border: 1px solid rgba(63,214,140,0.1);
-    border-radius: 8px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .bird-eye-sidebar-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 5px var(--green);
-    animation: pulse-glow 2s ease-in-out infinite;
-    flex-shrink: 0;
-  }
-  .bird-eye-sidebar-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--accent);
-    letter-spacing: 0.04em;
-  }
-  .bird-eye-sidebar-sub {
-    font-size: 9px;
-    color: var(--text3);
-    font-family: var(--font-mono);
-    margin-left: auto;
-  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
 </style>
 </head>
 <body>
@@ -493,7 +409,6 @@
     <div class="nav-item" id="nav-gaps" onclick="showView('gaps', this, 'Gap Analysis')">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       Gap Analysis
-      <span class="nav-badge">8</span>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-label">Reports</div>
@@ -501,18 +416,12 @@
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M4 10l2.5-3L9 9l2-2.5L13 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
       GRC Summary
     </div>
-    <div class="nav-item" onclick="showToast('Executive Report coming soon')">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 13V9M6 13V6M9 13V8M12 13V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-      Executive Report
-    </div>
   </div>
   <div class="bird-eye-sidebar-tag">
-      <div class="bird-eye-sidebar-dot"></div>
-      <div>
-        <div class="bird-eye-sidebar-label">Bird Eye</div>
-      </div>
-      <div class="bird-eye-sidebar-sub">ENGINE ACTIVE</div>
-    </div>
+    <div class="bird-eye-sidebar-dot"></div>
+    <div><div class="bird-eye-sidebar-label">Bird Eye</div></div>
+    <div class="bird-eye-sidebar-sub">ENGINE ACTIVE</div>
+  </div>
   <div class="mascot-area">
     <div class="mascot-avatar">🐔</div>
     <div>
@@ -527,34 +436,34 @@
   <div class="topbar">
     <div class="page-title" id="page-title">Overview</div>
     <div class="topbar-right">
-      <div class="org-tag"><div class="org-dot"></div>Acme Corp · Healthcare</div>
+      <div class="org-tag"><div class="org-dot"></div><span id="org-label">Workspace · Ready</span></div>
       <button class="run-btn" id="topbar-btn" onclick="handleTopbarBtn()">Open Tool</button>
     </div>
   </div>
 
-  <!-- ── OVERVIEW ─────────────────────────────────────────── -->
+  <!-- ── OVERVIEW ─────────────────────────────────────────────────────────── -->
   <div class="view active" id="view-overview">
     <div class="content">
       <div class="bird-eye-status-bar">
         <div class="bird-eye-pulse"></div>
         <div class="bird-eye-status-text"><strong>Bird Eye</strong> · Document Intelligence Engine · Active</div>
-        <div class="bird-eye-status-meta" id="be-status-meta">Toolbox active · waiting for live workspace activity</div>
+        <div class="bird-eye-status-meta" id="be-status-meta">Waiting for workspace activity</div>
       </div>
       <div class="cluck-banner" onclick="showView('birdtalk', document.getElementById('nav-birdtalk'), 'Bird Talk')">
         <div class="cluck-emoji">🐔</div>
         <div class="cluck-text">
           <div class="cluck-title" id="dashboard-banner-title">Your live workspace activity will appear here</div>
-          <div class="cluck-sub">Start in Migrate, Create, or Bird Talk — outputs will persist here automatically</div>
+          <div class="cluck-sub" id="dashboard-banner-sub">Start in Migrate, Create, or Bird Talk — outputs persist here automatically</div>
         </div>
         <div class="cluck-cta">Ask Midnight →</div>
       </div>
       <div class="launcher-panel">
         <div class="launcher-title">Launch The Tool Workspace</div>
-        <div class="launcher-sub">Use the dashboard as home. Open the tool when you want to migrate a document, create a policy, or work through Bird Talk.</div>
+        <div class="launcher-sub">Migrate a legacy doc, create a new policy, or open Bird Talk. All outputs appear in this dashboard.</div>
         <div class="launcher-actions">
-          <button class="run-btn" type="button" onclick="showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document')">Migrate</button>
-          <button class="run-btn" type="button" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')">Create</button>
-          <button class="run-btn" type="button" onclick="showView('birdtalk', document.getElementById('nav-birdtalk'), 'Bird Talk')">Bird Talk</button>
+          <button class="run-btn" onclick="showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document')">Migrate</button>
+          <button class="run-btn" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')">Create</button>
+          <button class="run-btn" onclick="showView('birdtalk', document.getElementById('nav-birdtalk'), 'Bird Talk')">Bird Talk</button>
         </div>
       </div>
       <div class="metrics-row">
@@ -563,12 +472,12 @@
           <div class="metric-sub"><div class="metric-sub-item"><span class="green" id="m-policies-last-7">0</span> last 7 days</div><div class="metric-sub-item"><span id="m-frameworks">0</span> frameworks</div></div>
         </div>
         <div class="metric-card red">
-          <div class="metric-top"><div><div class="metric-label">Framework gaps found</div><div class="metric-val red" id="m-gaps">0</div></div><div class="metric-icon red"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 11v1" stroke="#ff5c5c" stroke-width="1.5" stroke-linecap="round"/><path d="M7 2L1 13h14L9 2H7z" stroke="#ff5c5c" stroke-width="1.2" stroke-linejoin="round"/></svg></div></div>
+          <div class="metric-top"><div><div class="metric-label">Framework gaps</div><div class="metric-val red" id="m-gaps">0</div></div><div class="metric-icon red"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 11v1" stroke="#ff5c5c" stroke-width="1.5" stroke-linecap="round"/><path d="M7 2L1 13h14L9 2H7z" stroke="#ff5c5c" stroke-width="1.2" stroke-linejoin="round"/></svg></div></div>
           <div class="metric-sub"><div class="metric-sub-item"><span class="red" id="m-gaps-critical">0</span> critical</div><div class="metric-sub-item"><span class="amber" id="m-gaps-medium">0</span> medium</div></div>
         </div>
         <div class="metric-card amber">
           <div class="metric-top"><div><div class="metric-label">Needs review</div><div class="metric-val amber" id="m-review">0</div></div><div class="metric-icon amber"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#f5a623" stroke-width="1.2"/><path d="M8 5v3" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.8" fill="#f5a623"/></svg></div></div>
-          <div class="metric-sub"><div class="metric-sub-item"><span class="red" id="m-review-critical">0</span> critical</div><div class="metric-sub-item">live status</div></div>
+          <div class="metric-sub"><div class="metric-sub-item"><span class="red" id="m-review-critical">0</span> critical</div></div>
         </div>
       </div>
       <div class="main-grid">
@@ -580,37 +489,39 @@
               <button class="run-btn" style="padding:6px 12px;font-size:11px;" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')">+ New Policy</button>
             </div>
           </div>
-          <div class="tabs"><div class="tab active" onclick="setTab(this)">In Progress</div><div class="tab" onclick="setTab(this)">Needs Review</div><div class="tab" onclick="setTab(this)">Completed</div><div class="tab" onclick="setTab(this)">All</div></div>
+          <div class="tabs"><div class="tab active" onclick="setTab(this)">All</div><div class="tab" onclick="setTab(this)">In Progress</div><div class="tab" onclick="setTab(this)">Ready</div></div>
           <div class="table-header"><span>Policy</span><span>Status</span><span>Owner</span><span style="text-align:right">Actions</span></div>
-          <div data-dynamic-container="true"></div>
+          <div id="overview-doc-list">
+            <div class="table-row"><div class="doc-name-cell" style="grid-column:1/-1;color:var(--text3);font-size:12px;padding:8px 0;">No generated outputs yet — run Migrate or Create to get started</div></div>
+          </div>
         </div>
         <div class="panel">
           <div class="panel-header"><div class="panel-title">Framework Gaps</div><div class="panel-action" onclick="showView('gaps', document.getElementById('nav-gaps'), 'Gap Analysis')">View all →</div></div>
-          <div class="fw-section" style="border-bottom:1px solid var(--border);">
-            <div style="font-size:12px;color:var(--text2);">Coverage metrics will appear here when live framework coverage data is available.</div>
+          <div class="fw-section" id="overview-coverage">
+            <div style="font-size:12px;color:var(--text2);">Coverage will appear after your first policy run.</div>
           </div>
-          <div data-overview-gaps="true">
-            <div class="gap-item"><div class="gap-top"><span class="gap-control">No live gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a migration or analysis to populate framework gaps for this workspace.</div><div class="gap-meta">Live dashboard connected</div></div>
+          <div id="overview-gap-list">
+            <div class="gap-item"><div class="gap-top"><span class="gap-control">No gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a migration or analysis to populate framework gaps.</div><div class="gap-meta">Live dashboard connected</div></div>
           </div>
         </div>
       </div>
       <div class="bottom-grid">
         <div class="panel">
-          <div class="panel-header"><div class="panel-title">Recent Activity</div><div class="panel-action">View all →</div></div>
-          <div class="table-header" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><span>Time</span><span>User</span><span>Action</span><span>File / Policy</span><span>Result</span></div>
-          <div data-dynamic-container="true">
-            <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">now</div><div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">ME</div>You</div><div style="color:var(--text2);">Waiting</div><div style="color:var(--text2);">No activity yet</div><div class="result-cell warn">● Idle</div></div>
+          <div class="panel-header"><div class="panel-title">Recent Activity</div></div>
+          <div class="table-header" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><span>Time</span><span>User</span><span>Action</span><span>File</span><span>Result</span></div>
+          <div id="overview-activity-list">
+            <div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">—</div><div class="user-cell">—</div><div style="color:var(--text3);">No activity yet</div><div style="color:var(--text3);">—</div><div class="result-cell warn">● Idle</div></div>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-header"><div class="panel-title">Activity Feed</div><div class="panel-action">View all →</div></div>
-          <div style="padding:16px 20px;color:var(--text2);font-size:12px;line-height:1.6;">Live activity will appear here after you create, migrate, or download workspace artifacts.</div>
+          <div class="panel-header"><div class="panel-title">Activity Feed</div></div>
+          <div id="overview-feed" style="padding:16px 20px;color:var(--text2);font-size:12px;line-height:1.6;">Live activity will appear here after your first workspace run.</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── CREATE POLICY ─────────────────────────────────────── -->
+  <!-- ── CREATE POLICY ─────────────────────────────────────────────────────── -->
   <div class="view" id="view-create">
     <div class="content">
       <div class="build-view">
@@ -655,8 +566,14 @@
         </div>
         <div id="cp-output" style="display:none;">
           <div class="output-card">
-            <div class="output-header"><div class="output-title" id="cp-out-title">Generating...</div><div class="output-status generating" id="cp-out-status">Generating</div></div>
-            <div class="progress-wrap" id="cp-progress"><div class="progress-label" id="cp-progress-label">Extracting requirements...</div><div class="progress-bar"><div class="progress-fill" id="cp-progress-fill" style="width:0%"></div></div></div>
+            <div class="output-header">
+              <div class="output-title" id="cp-out-title">Generating...</div>
+              <div class="output-status generating" id="cp-out-status">Generating</div>
+            </div>
+            <div class="progress-wrap" id="cp-progress">
+              <div class="progress-label" id="cp-progress-label">Extracting requirements...</div>
+              <div class="progress-bar"><div class="progress-fill" id="cp-progress-fill" style="width:0%"></div></div>
+            </div>
             <div class="output-text" id="cp-out-text"></div>
             <div class="output-actions" id="cp-out-actions" style="display:none;">
               <button class="output-btn primary" id="cp-download-btn" onclick="downloadOutput('cp')">Download .docx</button>
@@ -669,7 +586,7 @@
     </div>
   </div>
 
-  <!-- ── MIGRATE DOCUMENT ──────────────────────────────────── -->
+  <!-- ── MIGRATE DOCUMENT ──────────────────────────────────────────────────── -->
   <div class="view" id="view-migrate">
     <div class="content">
       <div class="build-view">
@@ -689,12 +606,7 @@
               <line x1="110" y1="20" x2="110" y2="200" stroke="rgba(63,214,140,0.07)" stroke-width="1"/>
               <line x1="20" y1="110" x2="200" y2="110" stroke="rgba(63,214,140,0.07)" stroke-width="1"/>
               <g class="radar-sweep">
-                <defs>
-                  <radialGradient id="sweepGrad" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stop-color="#3fd68c" stop-opacity="0.5"/>
-                    <stop offset="100%" stop-color="#3fd68c" stop-opacity="0"/>
-                  </radialGradient>
-                </defs>
+                <defs><radialGradient id="sweepGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#3fd68c" stop-opacity="0.5"/><stop offset="100%" stop-color="#3fd68c" stop-opacity="0"/></radialGradient></defs>
                 <path d="M110 110 L110 22 A88 88 0 0 1 196 155 Z" fill="url(#sweepGrad)" opacity="0.6"/>
                 <line x1="110" y1="110" x2="110" y2="22" stroke="#3fd68c" stroke-width="1.5" opacity="0.9"/>
               </g>
@@ -713,15 +625,11 @@
           <div class="scan-result-header">
             <div class="scan-result-title">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#3fd68c" stroke-width="1.2"/><path d="M8 8 L8 3" stroke="#3fd68c" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="8" r="1.5" fill="#3fd68c"/></svg>
-              Bird Eye Analysis
-              <span class="scan-engine-badge">BIRD EYE</span>
+              Bird Eye Analysis <span class="scan-engine-badge">BIRD EYE</span>
             </div>
             <div class="scan-score-wrap">
               <div class="scan-score-num" id="scan-score-num">—</div>
-              <div>
-                <div class="scan-score-label" id="scan-score-label">—</div>
-                <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">quality</div>
-              </div>
+              <div><div class="scan-score-label" id="scan-score-label">—</div><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">quality</div></div>
             </div>
           </div>
           <div class="scan-body">
@@ -784,8 +692,14 @@
 
         <div id="mg-output" style="display:none;">
           <div class="output-card">
-            <div class="output-header"><div class="output-title" id="mg-out-title">Processing...</div><div class="output-status generating" id="mg-out-status">Processing</div></div>
-            <div class="progress-wrap" id="mg-progress"><div class="progress-label" id="mg-progress-label">Extracting content...</div><div class="progress-bar"><div class="progress-fill" id="mg-progress-fill" style="width:0%"></div></div></div>
+            <div class="output-header">
+              <div class="output-title" id="mg-out-title">Processing...</div>
+              <div class="output-status generating" id="mg-out-status">Processing</div>
+            </div>
+            <div class="progress-wrap" id="mg-progress">
+              <div class="progress-label" id="mg-progress-label">Extracting content...</div>
+              <div class="progress-bar"><div class="progress-fill" id="mg-progress-fill" style="width:0%"></div></div>
+            </div>
             <div class="output-text" id="mg-out-text"></div>
             <div class="output-actions" id="mg-out-actions" style="display:none;">
               <button class="output-btn primary" id="mg-download-btn" onclick="downloadOutput('mg')">Download .docx</button>
@@ -798,13 +712,13 @@
     </div>
   </div>
 
-  <!-- ── BIRD TALK ──────────────────────────────────────────── -->
+  <!-- ── BIRD TALK ─────────────────────────────────────────────────────────── -->
   <div class="view" id="view-birdtalk">
     <div class="content">
       <div class="bt-view">
         <div class="build-header">
           <div class="build-title">Bird Talk 🐔</div>
-          <div class="build-sub">Ask Midnight anything about your compliance program. Get guidance on gaps, framework requirements, and what to build next.</div>
+          <div class="build-sub">Ask Midnight anything about your compliance program.</div>
         </div>
         <div class="bt-chat-container">
           <div class="bt-chat-header">
@@ -823,32 +737,32 @@
     </div>
   </div>
 
-  <!-- ── GAP ANALYSIS ───────────────────────────────────────── -->
+  <!-- ── GAP ANALYSIS ──────────────────────────────────────────────────────── -->
   <div class="view" id="view-gaps">
     <div class="content">
       <div class="build-header"><div class="build-title">Gap Analysis</div><div class="build-sub">Framework coverage and identified gaps across your compliance program.</div></div>
       <div class="main-grid">
         <div class="panel">
-          <div class="panel-header"><div class="panel-title">All Gaps</div><div style="display:flex;align-items:center;gap:10px;"><span class="be-powered-tag">Bird Eye</span><div class="panel-action">Export →</div></div></div>
-          <div data-gap-analysis="true">
-            <div class="gap-item"><div class="gap-top"><span class="gap-control">No live gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a policy analysis or migration to populate this view.</div><div class="gap-meta">Live dashboard connected</div></div>
+          <div class="panel-header"><div class="panel-title">All Gaps</div><div style="display:flex;align-items:center;gap:10px;"><span class="be-powered-tag">Bird Eye</span></div></div>
+          <div id="gaps-list">
+            <div class="gap-item"><div class="gap-top"><span class="gap-control">No gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a policy analysis or migration to populate this view.</div><div class="gap-meta">Live dashboard connected</div></div>
           </div>
         </div>
         <div class="panel">
           <div class="panel-header"><div class="panel-title">Coverage</div></div>
-          <div class="fw-section">
-            <div style="font-size:12px;color:var(--text2);">Coverage metrics will appear here when live framework coverage data is available.</div>
+          <div class="fw-section" id="gaps-coverage">
+            <div style="font-size:12px;color:var(--text2);">Coverage metrics will appear after your first policy run.</div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── GRC SUMMARY ────────────────────────────────────────── -->
+  <!-- ── GRC SUMMARY ────────────────────────────────────────────────────────── -->
   <div class="view" id="view-grc">
     <div class="content">
       <div class="build-view">
-        <div class="build-header"><div class="build-title">GRC Summary</div><div class="build-sub">Generate a full GRC summary document for your program — control mapping, gap analysis, and remediation language.</div></div>
+        <div class="build-header"><div class="build-title">GRC Summary</div><div class="build-sub">Generate a full GRC summary document — control mapping, gap analysis, and remediation language.</div></div>
         <div class="form-card">
           <div class="form-section">
             <div class="form-section-title">Summary Scope</div>
@@ -857,7 +771,7 @@
               <div class="form-group"><label class="form-label">Industry</label><select class="form-select" id="grc-industry"><option>Healthcare</option><option>Financial Services</option><option>Technology / SaaS</option><option>Legal</option><option>Insurance</option><option>Other</option></select></div>
             </div>
             <div class="form-section-title" style="margin-top:8px;">Frameworks to Include</div>
-            <div class="fw-checkboxes">
+            <div class="fw-checkboxes" id="grc-frameworks">
               <label class="fw-check selected"><input type="checkbox" value="HIPAA" checked>HIPAA</label>
               <label class="fw-check selected"><input type="checkbox" value="HITRUST" checked>HiTrust Domains</label>
               <label class="fw-check selected"><input type="checkbox" value="PCI DSS" checked>PCI DSS</label>
@@ -868,11 +782,28 @@
           </div>
           <button class="run-btn" id="grc-submit" style="width:100%;padding:12px;font-size:13px;border-radius:8px;" onclick="generateGrcSummary()">Generate GRC Summary →</button>
         </div>
+        <div id="grc-output" style="display:none;">
+          <div class="output-card">
+            <div class="output-header">
+              <div class="output-title" id="grc-out-title">Generating GRC Summary...</div>
+              <div class="output-status generating" id="grc-out-status">Generating</div>
+            </div>
+            <div class="progress-wrap" id="grc-progress">
+              <div class="progress-label" id="grc-progress-label">Building control mappings...</div>
+              <div class="progress-bar"><div class="progress-fill" id="grc-progress-fill" style="width:0%"></div></div>
+            </div>
+            <div class="output-text" id="grc-out-text"></div>
+            <div class="output-actions" id="grc-out-actions" style="display:none;">
+              <button class="output-btn primary" id="grc-download-btn" onclick="downloadOutput('grc')">Download PDF</button>
+              <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ── LIBRARY ────────────────────────────────────────────── -->
+  <!-- ── LIBRARY ────────────────────────────────────────────────────────────── -->
   <div class="view" id="view-library">
     <div class="content">
       <div class="panel">
@@ -884,10 +815,10 @@
             <button class="run-btn" style="padding:6px 12px;font-size:11px;background:var(--bg4);color:var(--text2);border:1px solid var(--border2);" onclick="showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document')">↑ Migrate</button>
           </div>
         </div>
-        <div class="tabs"><div class="tab active" onclick="setTab(this)">All</div><div class="tab" onclick="setTab(this)">In Progress</div><div class="tab" onclick="setTab(this)">Needs Review</div><div class="tab" onclick="setTab(this)">Ready</div></div>
+        <div class="tabs"><div class="tab active" onclick="setTab(this)">All</div><div class="tab" onclick="setTab(this)">In Progress</div><div class="tab" onclick="setTab(this)">Ready</div></div>
         <div class="table-header"><span>Policy</span><span>Status</span><span>Owner</span><span style="text-align:right">Actions</span></div>
-        <div data-dynamic-container="true">
-          <div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span style="color:var(--text2);font-size:13px;">No generated outputs yet</span></div><div><span class="status-badge draft">Empty</span></div><div class="owner-cell">Personal Workspace</div><div class="actions-cell"></div></div>
+        <div id="library-doc-list">
+          <div class="table-row"><div class="doc-name-cell" style="color:var(--text3);font-size:12px;">No generated outputs yet — run Migrate or Create to get started</div><div></div><div></div><div></div></div>
         </div>
       </div>
     </div>
@@ -899,34 +830,49 @@
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg">Action triggered</span></div>
 
 <script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CORE STATE
+// ─────────────────────────────────────────────────────────────────────────────
 const API = window.location.origin;
 let authReady = null;
-const outputDownloads = {
-  cp: { url: null, filename: null, preview: '' },
-  mg: { url: null, filename: null, preview: '' },
-};
 
-// ── Navigation ────────────────────────────────────────────────────────
+// Per-key download state: { url, filename, preview }
+const outputDownloads = { cp: null, mg: null, grc: null };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────────────────────────────────────
 function showView(viewId, navEl, title) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + viewId).classList.add('active');
-  if(navEl) navEl.classList.add('active');
+  if (navEl) navEl.classList.add('active');
   document.getElementById('page-title').textContent = title;
-  const btnMap = { create:'Generate Policy', migrate:'Migrate Document', birdtalk:null, gaps:null, grc:'Generate Summary', library:null, overview:'+ New Analysis' };
+
+  const btnMap = {
+    create: 'Generate Policy',
+    migrate: 'Migrate Document',
+    birdtalk: null,
+    gaps: null,
+    grc: 'Generate Summary',
+    library: null,
+    overview: 'Open Tool',
+  };
   const btn = document.getElementById('topbar-btn');
-  if(btnMap[viewId] === null) { btn.style.display='none'; } else { btn.style.display='block'; btn.textContent = btnMap[viewId] || '+ New Analysis'; }
-  if(viewId === 'birdtalk' && !window.btStarted) { window.btStarted = true; btGreet(); }
-  window.scrollTo({top:0,behavior:'instant'});
+  const label = btnMap[viewId];
+  if (label === null) { btn.style.display = 'none'; }
+  else { btn.style.display = 'block'; btn.textContent = label || 'Open Tool'; }
+
+  if (viewId === 'birdtalk' && !window.btStarted) { window.btStarted = true; btGreet(); }
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function handleTopbarBtn() {
   const title = document.getElementById('page-title').textContent;
-  if(title === 'Overview') showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document');
-  else if(title === 'Create Policy') createPolicy();
-  else if(title === 'Migrate Document') migrateDocument();
-  else if(title === 'Generate Summary') showToast('Generating GRC Summary...');
-  else showView('create', document.getElementById('nav-create'), 'Create Policy');
+  if (title === 'Overview')         showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document');
+  else if (title === 'Create Policy')   createPolicy();
+  else if (title === 'Migrate Document') migrateDocument();
+  else if (title === 'Generate Summary') generateGrcSummary();
 }
 
 function setTab(el) {
@@ -934,24 +880,33 @@ function setTab(el) {
   el.classList.add('active');
 }
 
-function showToast(msg) {
+// ─────────────────────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   document.getElementById('toast-msg').textContent = msg;
+  t.classList.toggle('error', isError);
   t.classList.add('show');
   clearTimeout(window._tt);
-  window._tt = setTimeout(() => t.classList.remove('show'), 2400);
+  window._tt = setTimeout(() => t.classList.remove('show'), isError ? 4000 : 2400);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────────────────────
 async function ensureAuthenticated(forcePrompt = false) {
   if (authReady && !forcePrompt) return authReady;
 
   authReady = (async () => {
     if (!forcePrompt) {
-      const session = await fetch(API + '/auth/session', { credentials: 'include' });
-      if (session.ok) {
-        const data = await session.json();
-        if (data.authenticated) return true;
-      }
+      try {
+        const session = await fetch(API + '/auth/session', { credentials: 'include' });
+        if (session.ok) {
+          const data = await session.json();
+          if (data.authenticated) return true;
+        }
+      } catch (_) { /* no auth endpoint — proceed unauthenticated */ }
     }
 
     const password = window.prompt('Enter your Midnight access password');
@@ -966,9 +921,8 @@ async function ensureAuthenticated(forcePrompt = false) {
 
     if (!login.ok) {
       authReady = null;
-      throw new Error('Authentication failed');
+      throw new Error('Authentication failed — check your password');
     }
-
     return true;
   })();
 
@@ -976,290 +930,71 @@ async function ensureAuthenticated(forcePrompt = false) {
 }
 
 async function apiRequest(path, options = {}) {
-  await ensureAuthenticated();
-
-  let response = await fetch(API + path, {
-    credentials: 'include',
-    ...options,
-  });
+  // Try without auth first; if 401, prompt and retry once
+  let response = await fetch(API + path, { credentials: 'include', ...options });
 
   if (response.status === 401) {
     authReady = null;
     await ensureAuthenticated(true);
-    response = await fetch(API + path, {
-      credentials: 'include',
-      ...options,
-    });
+    response = await fetch(API + path, { credentials: 'include', ...options });
   }
 
   return response;
 }
 
-function getFilenameFromDisposition(headerValue, fallbackName) {
-  const match = /filename="?([^"]+)"?/i.exec(headerValue || '');
-  return match ? match[1] : fallbackName;
+// ─────────────────────────────────────────────────────────────────────────────
+// DOWNLOAD HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function getFilenameFromHeader(header, fallback) {
+  const match = /filename="?([^";\n]+)"?/i.exec(header || '');
+  return (match && match[1].trim()) || fallback;
 }
 
-function resetOutputDownload(key) {
-  const existing = outputDownloads[key];
-  if (existing && existing.url) {
-    URL.revokeObjectURL(existing.url);
-  }
-  outputDownloads[key] = { url: null, filename: null, preview: '' };
+function storeDownload(key, blob, contentDisposition, fallback, preview) {
+  if (outputDownloads[key]?.url) URL.revokeObjectURL(outputDownloads[key].url);
+  const url = URL.createObjectURL(blob);
+  outputDownloads[key] = {
+    url,
+    filename: getFilenameFromHeader(contentDisposition, fallback),
+    preview:  preview || '',
+  };
 }
 
 function downloadOutput(key) {
-  const download = outputDownloads[key];
-  if (!download?.url || !download?.filename) {
-    showToast('Download not ready yet');
-    return;
-  }
-
-  const link = document.createElement('a');
-  link.href = download.url;
-  link.download = download.filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  const dl = outputDownloads[key];
+  if (!dl?.url) { showToast('Download not ready yet', true); return; }
+  const a = document.createElement('a');
+  a.href = dl.url;
+  a.download = dl.filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
-function parseDownloadFilename(contentDisposition, fallbackName) {
-  const match = /filename="?([^"]+)"?/i.exec(contentDisposition || '');
-  if (match && match[1]) return match[1];
-  return fallbackName || 'midnight-document.docx';
-}
-
-async function downloadDashboardArtifact(path, fallbackName) {
+// Dashboard artifact download (from persisted store)
+async function downloadDashboardArtifact(path, fallback) {
   try {
-    const response = await apiRequest(path);
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
+    const res = await apiRequest(path);
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
       throw new Error(payload.detail || 'Download failed');
     }
-
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = parseDownloadFilename(
-      response.headers.get('Content-Disposition'),
-      fallbackName,
-    );
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch (error) {
-    showToast(error.message || 'Download failed');
+    const blob = URL.createObjectURL(await res.blob());
+    const a = document.createElement('a');
+    a.href = blob;
+    a.download = getFilenameFromHeader(res.headers.get('Content-Disposition'), fallback);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blob), 1000);
+  } catch (err) {
+    showToast(err.message || 'Download failed', true);
   }
 }
 
-function escapeHtml(value) {
-  return String(value || '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function formatRelativeTime(value) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value || 'just now';
-  const seconds = Math.max(1, Math.floor((Date.now() - parsed.getTime()) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hr ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
-}
-
-function renderDocumentRows(target, items) {
-  if (!target) return;
-  if (!items.length) {
-    target.innerHTML = `<div class="table-row"><div class="doc-name-cell"><div class="doc-checkbox"><div style="width:6px;height:6px;border-radius:50%;background:var(--text3);margin:auto;"></div></div><span style="color:var(--text2);font-size:13px;">No generated outputs yet</span></div><div><span class="status-badge draft">Empty</span></div><div class="owner-cell">Personal Workspace</div><div class="actions-cell"></div></div>`;
-    return;
-  }
-
-  target.innerHTML = items.map(item => {
-    const typeClass = String(item.doc_type || 'policy').toLowerCase().replace(/\s+/g, '');
-    const statusClass = String(item.status || 'ready').toLowerCase();
-    return `<div class="table-row">
-      <div class="doc-name-cell">
-        <div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-        <span class="doc-type-pill ${escapeHtml(typeClass)}">${escapeHtml(item.doc_type)}</span>
-        <span style="color:var(--text);font-size:13px;" title="${escapeHtml(item.preview || item.name)}">${escapeHtml(item.name)}</span>
-      </div>
-      <div><span class="status-badge ${escapeHtml(statusClass)}">${escapeHtml(item.status)}</span></div>
-      <div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escapeHtml(item.owner_initials)}</div>${escapeHtml(item.owner_name)}</div>
-      <div class="actions-cell"><div class="action-btn" data-path="${escapeHtml(item.download_path)}" data-filename="${escapeHtml(item.filename || item.name)}" onclick="downloadDashboardArtifact(this.dataset.path, this.dataset.filename)">↓</div></div>
-    </div>`;
-  }).join('');
-}
-
-function renderActivityRows(target, items) {
-  if (!target) return;
-  if (!items.length) {
-    target.innerHTML = `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">now</div><div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">ME</div>You</div><div style="color:var(--text2);">Waiting</div><div style="color:var(--text2);">No activity yet</div><div class="result-cell warn">● Idle</div></div>`;
-    return;
-  }
-
-  target.innerHTML = items.map(item => {
-    const ok = String(item.result || '').toLowerCase().includes('audit') || String(item.result || '').toLowerCase().includes('complete');
-    return `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;">
-      <div class="time-cell">${escapeHtml(formatRelativeTime(item.timestamp))}</div>
-      <div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escapeHtml(item.user_initials)}</div>${escapeHtml(item.user_name)}</div>
-      <div style="color:var(--text2);">${escapeHtml(item.action)}</div>
-      <div style="color:var(--text2);">${escapeHtml(item.target)}</div>
-      <div class="result-cell ${ok ? 'ok' : 'warn'}">● ${escapeHtml(item.result)}</div>
-    </div>`;
-  }).join('');
-}
-
-function getOverviewGapPanel() {
-  return document.querySelector('#view-overview .main-grid .panel:last-child');
-}
-
-function getGapAnalysisPanel() {
-  return document.querySelector('#view-gaps .main-grid .panel:first-child');
-}
-
-function replaceOverviewGapItems(html) {
-  const panel = getOverviewGapPanel();
-  if (!panel) return;
-  const coverage = panel.querySelector('.fw-section');
-  if (!coverage) return;
-
-  let cursor = coverage.nextElementSibling;
-  while (cursor && cursor.classList && cursor.classList.contains('gap-item')) {
-    const next = cursor.nextElementSibling;
-    cursor.remove();
-    cursor = next;
-  }
-
-  let container = panel.querySelector('[data-overview-gaps="true"]');
-  if (!container) {
-    container = document.createElement('div');
-    container.dataset.overviewGaps = 'true';
-    coverage.insertAdjacentElement('afterend', container);
-  }
-  container.innerHTML = html;
-}
-
-function replaceGapAnalysisItems(html) {
-  const panel = getGapAnalysisPanel();
-  if (!panel) return;
-  const header = panel.querySelector('.panel-header');
-  if (!header) return;
-
-  let cursor = header.nextElementSibling;
-  while (cursor && cursor.classList && cursor.classList.contains('gap-item')) {
-    const next = cursor.nextElementSibling;
-    cursor.remove();
-    cursor = next;
-  }
-
-  let container = panel.querySelector('[data-gap-analysis="true"]');
-  if (!container) {
-    container = document.createElement('div');
-    container.dataset.gapAnalysis = 'true';
-    header.insertAdjacentElement('afterend', container);
-  }
-  container.innerHTML = html;
-}
-
-function renderCoverage(target, frameworks) {
-  if (!target) return;
-  if (!frameworks || !frameworks.length) {
-    target.innerHTML = `<div style="font-size:12px;color:var(--text2);">Coverage metrics will appear here when live framework coverage data is available.</div>`;
-    return;
-  }
-
-  target.innerHTML = frameworks.map(item => {
-    const pct = Math.max(0, Math.min(100, Number(item.coverage_pct || 0)));
-    const color = pct >= 80 ? '#3fd68c' : pct >= 50 ? '#f5a623' : '#ff5c5c';
-    return `<div class="fw-row"><div class="fw-name">${escapeHtml(item.framework || 'Framework')}</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:${pct}%;background:${color};"></div></div><div class="fw-pct" style="color:${color};">${pct}%</div></div>`;
-  }).join('');
-}
-
-function renderGapPanels(items) {
-  if (!items.length) {
-    const emptyHtml = `<div class="gap-item"><div class="gap-top"><span class="gap-control">No live gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a policy analysis or migration to populate framework gaps.</div><div class="gap-meta">Live dashboard connected</div></div>`;
-    replaceOverviewGapItems(emptyHtml);
-    replaceGapAnalysisItems(emptyHtml);
-    return;
-  }
-
-  const html = items.map(item => {
-    const severity = String(item.severity || 'medium').toLowerCase();
-    const badgeClass = severity === 'medium' ? 'critical-badge med' : 'critical-badge';
-    const frameworks = Array.isArray(item.affected_frameworks) && item.affected_frameworks.length
-      ? item.affected_frameworks.join(' · ')
-      : item.framework || 'Framework';
-    return `<div class="gap-item"><div class="gap-top"><span class="gap-control">${escapeHtml(item.control_id || item.id || 'Gap')}</span><span class="${badgeClass}">${escapeHtml(severity)}</span></div><div class="gap-desc">${escapeHtml(item.description || 'Gap detected')}</div><div class="gap-meta">${escapeHtml(frameworks)} · ${escapeHtml(item.suggested_action || 'Review')}</div></div>`;
-  }).join('');
-
-  replaceOverviewGapItems(html);
-  replaceGapAnalysisItems(html);
-}
-
-function primeDashboardUi() {
-  const overviewHeader = document.querySelector('#view-overview .main-grid .panel .table-header');
-  const libraryHeader = document.querySelector('#view-library .panel .table-header');
-  const activityHeader = document.querySelector('#view-overview .bottom-grid .panel .table-header');
-  renderDocumentRows(ensureRowContainerAfter(overviewHeader, 'table-row'), []);
-  renderDocumentRows(ensureRowContainerAfter(libraryHeader, 'table-row'), []);
-  renderActivityRows(ensureRowContainerAfter(activityHeader, 'activity-row'), []);
-  renderGapPanels([]);
-  renderCoverage(document.querySelector('#view-overview .fw-section'), []);
-  renderCoverage(document.querySelector('#view-gaps .fw-section'), []);
-}
-
-function ensureRowContainerAfter(headerEl, rowClass) {
-  if (!headerEl) return null;
-  let cursor = headerEl.nextElementSibling;
-
-  if (cursor && cursor.dataset && cursor.dataset.dynamicContainer === 'true') {
-    return cursor;
-  }
-
-  const container = document.createElement('div');
-  container.dataset.dynamicContainer = 'true';
-
-  while (cursor && cursor.classList && cursor.classList.contains(rowClass)) {
-    const next = cursor.nextElementSibling;
-    container.appendChild(cursor);
-    cursor = next;
-  }
-
-  headerEl.parentNode.insertBefore(container, cursor || null);
-  return container;
-}
-
-async function downloadDocxResponse(response, fallbackName, outputKey) {
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || 'Request failed');
-  }
-
-  resetOutputDownload(outputKey);
-
-  const blob = await response.blob();
-  const filename = getFilenameFromDisposition(
-    response.headers.get('Content-Disposition'),
-    fallbackName,
-  );
-  const preview = (response.headers.get('X-Midnight-Preview') || '').trim();
-  const url = URL.createObjectURL(blob);
-
-  outputDownloads[outputKey] = { url, filename, preview };
-  downloadOutput(outputKey);
-  return outputDownloads[outputKey];
-}
-
-// ── Framework checkboxes ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// FRAMEWORK CHECKBOXES
+// ─────────────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.fw-check').forEach(label => {
   label.addEventListener('click', () => {
     label.classList.toggle('selected');
@@ -1268,167 +1003,212 @@ document.querySelectorAll('.fw-check').forEach(label => {
 });
 
 function getSelectedFrameworks(containerId) {
-  return Array.from(document.querySelectorAll(`#${containerId} .fw-check.selected input`)).map(i => i.value);
+  return Array.from(
+    document.querySelectorAll(`#${containerId} .fw-check.selected input`)
+  ).map(i => i.value);
 }
 
-// ── File handling ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// FILE HANDLING
+// ─────────────────────────────────────────────────────────────────────────────
 let selectedFile = null;
 
-function handleFileSelect(input) {
-  if(input.files[0]) setFile(input.files[0]);
-}
-
+function handleFileSelect(input) { if (input.files[0]) setFile(input.files[0]); }
 function handleDrop(e) {
   e.preventDefault();
   document.getElementById('mg-drop').classList.remove('drag');
-  if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
 }
-
 function setFile(file) {
+  const allowed = ['.docx', '.txt', '.md'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(ext)) { showToast('Only .docx, .txt, and .md files are supported', true); return; }
   selectedFile = file;
   document.getElementById('mg-file-name').textContent = file.name;
   document.getElementById('mg-file-selected').style.display = 'flex';
   document.getElementById('mg-drop').style.display = 'none';
 }
-
 function clearFile() {
   selectedFile = null;
+  _previewedPolicyData = null;
+  _migrateState = 'IDLE';
   document.getElementById('mg-file-selected').style.display = 'none';
   document.getElementById('mg-drop').style.display = 'block';
   document.getElementById('mg-file').value = '';
   document.getElementById('scan-result').classList.remove('active');
-  window._scanPassed = false;
-  resetOutputDownload('mg');
+  document.getElementById('mg-output').style.display = 'none';
+  const submitBtn = document.getElementById('mg-submit');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Migrate Document →'; }
+  if (outputDownloads.mg?.url) URL.revokeObjectURL(outputDownloads.mg.url);
+  outputDownloads.mg = null;
 }
 
-// ── Progress animation ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PROGRESS ANIMATION
+// ─────────────────────────────────────────────────────────────────────────────
 function animateProgress(fillId, labelId, steps, onDone) {
   let i = 0;
   const fill  = document.getElementById(fillId);
   const label = document.getElementById(labelId);
   function next() {
-    if(i >= steps.length) { onDone(); return; }
-    label.textContent  = steps[i].label;
-    fill.style.width   = steps[i].pct + '%';
-    i++;
-    setTimeout(next, steps[i-1].delay || 800);
+    if (i >= steps.length) { onDone(); return; }
+    const step = steps[i++];
+    label.textContent = step.label;
+    fill.style.width  = step.pct + '%';
+    setTimeout(next, step.delay || 800);
   }
   next();
 }
 
-// ── Create Policy ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE POLICY
+// ─────────────────────────────────────────────────────────────────────────────
 async function createPolicy() {
   const name = document.getElementById('cp-name').value.trim();
-  if(!name) { showToast('Please enter a policy name'); return; }
+  if (!name) { showToast('Please enter a policy name', true); return; }
+
   const btn = document.getElementById('cp-submit');
-  resetOutputDownload('cp');
   btn.disabled = true; btn.textContent = 'Generating...';
-  const out = document.getElementById('cp-output');
-  out.style.display = 'block';
-  document.getElementById('cp-out-title').textContent = name;
+
+  const outEl = document.getElementById('cp-output');
+  outEl.style.display = 'block';
+  document.getElementById('cp-out-title').textContent  = name;
   document.getElementById('cp-out-status').textContent = 'Generating';
-  document.getElementById('cp-out-status').className = 'output-status generating';
+  document.getElementById('cp-out-status').className   = 'output-status generating';
   document.getElementById('cp-progress').style.display = 'block';
-  document.getElementById('cp-out-text').textContent = '';
+  document.getElementById('cp-out-text').textContent   = '';
   document.getElementById('cp-out-actions').style.display = 'none';
-  out.scrollIntoView({behavior:'smooth', block:'start'});
+  outEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  if (outputDownloads.cp?.url) URL.revokeObjectURL(outputDownloads.cp.url);
+  outputDownloads.cp = null;
 
   const steps = [
-    {label:'Analyzing requirements...', pct:20, delay:600},
-    {label:'Mapping to frameworks...', pct:45, delay:800},
-    {label:'Generating policy language...', pct:70, delay:1000},
-    {label:'Applying structure and formatting...', pct:90, delay:700},
-    {label:'Finalizing document...', pct:98, delay:400},
+    { label: 'Analyzing requirements...', pct: 20, delay: 600 },
+    { label: 'Mapping to frameworks...',   pct: 45, delay: 800 },
+    { label: 'Generating policy language...', pct: 70, delay: 1000 },
+    { label: 'Applying structure...', pct: 90, delay: 700 },
+    { label: 'Finalizing document...', pct: 98, delay: 400 },
   ];
 
   animateProgress('cp-progress-fill', 'cp-progress-label', steps, async () => {
     try {
-      const frameworks = getSelectedFrameworks('cp-frameworks');
       const res = await apiRequest('/pipeline/create', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           policy_name: name,
-          doc_type: document.getElementById('cp-type').value,
-          industry: document.getElementById('cp-industry').value,
-          frameworks: frameworks,
-          owner: document.getElementById('cp-owner').value || 'Compliance Team',
-          description: document.getElementById('cp-desc').value
-        })
+          doc_type:    document.getElementById('cp-type').value,
+          industry:    document.getElementById('cp-industry').value,
+          frameworks:  getSelectedFrameworks('cp-frameworks'),
+          owner:       document.getElementById('cp-owner').value || 'Compliance Team',
+          description: document.getElementById('cp-desc').value,
+        }),
       });
-      const download = await downloadDocxResponse(res, `${name.replace(/\s+/g, '_')}_v1.0.docx`, 'cp');
-      document.getElementById('cp-progress').style.display = 'none';
-      document.getElementById('cp-out-text').textContent = download.preview || 'Policy generated successfully. Use the download button to review the full document.';
-      document.getElementById('cp-out-status').textContent = 'Complete';
-      document.getElementById('cp-out-status').className = 'output-status done';
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+
+      const blob    = await res.blob();
+      const preview = (res.headers.get('X-Midnight-Preview') || '').trim();
+      storeDownload('cp', blob, res.headers.get('Content-Disposition'),
+        `${name.replace(/\s+/g, '_')}_v1.0.docx`, preview);
+
+      document.getElementById('cp-progress').style.display  = 'none';
+      document.getElementById('cp-out-text').textContent    = preview || 'Policy generated. Use the download button to review the full document.';
+      document.getElementById('cp-out-status').textContent  = 'Complete';
+      document.getElementById('cp-out-status').className    = 'output-status done';
       document.getElementById('cp-out-actions').style.display = 'flex';
       await refreshDashboardData();
       showToast('Policy generated — ' + name);
-    } catch(e) {
-      document.getElementById('cp-progress').style.display = 'none';
-      document.getElementById('cp-out-text').textContent = 'Policy created and queued for rendering. Download will be available shortly.';
-      document.getElementById('cp-out-status').textContent = 'Complete';
-      document.getElementById('cp-out-status').className = 'output-status done';
-      document.getElementById('cp-out-actions').style.display = 'flex';
-      showToast('Policy generated — ' + name);
+
+    } catch (e) {
+      document.getElementById('cp-progress').style.display  = 'none';
+      document.getElementById('cp-out-status').textContent  = 'Error';
+      document.getElementById('cp-out-status').className    = 'output-status error';
+      document.getElementById('cp-out-text').textContent    = e.message || 'Policy generation failed.';
+      showToast(e.message || 'Policy generation failed', true);
     }
+
     btn.disabled = false; btn.textContent = 'Generate Policy →';
   });
 }
 
-// ── Bird Eye + Migrate ────────────────────────────────────────────────
-async function generateGrcSummary() {
-  const organizationName = document.getElementById('grc-org').value.trim();
-  if (!organizationName) { showToast('Please enter an organization name'); return; }
+// ─────────────────────────────────────────────────────────────────────────────
+// BIRD EYE PREFLIGHT + MIGRATE
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// MIGRATE — two-step: preview → review → generate
+// State machine:
+//   IDLE → SCANNING (Bird Eye preflight) → PREVIEWING (policy JSON in hand)
+//         → GENERATING (render docx) → DONE
+// ─────────────────────────────────────────────────────────────────────────────
+let _migrateState = 'IDLE';  // IDLE | SCANNING | PREVIEWING | GENERATING
+let _previewedPolicyData = null;  // holds JSON from /preview, passed to /generate
 
-  const btn = document.getElementById('grc-submit');
-  btn.disabled = true;
-  btn.textContent = 'Generating...';
+function _mgSetState(state) {
+  _migrateState = state;
+  const submitBtn   = document.getElementById('mg-submit');
+  const generateBtn = document.getElementById('mg-generate-btn');
+  if (!submitBtn) return;
 
-  try {
-    const frameworks = getSelectedFrameworks('view-grc');
-    const response = await apiRequest('/pipeline/grc-summary', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        organization_name: organizationName,
-        industry: document.getElementById('grc-industry').value,
-        frameworks: frameworks,
-      })
-    });
-    await downloadDocxResponse(response, `${organizationName.replace(/\s+/g, '_')}_grc_summary.pdf`, 'grc');
-    await refreshDashboardData();
-    showToast('GRC Summary generated');
-  } catch(e) {
-    showToast(e.message || 'GRC Summary generation failed');
+  switch (state) {
+    case 'IDLE':
+      submitBtn.disabled   = false;
+      submitBtn.textContent = 'Migrate Document →';
+      if (generateBtn) { generateBtn.style.display = 'none'; }
+      break;
+    case 'SCANNING':
+      submitBtn.disabled   = true;
+      submitBtn.textContent = 'Scanning...';
+      break;
+    case 'PREVIEWING':
+      submitBtn.disabled   = false;
+      submitBtn.textContent = 'Re-scan Document';
+      if (generateBtn) { generateBtn.style.display = 'block'; }
+      break;
+    case 'GENERATING':
+      submitBtn.disabled   = true;
+      if (generateBtn) { generateBtn.disabled = true; generateBtn.textContent = 'Generating...'; }
+      break;
+    case 'DONE':
+      submitBtn.disabled   = false;
+      submitBtn.textContent = 'Migrate Another →';
+      if (generateBtn) { generateBtn.disabled = false; generateBtn.textContent = 'Re-generate'; }
+      break;
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Generate GRC Summary →';
 }
 
-let _scanPassed = false;
-
+// Entry point — clicking the main button
 async function migrateDocument() {
-  if (!selectedFile) { showToast('Please upload a document first'); return; }
-  if (_scanPassed) { _runMigration(); return; }
-  await runBirdEye();
+  if (!selectedFile) { showToast('Please upload a document first', true); return; }
+  // If we already have a preview, re-scanning means starting over
+  if (_migrateState === 'PREVIEWING' || _migrateState === 'DONE') {
+    _previewedPolicyData = null;
+    document.getElementById('scan-result').classList.remove('active');
+    document.getElementById('mg-preview-card')?.remove();
+  }
+  await _runBirdEyeThenPreview();
 }
 
-async function runBirdEye() {
+// Step 1a: Bird Eye preflight quality check
+async function _runBirdEyeThenPreview() {
   const overlay = document.getElementById('bird-eye-overlay');
   const status  = document.getElementById('bird-eye-status');
+  _mgSetState('SCANNING');
   overlay.classList.add('active');
 
-  const steps = [
+  const scanSteps = [
     'Analyzing document structure...',
     'Identifying sections by meaning...',
     'Mapping to compliance schema...',
     'Scoring completeness...',
   ];
-  let i = 0;
+  let si = 0;
   const ticker = setInterval(() => {
-    status.textContent = steps[Math.min(i++, steps.length - 1)];
+    status.textContent = scanSteps[Math.min(si++, scanSteps.length - 1)];
   }, 1400);
 
   try {
@@ -1437,25 +1217,195 @@ async function runBirdEye() {
     fd.append('doc_type',   document.getElementById('mg-template')?.value || 'policy');
     fd.append('industry',   document.getElementById('mg-industry')?.value || '');
 
-    const res  = await apiRequest('/api/smart-scan/preflight', {
-      method:  'POST',
-      body:    fd,
-    });
-    if (!res.ok) throw new Error('Bird Eye scan failed');
-    const data = await res.json();
-
+    const res  = await apiRequest('/api/smart-scan/preflight', { method: 'POST', body: fd });
     clearInterval(ticker);
     overlay.classList.remove('active');
-    renderScanResult(data);
 
-  } catch (err) {
+    if (!res.ok) throw new Error('preflight failed');
+    const scanData = await res.json();
+    renderScanResult(scanData);
+    // After showing the scan, automatically kick off the real extraction
+    await _runMigratePreview();
+
+  } catch (_err) {
     clearInterval(ticker);
     overlay.classList.remove('active');
-    showToast('Bird Eye scan unavailable — proceeding with migration');
-    _runMigration();
+    // Preflight unavailable — skip quality check, go straight to extraction
+    await _runMigratePreview();
   }
 }
 
+// Step 1b: Real extraction — calls /pipeline/migrate/preview, returns policy JSON
+async function _runMigratePreview() {
+  const out = document.getElementById('mg-output');
+  if (outputDownloads.mg?.url) URL.revokeObjectURL(outputDownloads.mg.url);
+  outputDownloads.mg = null;
+
+  out.style.display = 'block';
+  document.getElementById('mg-out-title').textContent    = selectedFile.name;
+  document.getElementById('mg-out-status').textContent   = 'Extracting';
+  document.getElementById('mg-out-status').className     = 'output-status generating';
+  document.getElementById('mg-progress').style.display   = 'block';
+  document.getElementById('mg-out-text').textContent     = '';
+  document.getElementById('mg-out-actions').style.display = 'none';
+  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const extractSteps = [
+    { label: 'Extracting content...',        pct: 20, delay: 600  },
+    { label: 'Reconstructing structure...',  pct: 45, delay: 900  },
+    { label: 'Mapping frameworks...',        pct: 70, delay: 1000 },
+    { label: 'Scoring completeness...',      pct: 90, delay: 600  },
+    { label: 'Building preview...',          pct: 97, delay: 400  },
+  ];
+
+  animateProgress('mg-progress-fill', 'mg-progress-label', extractSteps, async () => {
+    try {
+      const formData = new FormData();
+      formData.append('source_file',   selectedFile);
+      formData.append('template_name', document.getElementById('mg-template').value);
+      formData.append('industry',      document.getElementById('mg-industry').value);
+      formData.append('frameworks',    getSelectedFrameworks('mg-frameworks').join(','));
+
+      const res = await apiRequest('/pipeline/migrate/preview', { method: 'POST', body: formData });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      _previewedPolicyData = data.policy_data;
+
+      document.getElementById('mg-progress').style.display   = 'none';
+      document.getElementById('mg-out-status').textContent   = 'Preview Ready';
+      document.getElementById('mg-out-status').className     = 'output-status done';
+
+      // Render structured preview in the output text area
+      document.getElementById('mg-out-text').textContent = _buildPolicyPreviewText(data.policy_data);
+
+      // Show Generate button (injected below the output text)
+      _injectMigrateGenerateBtn();
+      _mgSetState('PREVIEWING');
+
+      showToast('Preview ready — review and generate when ready');
+
+    } catch (e) {
+      document.getElementById('mg-progress').style.display  = 'none';
+      document.getElementById('mg-out-status').textContent  = 'Error';
+      document.getElementById('mg-out-status').className    = 'output-status error';
+      document.getElementById('mg-out-text').textContent    = e.message || 'Extraction failed.';
+      showToast(e.message || 'Extraction failed', true);
+      _mgSetState('IDLE');
+    }
+  });
+}
+
+function _buildPolicyPreviewText(pd) {
+  if (!pd) return '';
+  const lines = [];
+  if (pd.policy_name)      lines.push(`POLICY: ${pd.policy_name}`);
+  if (pd.doc_type)         lines.push(`TYPE: ${pd.doc_type}`);
+  if (pd.version)          lines.push(`VERSION: ${pd.version}`);
+  if (pd.effective_date)   lines.push(`EFFECTIVE: ${pd.effective_date}`);
+  if (pd.owner)            lines.push(`OWNER: ${pd.owner}`);
+  lines.push('');
+  if (pd.purpose)          lines.push(`PURPOSE:\n${pd.purpose}`);
+  if (pd.scope)            lines.push(`\nSCOPE:\n${pd.scope}`);
+  if (pd.policy_statement) lines.push(`\nPOLICY STATEMENT:\n${pd.policy_statement}`);
+
+  const fm = pd.framework_map;
+  if (fm) {
+    lines.push('');
+    lines.push(`FRAMEWORK COVERAGE: ${fm.overall_coverage || '—'}`);
+    lines.push(`Controls mapped: ${fm.total_controls_mapped || 0}  ·  Gaps: ${fm.total_gaps || 0}`);
+    if (fm.audit_summary) lines.push(`\n${fm.audit_summary}`);
+    const gaps = fm.gaps || [];
+    if (gaps.length) {
+      lines.push(`\nGAPS (${gaps.length}):`);
+      gaps.slice(0, 5).forEach(g => {
+        lines.push(`  [${(g.risk_level || '').toUpperCase()}] ${g.framework} ${g.control_id} — ${g.gap_description}`);
+      });
+      if (gaps.length > 5) lines.push(`  … and ${gaps.length - 5} more`);
+    }
+  }
+
+  if (pd.quality_score !== undefined) lines.push(`\nQUALITY SCORE: ${pd.quality_score}/100`);
+  return lines.join('\n');
+}
+
+function _injectMigrateGenerateBtn() {
+  // Add the Generate .docx button below the output card if not already there
+  const actionsEl = document.getElementById('mg-out-actions');
+  if (!actionsEl) return;
+  actionsEl.style.display = 'flex';
+
+  // Rebuild action buttons for the preview state
+  actionsEl.innerHTML = `
+    <button class="output-btn primary" id="mg-generate-btn" onclick="generateMigratedDoc()">Generate .docx →</button>
+    <button class="output-btn" onclick="showView('grc', document.getElementById('nav-grc'), 'GRC Summary')">Open GRC Summary</button>
+    <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
+  `;
+}
+
+// Step 2: User clicks Generate — sends policy JSON to /pipeline/migrate/generate
+async function generateMigratedDoc() {
+  if (!_previewedPolicyData) { showToast('Run migration first', true); return; }
+
+  _mgSetState('GENERATING');
+  document.getElementById('mg-out-status').textContent  = 'Generating';
+  document.getElementById('mg-out-status').className    = 'output-status generating';
+  document.getElementById('mg-progress').style.display  = 'block';
+  document.getElementById('mg-progress-label').textContent = 'Rendering document...';
+  document.getElementById('mg-progress-fill').style.width  = '60%';
+
+  try {
+    const res = await apiRequest('/pipeline/migrate/generate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ policy_data: _previewedPolicyData }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    document.getElementById('mg-progress-fill').style.width = '95%';
+
+    const blob    = await res.blob();
+    const preview = (res.headers.get('X-Midnight-Preview') || '').trim();
+    const fallback = selectedFile.name.replace(/\.[^.]+$/, '') + '_migrated.docx';
+    storeDownload('mg', blob, res.headers.get('Content-Disposition'), fallback, preview);
+
+    document.getElementById('mg-progress').style.display   = 'none';
+    document.getElementById('mg-out-status').textContent   = 'Complete';
+    document.getElementById('mg-out-status').className     = 'output-status done';
+
+    // Swap Generate button to Download
+    const actionsEl = document.getElementById('mg-out-actions');
+    if (actionsEl) {
+      actionsEl.innerHTML = `
+        <button class="output-btn primary" onclick="downloadOutput('mg')">Download .docx</button>
+        <button class="output-btn" onclick="showView('grc', document.getElementById('nav-grc'), 'GRC Summary')">Open GRC Summary</button>
+        <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
+      `;
+    }
+
+    _mgSetState('DONE');
+    await refreshDashboardData();
+    showToast('Document generated — ' + selectedFile.name);
+
+  } catch (e) {
+    document.getElementById('mg-progress').style.display  = 'none';
+    document.getElementById('mg-out-status').textContent  = 'Error';
+    document.getElementById('mg-out-status').className    = 'output-status error';
+    document.getElementById('mg-out-text').textContent    = e.message || 'Generation failed.';
+    showToast(e.message || 'Generation failed', true);
+    _mgSetState('PREVIEWING');
+  }
+}
+
+// Bird Eye scan result card renderer (unchanged — still used for quality display)
 function renderScanResult(data) {
   const card = document.getElementById('scan-result');
   card.classList.add('active');
@@ -1468,9 +1418,8 @@ function renderScanResult(data) {
   document.getElementById('scan-score-label').textContent = data.quality_label || '—';
   document.getElementById('scan-score-label').className   = 'scan-score-label ' + label;
 
-  const grid     = document.getElementById('scan-sections-grid');
-  const statuses = data.section_statuses || {};
-  const labels   = {
+  const grid = document.getElementById('scan-sections-grid');
+  const sectionLabels = {
     purpose:                'Purpose',
     scope:                  'Scope',
     policy_statement:       'Policy Statement',
@@ -1479,11 +1428,12 @@ function renderScanResult(data) {
     revision_history:       'Revision History',
   };
   grid.innerHTML = '';
-  for (const [key, nice] of Object.entries(labels)) {
+  const statuses = data.section_statuses || {};
+  for (const [key, nice] of Object.entries(sectionLabels)) {
     const st  = statuses[key] || 'missing';
     const div = document.createElement('div');
-    div.className   = 'scan-section-item';
-    div.innerHTML   = `<div class="scan-section-dot ${st}"></div>${nice}`;
+    div.className = 'scan-section-item';
+    div.innerHTML = `<div class="scan-section-dot ${st}"></div>${nice}`;
     grid.appendChild(div);
   }
 
@@ -1493,9 +1443,9 @@ function renderScanResult(data) {
   if (gaps.length > 0) {
     gapsWrap.style.display = 'block';
     gapsList.innerHTML = gaps.map(g => `
-      <div class="scan-gap-item ${g.severity}">
-        <span class="scan-gap-name">${g.section}</span>
-        <span class="scan-gap-sev ${g.severity}">${g.severity}</span>
+      <div class="scan-gap-item ${g.severity === 'high' ? 'high' : ''}">
+        <span class="scan-gap-name">${escHtml(g.section)}</span>
+        <span class="scan-gap-sev ${g.severity}">${escHtml(g.severity)}</span>
       </div>`).join('');
   }
 
@@ -1506,74 +1456,88 @@ function renderScanResult(data) {
   }
 }
 
+// These are now no-ops — the scan card is informational only, not a gate
 function proceedWithMigration() {
-  _scanPassed = true;
   document.getElementById('scan-result').classList.remove('active');
-  _runMigration();
 }
-
 function dismissScan() {
   document.getElementById('scan-result').classList.remove('active');
 }
 
-async function _runMigration() {
-  const btn = document.getElementById('mg-submit');
-  const out = document.getElementById('mg-output');
-  resetOutputDownload('mg');
-  btn.disabled    = true;
-  btn.textContent = 'Processing...';
-  out.style.display = 'block';
-  document.getElementById('mg-out-title').textContent = selectedFile.name;
-  document.getElementById('mg-out-status').textContent = 'Processing';
-  document.getElementById('mg-out-status').className = 'output-status generating';
-  document.getElementById('mg-progress').style.display = 'block';
-  document.getElementById('mg-out-text').textContent = '';
-  document.getElementById('mg-out-actions').style.display = 'none';
-  out.scrollIntoView({behavior:'smooth', block:'start'});
+// ─────────────────────────────────────────────────────────────────────────────
+// GRC SUMMARY
+// ─────────────────────────────────────────────────────────────────────────────
+async function generateGrcSummary() {
+  const org = document.getElementById('grc-org').value.trim();
+  if (!org) { showToast('Please enter an organization name', true); return; }
+
+  const btn = document.getElementById('grc-submit');
+  btn.disabled = true; btn.textContent = 'Generating...';
+
+  const outEl = document.getElementById('grc-output');
+  outEl.style.display = 'block';
+  document.getElementById('grc-out-title').textContent   = org + ' — GRC Summary';
+  document.getElementById('grc-out-status').textContent  = 'Generating';
+  document.getElementById('grc-out-status').className    = 'output-status generating';
+  document.getElementById('grc-progress').style.display  = 'block';
+  document.getElementById('grc-out-text').textContent    = '';
+  document.getElementById('grc-out-actions').style.display = 'none';
+
+  if (outputDownloads.grc?.url) URL.revokeObjectURL(outputDownloads.grc.url);
+  outputDownloads.grc = null;
 
   const steps = [
-    {label:'Extracting content...', pct:20, delay:600},
-    {label:'Mapping frameworks...', pct:50, delay:900},
-    {label:'Generating document...', pct:78, delay:1000},
-    {label:'Finalizing output...', pct:96, delay:600},
+    { label: 'Building control mappings...', pct: 30, delay: 700 },
+    { label: 'Analyzing framework coverage...', pct: 60, delay: 900 },
+    { label: 'Compiling gap report...', pct: 85, delay: 800 },
+    { label: 'Rendering PDF...', pct: 97, delay: 500 },
   ];
 
-  animateProgress('mg-progress-fill', 'mg-progress-label', steps, async () => {
+  animateProgress('grc-progress-fill', 'grc-progress-label', steps, async () => {
     try {
-      const formData = new FormData();
-      formData.append('source_file',   selectedFile);
-      formData.append('template_name', document.getElementById('mg-template').value);
-      const res  = await apiRequest('/pipeline/migrate', {
+      const res = await apiRequest('/pipeline/grc-summary', {
         method:  'POST',
-        body:    formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_name: org,
+          industry:          document.getElementById('grc-industry').value,
+          frameworks:        getSelectedFrameworks('grc-frameworks'),
+        }),
       });
-      const download = await downloadDocxResponse(
-        res,
-        `${selectedFile.name.replace(/\.docx$/i, '')}_migrated.docx`,
-        'mg',
-      );
-      document.getElementById('mg-progress').style.display = 'none';
-      document.getElementById('mg-out-text').textContent = download.preview || 'Migration complete. Use the download button to review the full document.';
-      document.getElementById('mg-out-status').textContent = 'Complete';
-      document.getElementById('mg-out-status').className = 'output-status done';
-      document.getElementById('mg-out-actions').style.display = 'flex';
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+
+      const blob    = await res.blob();
+      const preview = (res.headers.get('X-Midnight-Preview') || '').trim();
+      storeDownload('grc', blob, res.headers.get('Content-Disposition'),
+        `${org.replace(/\s+/g, '_')}_grc_summary.pdf`, preview);
+
+      document.getElementById('grc-progress').style.display   = 'none';
+      document.getElementById('grc-out-text').textContent     = preview || 'GRC Summary generated. Use the download button to access the PDF.';
+      document.getElementById('grc-out-status').textContent   = 'Complete';
+      document.getElementById('grc-out-status').className     = 'output-status done';
+      document.getElementById('grc-out-actions').style.display = 'flex';
       await refreshDashboardData();
-      showToast('Document migrated — ' + selectedFile.name);
-    } catch(e) {
-      document.getElementById('mg-progress').style.display = 'none';
-      document.getElementById('mg-out-text').textContent = 'Document processed successfully. Output ready for download.';
-      document.getElementById('mg-out-status').textContent = 'Complete';
-      document.getElementById('mg-out-status').className = 'output-status done';
-      document.getElementById('mg-out-actions').style.display = 'flex';
-      showToast('Document migrated — ' + selectedFile.name);
+      showToast('GRC Summary generated — ' + org);
+
+    } catch (e) {
+      document.getElementById('grc-progress').style.display  = 'none';
+      document.getElementById('grc-out-status').textContent  = 'Error';
+      document.getElementById('grc-out-status').className    = 'output-status error';
+      document.getElementById('grc-out-text').textContent    = e.message || 'GRC Summary generation failed.';
+      showToast(e.message || 'GRC Summary generation failed', true);
     }
-    btn.disabled    = false;
-    btn.textContent = 'Migrate Document →';
-    _scanPassed     = false;
+
+    btn.disabled = false; btn.textContent = 'Generate GRC Summary →';
   });
 }
 
-// ── Bird Talk ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// BIRD TALK
+// ─────────────────────────────────────────────────────────────────────────────
 const BT_SYSTEM = `You are Midnight, the AI compliance assistant for the Midnight compliance platform by Takeoff. You are also known as Bird Talk — a chicken mascot who is the Chief Compliance Officer.
 
 Your job: help users understand their compliance program, identify gaps, and guide them toward building the right policies and controls.
@@ -1583,7 +1547,7 @@ Key product context:
 - Philosophy: "Handshake, not takeover" — human-led, AI-accelerated
 - You help BUILD and PREPARE, not certify or replace auditors
 
-Your persona: warm, direct, expert. Keep responses SHORT (3-5 sentences max). Ask one question at a time to guide users. Be genuinely helpful — not salesy. When relevant, suggest using Create Policy or Migrate Document to fill gaps. 🐔`;
+Your persona: warm, direct, expert. Keep responses SHORT (3-5 sentences max). Ask one question at a time to guide users. Be genuinely helpful. When relevant, suggest using Create Policy or Migrate Document to fill gaps. 🐔`;
 
 let btHistory = [];
 
@@ -1597,7 +1561,7 @@ function addBTMsg(role, text) {
   const msgs = document.getElementById('bt-messages');
   const div  = document.createElement('div');
   div.className = 'bt-chat-msg ' + role;
-  div.innerHTML = `<div class="bt-chat-bubble">${text}</div>`;
+  div.innerHTML = `<div class="bt-chat-bubble">${escHtml(text)}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -1616,126 +1580,192 @@ async function sendBT() {
   const input = document.getElementById('bt-input');
   const btn   = document.getElementById('bt-send');
   const text  = input.value.trim();
-  if(!text) return;
+  if (!text) return;
   input.value = ''; btn.disabled = true;
   addBTMsg('user', text);
-  btHistory.push({role:'user', content:text});
+  btHistory.push({ role: 'user', content: text });
   showBTTyping();
   try {
-    const res  = await apiRequest('/pipeline/birdsong', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({system:BT_SYSTEM, messages:btHistory})
+    const res = await apiRequest('/pipeline/birdsong', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: BT_SYSTEM, messages: btHistory }),
     });
-    if (!res.ok) throw new Error('Bird Talk request failed');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Bird Talk request failed');
+    }
     const data  = await res.json();
     const reply = data.reply || "Something went wrong on my end. 🐔 Try again?";
     document.getElementById('bt-typing')?.remove();
     addBTMsg('bot', reply);
-    btHistory.push({role:'assistant', content:reply});
-  } catch(e) {
+    btHistory.push({ role: 'assistant', content: reply });
+  } catch (e) {
     document.getElementById('bt-typing')?.remove();
-    addBTMsg('bot', "Network issue. 🐔 Try again in a moment.");
+    addBTMsg('bot', `Network issue. 🐔 ${e.message || 'Try again in a moment.'}`);
   }
   btn.disabled = false; input.focus();
 }
 
-// ── API data loading ──────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// DASHBOARD DATA
+// ─────────────────────────────────────────────────────────────────────────────
+function escHtml(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function relTime(val) {
+  const d = new Date(val);
+  if (isNaN(d)) return val || 'just now';
+  const s = Math.max(1, Math.floor((Date.now() - d) / 1000));
+  if (s < 60)   return s + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+function renderDocList(targetId, items) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = `<div class="table-row"><div class="doc-name-cell" style="color:var(--text3);font-size:12px;">No generated outputs yet — run Migrate or Create to get started</div><div></div><div></div><div></div></div>`;
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const typeClass = String(item.doc_type || 'policy').toLowerCase().replace(/[\s/]+/g, '');
+    const statusClass = String(item.status || 'ready').toLowerCase();
+    return `<div class="table-row">
+      <div class="doc-name-cell">
+        <div class="doc-checkbox checked"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="#3fd68c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <span class="doc-type-pill ${escHtml(typeClass)}">${escHtml(item.doc_type)}</span>
+        <span style="color:var(--text);font-size:13px;">${escHtml(item.name)}</span>
+      </div>
+      <div><span class="status-badge ${escHtml(statusClass)}">${escHtml(item.status)}</span></div>
+      <div class="owner-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escHtml(item.owner_initials)}</div>${escHtml(item.owner_name)}</div>
+      <div class="actions-cell"><div class="action-btn" title="Download" data-path="${escHtml(item.download_path)}" data-fn="${escHtml(item.filename || item.name)}" onclick="downloadDashboardArtifact(this.dataset.path, this.dataset.fn)">↓</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderActivityList(targetId, items) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;"><div class="time-cell">—</div><div class="user-cell">—</div><div style="color:var(--text3);">No activity yet</div><div style="color:var(--text3);">—</div><div class="result-cell warn">● Idle</div></div>`;
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const ok = /audit|complete/i.test(item.result || '');
+    return `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;">
+      <div class="time-cell">${escHtml(relTime(item.timestamp))}</div>
+      <div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escHtml(item.user_initials)}</div>${escHtml(item.user_name)}</div>
+      <div style="color:var(--text2);">${escHtml(item.action)}</div>
+      <div style="color:var(--text2);">${escHtml(item.target)}</div>
+      <div class="result-cell ${ok ? 'ok' : 'warn'}">● ${escHtml(item.result)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCoverage(targetId, frameworks) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  if (!frameworks?.length) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--text2);">Coverage will appear after your first policy run.</div>`;
+    return;
+  }
+  el.innerHTML = frameworks.map(item => {
+    const pct   = Math.max(0, Math.min(100, Number(item.coverage_pct || 0)));
+    const color = pct >= 80 ? '#3fd68c' : pct >= 50 ? '#f5a623' : '#ff5c5c';
+    return `<div class="fw-row"><div class="fw-name">${escHtml(item.framework)}</div><div class="fw-bar-track"><div class="fw-bar-fill" style="width:${pct}%;background:${color};"></div></div><div class="fw-pct" style="color:${color};">${pct}%</div></div>`;
+  }).join('');
+}
+
+function renderGapList(targetId, items) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  if (!items?.length) {
+    el.innerHTML = `<div class="gap-item"><div class="gap-top"><span class="gap-control">No gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a policy analysis or migration to populate framework gaps.</div><div class="gap-meta">Live dashboard connected</div></div>`;
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const sev   = String(item.severity || 'medium').toLowerCase();
+    const badge = sev === 'medium' ? 'critical-badge med' : 'critical-badge';
+    const fw    = Array.isArray(item.affected_frameworks) && item.affected_frameworks.length
+      ? item.affected_frameworks.join(' · ') : (item.framework || 'Framework');
+    return `<div class="gap-item"><div class="gap-top"><span class="gap-control">${escHtml(item.control_id || item.id || 'Gap')}</span><span class="${badge}">${escHtml(sev)}</span></div><div class="gap-desc">${escHtml(item.description || 'Gap detected')}</div><div class="gap-meta">${escHtml(fw)} · ${escHtml(item.suggested_action || 'Review')}</div></div>`;
+  }).join('');
+}
+
 async function apiFetch(path) {
   try {
     const res = await apiRequest(path);
-    if(!res.ok) throw new Error();
+    if (!res.ok) return null;
     return await res.json();
-  } catch(e) { return null; }
+  } catch { return null; }
 }
 
 async function loadSummary() {
   const data = await apiFetch('/dashboard/summary');
-  if(!data) return;
-  document.getElementById('m-policies').textContent = data.policies_processed;
-  document.getElementById('m-gaps').textContent     = data.gaps_total;
-  document.getElementById('m-review').textContent   = data.needs_review_total;
+  if (!data) return;
+
+  document.getElementById('m-policies').textContent      = data.policies_processed;
+  document.getElementById('m-gaps').textContent          = data.gaps_total;
+  document.getElementById('m-review').textContent        = data.needs_review_total;
   document.getElementById('m-policies-last-7').textContent = data.policies_last_7_days || 0;
-  document.getElementById('m-frameworks').textContent = Array.isArray(data.frameworks) ? data.frameworks.length : 0;
+  document.getElementById('m-frameworks').textContent    = Array.isArray(data.frameworks) ? data.frameworks.length : 0;
   document.getElementById('m-gaps-critical').textContent = data.gaps_critical || 0;
-  document.getElementById('m-gaps-medium').textContent = data.gaps_medium || 0;
+  document.getElementById('m-gaps-medium').textContent   = data.gaps_medium || 0;
   document.getElementById('m-review-critical').textContent = data.needs_review_critical || 0;
-  // Update Bird Eye status bar with live numbers
+
   const meta = document.getElementById('be-status-meta');
-  if(meta) meta.textContent = `${data.policies_processed} docs analyzed · ${data.gaps_total} gaps detected`;
+  if (meta) meta.textContent = `${data.policies_processed} docs analyzed · ${data.gaps_total} gaps detected`;
+
+  // Update banner
   const bannerTitle = document.getElementById('dashboard-banner-title');
-  const bannerSub = document.getElementById('dashboard-banner-sub');
-  if (bannerTitle && bannerSub) {
-    if (data.gaps_total > 0) {
-      bannerTitle.textContent = `Midnight found ${data.gaps_total} live framework gap${data.gaps_total === 1 ? '' : 's'}`;
-      bannerSub.textContent = `${data.policies_processed} documents processed in your workspace`;
-    } else if (data.policies_processed > 0) {
-      bannerTitle.textContent = 'Your workspace artifacts are live';
-      bannerSub.textContent = `${data.policies_processed} generated document${data.policies_processed === 1 ? '' : 's'} available in the dashboard`;
-    }
+  const bannerSub   = document.getElementById('dashboard-banner-sub');
+  if (data.gaps_total > 0) {
+    bannerTitle.textContent = `Midnight found ${data.gaps_total} live framework gap${data.gaps_total === 1 ? '' : 's'}`;
+    bannerSub.textContent   = `${data.policies_processed} document${data.policies_processed === 1 ? '' : 's'} processed in your workspace`;
+  } else if (data.policies_processed > 0) {
+    bannerTitle.textContent = 'Your workspace artifacts are live';
+    bannerSub.textContent   = `${data.policies_processed} generated document${data.policies_processed === 1 ? '' : 's'} ready in the dashboard`;
   }
-  renderCoverage(document.querySelector('#view-overview .fw-section'), data.frameworks || []);
-  renderCoverage(document.querySelector('#view-gaps .fw-section'), data.frameworks || []);
+
+  renderCoverage('overview-coverage', data.frameworks || []);
+  renderCoverage('gaps-coverage', data.frameworks || []);
 }
 
 async function loadDocuments() {
   const data = await apiFetch('/dashboard/documents');
   if (!data) return;
-  const overviewHeader = document.querySelector('.main-grid .panel .table-header');
-  const libraryHeader = document.querySelector('#view-library .panel .table-header');
-  renderDocumentRows(ensureRowContainerAfter(overviewHeader, 'table-row'), data.items);
-  renderDocumentRows(ensureRowContainerAfter(libraryHeader, 'table-row'), data.items);
+  renderDocList('overview-doc-list', data.items || []);
+  renderDocList('library-doc-list', data.items || []);
 }
 
 async function loadActivity() {
   const data = await apiFetch('/dashboard/activity');
   if (!data) return;
-  const activityHeader = document.querySelector('.bottom-grid .panel .table-header');
-  renderActivityRows(ensureRowContainerAfter(activityHeader, 'activity-row'), data.items);
+  renderActivityList('overview-activity-list', data.items || []);
 }
 
 async function loadGaps() {
   const data = await apiFetch('/dashboard/gaps');
   if (!data) return;
-  renderGapPanels(data.items || []);
+  renderGapList('overview-gap-list', data.items || []);
+  renderGapList('gaps-list', data.items || []);
 }
 
 async function refreshDashboardData() {
   await Promise.all([loadSummary(), loadDocuments(), loadActivity(), loadGaps()]);
 }
 
-document.querySelectorAll('.fw-bar-fill').forEach(bar => {
-  const w = bar.style.width; bar.style.width = '0';
-  setTimeout(() => { bar.style.width = w; }, 400);
-});
-
-// Count-up animation for metric numbers
-function countUp(el, target, duration) {
-  const start = 0;
-  const startTime = performance.now();
-  function update(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    el.textContent = Math.round(start + (target - start) * eased);
-    if (progress < 1) requestAnimationFrame(update);
-  }
-  requestAnimationFrame(update);
-}
-
-setTimeout(() => {
-  const policies = document.getElementById('m-policies');
-  const gaps     = document.getElementById('m-gaps');
-  const review   = document.getElementById('m-review');
-  if(policies) countUp(policies, parseInt(policies.textContent) || 0, 1200);
-  if(gaps)     countUp(gaps,     parseInt(gaps.textContent)     || 0, 900);
-  if(review)   countUp(review,   parseInt(review.textContent)   || 0, 700);
-}, 300);
-
-primeDashboardUi();
-ensureAuthenticated().then(refreshDashboardData).catch(() => {
-  showToast('Authentication required to load dashboard data');
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+// Silent dashboard load — no auth prompt on page open
+refreshDashboardData().catch(() => {});
 </script>
 </body>
 </html>
