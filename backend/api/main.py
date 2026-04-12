@@ -32,10 +32,6 @@ app.add_middleware(
 
 session_cookie_name = "midnight_session"
 
-# ── Owner account ─────────────────────────────────────────────────────────────
-# Phase 1: single owner account via env vars.
-# Phase 2: Supabase user table for sandbox + user accounts.
-
 OWNER_EMAIL       = os.getenv("OWNER_EMAIL",       "admin@midnight.ai")
 OWNER_NAME        = os.getenv("OWNER_NAME",        "Workspace Owner")
 ORGANIZATION_NAME = os.getenv("ORGANIZATION_NAME", "Midnight Workspace")
@@ -58,9 +54,7 @@ def get_owner_profile() -> dict[str, str]:
     if not owner_name:
         local_part = owner_email.split("@", 1)[0].replace(".", " ").replace("_", " ").strip()
         owner_name = " ".join(part.capitalize() for part in local_part.split()) or "Workspace Owner"
-
     organization_name = ORGANIZATION_NAME.strip() or "Midnight Workspace"
-
     return {
         "email": owner_email,
         "display_name": owner_name,
@@ -86,49 +80,29 @@ def _build_session_token(password: str) -> str:
 
 
 def verify_access(request: Request):
-    """
-    Cookie-only session check.
-    No HTTP Basic Auth — browser must use /auth/login to get a session cookie.
-    Unauthenticated API calls get a clean 401 (no WWW-Authenticate header)
-    so the browser does NOT show the native username/password popup.
-    """
     password      = _get_password()
     cookie_token  = request.cookies.get(session_cookie_name, "")
     expected      = _build_session_token(password)
-
     if cookie_token and secrets.compare_digest(cookie_token, expected):
         return "session"
-
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Authentication required.",
-        # Intentionally no WWW-Authenticate header — prevents browser popup
     )
 
 
-# ── Routers ───────────────────────────────────────────────────────────────────
-from backend.api.routes     import router as pipeline_router
-from backend.api.dashboard  import router as dashboard_router
-from backend.api.smart_scan import router as smart_scan_router
-
-app.include_router(pipeline_router,   dependencies=[Depends(verify_access)])
-app.include_router(dashboard_router,  dependencies=[Depends(verify_access)])
-app.include_router(smart_scan_router, dependencies=[Depends(verify_access)])
-
-
-# ── Public endpoints (no auth required) ──────────────────────────────────────
-
+# ── Health check (must be before routers and static mount) ──────────────
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "midnight-core"}
 
 
+# ── Public auth endpoints ────────────────────────────────────────────────
 @app.post("/auth/login")
 async def login(payload: LoginRequest, response: Response):
     password = _get_password()
     owner_profile = get_owner_profile()
     owner_email = owner_profile["email"]
-
     email_match    = secrets.compare_digest(
         payload.email.lower().strip().encode(),
         owner_email.encode(),
@@ -137,20 +111,18 @@ async def login(payload: LoginRequest, response: Response):
         payload.password.encode(),
         password.encode(),
     )
-
     if not (email_match and password_match):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials.",
         )
-
     response.set_cookie(
         key=session_cookie_name,
         value=_build_session_token(password),
         httponly=True,
         secure=ENVIRONMENT == "production",
         samesite="lax",
-        max_age=60 * 60 * 12,  # 12 hours
+        max_age=60 * 60 * 12,
     )
     return {
         "authenticated": True,
@@ -181,14 +153,21 @@ async def session_status(request: Request):
     }
 
 
-# ── Root redirect ─────────────────────────────────────────────────────────────
+# ── Protected routers ────────────────────────────────────────────────────
+from backend.api.routes     import router as pipeline_router
+from backend.api.dashboard  import router as dashboard_router
+from backend.api.smart_scan import router as smart_scan_router
 
+app.include_router(pipeline_router,   dependencies=[Depends(verify_access)])
+app.include_router(dashboard_router,  dependencies=[Depends(verify_access)])
+app.include_router(smart_scan_router, dependencies=[Depends(verify_access)])
+
+
+# ── Root redirect ────────────────────────────────────────────────────────
 @app.get("/")
 async def root():
     return RedirectResponse(url="/index.html")
 
 
-# ── Static files (frontend) ───────────────────────────────────────────────────
-# Mounted last so API routes take priority
-
+# ── Static files (frontend) — mounted last ──────────────────────────────
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
