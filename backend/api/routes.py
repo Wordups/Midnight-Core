@@ -247,7 +247,7 @@ async def birdsong(request: BirdsongRequest):
 
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
-            max_tokens=1000,
+            max_tokens=8096,
             system=system,
             messages=request.messages,
         )
