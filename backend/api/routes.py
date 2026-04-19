@@ -1,20 +1,11 @@
 """
 Midnight Core - Pipeline Routes
 Takeoff LLC
-
-POST /pipeline/migrate/preview   -> extract legacy policy into structured JSON
-POST /pipeline/migrate/generate  -> render edited migrate JSON into .docx
-POST /pipeline/migrate           -> legacy single-shot migrate
-POST /pipeline/create/preview    -> create policy JSON from intake form
-POST /pipeline/create/generate   -> render edited create JSON into .docx
-POST /pipeline/create            -> legacy single-shot create
-POST /pipeline/analyze           -> gap analysis on uploaded doc
-POST /pipeline/birdsong          -> Bird Talk proxy
-POST /pipeline/grc-summary       -> workspace GRC summary PDF
 """
 
 import json
 import os
+import tempfile
 import uuid
 from io import BytesIO
 from typing import Optional
@@ -24,7 +15,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 from dotenv import load_dotenv
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from backend.core.framework_layer import (
@@ -36,13 +27,62 @@ from backend.storage.file_store import save_generated_document, list_generated_d
 
 try:
     import anthropic
-except ImportError:  # pragma: no cover - handled at runtime when dependency is missing
+except ImportError:  # pragma: no cover
     anthropic = None
+
+try:
+    import requests as _requests
+except ImportError:  # pragma: no cover
+    _requests = None
 
 load_dotenv()
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
+router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
+GO_SERVICE_URL = os.getenv("GO_SERVICE_URL", "http://localhost:8080")
+
+_FW_TO_GO = {
+    "HIPAA": "HIPAA",
+    "PCI DSS": "PCI_DSS",
+    "NIST CSF": "NIST_CSF",
+    "SOC 2": "SOC2",
+    "HITRUST": "HITRUST",
+    "ISO 27001": "ISO_27001",
+}
+
+
+def _go_framework_coverage(document: str, frameworks: list[str], title: str = "") -> list | None:
+    if _requests is None:
+        return None
+    go_frameworks = [_FW_TO_GO[f] for f in frameworks if f in _FW_TO_GO]
+    if not go_frameworks:
+        return None
+    try:
+        resp = _requests.post(
+            f"{GO_SERVICE_URL}/analyze",
+            json={"title": title, "document": document, "frameworks": go_frameworks},
+            timeout=180,
+        )
+        resp.raise_for_status()
+        return resp.json().get("frameworks", [])
+    except Exception:
+        return None
+
+
+@router.get("/smoke-docx")
+async def smoke_docx():
+    path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.docx")
+
+    doc = Document()
+    doc.add_paragraph("Hello world")
+    doc.save(path)
+
+    return FileResponse(
+        path=path,
+        filename="smoke_test.docx",
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = "claude-opus-4-5"
 SUPPORTED_EXTENSIONS = {".docx", ".txt", ".md"}
@@ -78,16 +118,19 @@ def _extract_text_from_upload(file_bytes: bytes, filename: str) -> str:
 
     if lower.endswith(".docx"):
         doc = Document(BytesIO(file_bytes))
-        lines = []
+        lines: list[str] = []
+
         for para in doc.paragraphs:
             text = para.text.strip()
             if text:
                 lines.append(text)
+
         for table in doc.tables:
             for row in table.rows:
                 cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
                 if cells:
                     lines.append(" | ".join(cells))
+
         return "\n".join(lines)
 
     try:
@@ -108,7 +151,23 @@ def _build_preview_text(policy_data: dict) -> str:
     return "Document generated successfully."
 
 
-def _stream_docx_response(
+def _safe_text(value) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return str(value)
+
+
+def _write_temp_docx(docx_bytes: bytes) -> str:
+    temp_dir = tempfile.gettempdir()
+    output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.docx")
+    with open(output_path, "wb") as f:
+        f.write(docx_bytes)
+    return output_path
+
+
+def _file_docx_response(
     *,
     policy_data: dict,
     template_name: str,
@@ -116,11 +175,14 @@ def _stream_docx_response(
     document_name: str,
     doc_type: str,
     source_name: str,
-) -> StreamingResponse:
+) -> FileResponse:
     try:
         docx_bytes = _build_docx(policy_data, template_name)
-    except Exception as exc:  # pragma: no cover - runtime rendering failure
+    except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Document rendering error: {exc}") from exc
+
+    if not docx_bytes:
+        raise HTTPException(status_code=500, detail="Document rendering produced an empty file.")
 
     preview_text = _build_preview_text(policy_data)
     record = save_generated_document(
@@ -134,11 +196,13 @@ def _stream_docx_response(
         source_name=source_name,
     )
 
-    return StreamingResponse(
-        BytesIO(docx_bytes),
+    temp_path = _write_temp_docx(docx_bytes)
+
+    return FileResponse(
+        path=temp_path,
+        filename=output_name,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f'attachment; filename="{output_name}"',
             "X-Midnight-Preview": preview_text,
             "X-Midnight-Document-Id": record["id"],
         },
@@ -148,6 +212,23 @@ def _stream_docx_response(
 class BirdsongRequest(BaseModel):
     messages: list[dict]
     system: Optional[str] = None
+
+
+@router.get("/smoke-docx")
+async def smoke_docx():
+    doc = Document()
+    doc.add_paragraph("Hello world from Midnight Core")
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    temp_path = _write_temp_docx(buffer.read())
+
+    return FileResponse(
+        path=temp_path,
+        filename="smoke_test.docx",
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
 
 @router.post("/birdsong")
@@ -173,7 +254,7 @@ async def birdsong(request: BirdsongRequest):
         return {"reply": message.content[0].text}
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - runtime provider failure
+    except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Bird Talk error: {exc}") from exc
 
 
@@ -351,19 +432,15 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
 
     def add_heading(text: str, level: int = 1):
         heading = doc.add_heading(text, level=level)
-        heading.style.font.color.rgb = RGBColor(0x1A, 0x1A, 0x2E)
         return heading
 
     def add_body(text: str):
-        paragraph = doc.add_paragraph(text)
-        paragraph.style.font.size = Pt(11)
+        paragraph = doc.add_paragraph(_safe_text(text))
         return paragraph
 
     def add_bullet(text: str):
-        doc.add_paragraph(text, style="List Bullet")
+        doc.add_paragraph(_safe_text(text), style="List Bullet")
 
-    table = doc.add_table(rows=5, cols=2)
-    table.style = "Table Grid"
     fields = [
         ("Policy Name", policy_data.get("policy_name", "Untitled Policy")),
         ("Document Type", policy_data.get("doc_type", "Policy")),
@@ -371,10 +448,14 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         ("Effective Date", policy_data.get("effective_date", "-")),
         ("Policy Owner", policy_data.get("owner", "-")),
     ]
+
+    table = doc.add_table(rows=len(fields), cols=2)
+    table.style = "Table Grid"
+
     for index, (label, value) in enumerate(fields):
         row = table.rows[index]
-        row.cells[0].text = label
-        row.cells[1].text = str(value) if value else "-"
+        row.cells[0].text = _safe_text(label)
+        row.cells[1].text = _safe_text(value)
 
     doc.add_paragraph()
 
@@ -393,18 +474,21 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
     for title, key in sections:
         add_heading(title, level=1)
         content = policy_data.get(key)
+
         if not content:
             add_body("[Section not found in source document]")
         elif isinstance(content, list):
             for item in content:
                 if isinstance(item, dict):
                     label = item.get("role") or item.get("title") or ""
-                    desc = item.get("responsibility") or item.get("description") or str(item)
-                    add_bullet(f"{label}: {desc}" if label else desc)
+                    desc = item.get("responsibility") or item.get("description") or item
+                    text = f"{label}: {desc}" if label else _safe_text(desc)
+                    add_bullet(text)
                 else:
-                    add_bullet(str(item))
+                    add_bullet(item)
         else:
-            add_body(str(content))
+            add_body(content)
+
         doc.add_paragraph()
 
     framework_mappings = policy_data.get("framework_mappings", {})
@@ -413,12 +497,12 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         for framework, controls in framework_mappings.items():
             if not controls:
                 continue
-            add_heading(framework, level=2)
+            add_heading(_safe_text(framework), level=2)
             if isinstance(controls, list):
                 for control in controls:
-                    add_bullet(str(control))
+                    add_bullet(control)
             else:
-                add_body(str(controls))
+                add_body(controls)
         doc.add_paragraph()
 
     framework_map = policy_data.get("framework_map", {}) or {}
@@ -435,7 +519,7 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
                     label = f"{label} -> {gap['suggestion']}"
                 add_bullet(label)
             else:
-                add_bullet(str(gap))
+                add_bullet(gap)
         doc.add_paragraph()
 
     revision_history = policy_data.get("revision_history", [])
@@ -447,14 +531,17 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         header[0].text = "Version"
         header[1].text = "Date"
         header[2].text = "Description"
+
         for entry in revision_history:
             row = rev_table.add_row().cells
             if isinstance(entry, dict):
-                row[0].text = str(entry.get("version", ""))
-                row[1].text = str(entry.get("date", ""))
-                row[2].text = str(entry.get("description", entry.get("change", "")))
+                row[0].text = _safe_text(entry.get("version", ""))
+                row[1].text = _safe_text(entry.get("date", ""))
+                row[2].text = _safe_text(entry.get("description", entry.get("change", "")))
             else:
-                row[0].text = str(entry)
+                row[0].text = _safe_text(entry)
+                row[1].text = ""
+                row[2].text = ""
     else:
         add_body("[No revision history found in source document]")
 
@@ -465,7 +552,6 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         "Midnight - Takeoff LLC · CONFIDENTIAL"
     )
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    footer.style.font.size = Pt(8)
 
     buffer = BytesIO()
     doc.save(buffer)
@@ -498,7 +584,7 @@ async def migrate_preview(
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - runtime provider failure
+    except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Extraction error: {exc}") from exc
 
     policy_data["_session"] = {
@@ -535,7 +621,7 @@ async def migrate_generate(request: MigrateGenerateRequest):
     base_name = source_name.rsplit(".", 1)[0]
     output_name = f"{base_name}_migrated.docx"
 
-    return _stream_docx_response(
+    return _file_docx_response(
         policy_data=policy_data,
         template_name=template_name,
         output_name=output_name,
@@ -575,11 +661,11 @@ async def migrate_document(
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - runtime provider failure
+    except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Migration error: {exc}") from exc
 
     base_name = (upload.filename or "document").rsplit(".", 1)[0]
-    return _stream_docx_response(
+    return _file_docx_response(
         policy_data=policy_data,
         template_name=template_name,
         output_name=f"{base_name}_migrated.docx",
@@ -597,7 +683,7 @@ async def create_preview(request: CreatePolicyRequest):
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - runtime provider failure
+    except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Creation error: {exc}") from exc
 
     policy_data["_session"] = {
@@ -632,7 +718,7 @@ async def create_generate(request: CreateGenerateRequest):
     doc_type = policy_data.get("doc_type", session.get("doc_type", "POLICY"))
     output_name = f"{policy_name.replace(' ', '_')}_v{policy_data.get('version', '1.0')}.docx"
 
-    return _stream_docx_response(
+    return _file_docx_response(
         policy_data=policy_data,
         template_name=str(doc_type).lower(),
         output_name=output_name,
@@ -650,11 +736,11 @@ async def create_document(request: CreatePolicyRequest):
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - runtime provider failure
+    except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Creation error: {exc}") from exc
 
     output_name = f"{request.policy_name.replace(' ', '_')}_v1.0.docx"
-    return _stream_docx_response(
+    return _file_docx_response(
         policy_data=policy_data,
         template_name=request.doc_type,
         output_name=output_name,
@@ -746,8 +832,12 @@ async def analyze_document(
             system="You are a GRC analyst. Analyze policy documents against compliance frameworks. Return only valid JSON.",
             messages=[{"role": "user", "content": user_msg}],
         )
-        return JSONResponse(content=json.loads(_strip_json_fences(message.content[0].text)))
+        result = json.loads(_strip_json_fences(message.content[0].text))
+        go_coverage = _go_framework_coverage(raw_text, normalized_frameworks, file.filename or "")
+        if go_coverage:
+            result["framework_coverage"] = go_coverage
+        return JSONResponse(content=result)
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - runtime provider failure
+    except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Analysis error: {exc}") from exc
