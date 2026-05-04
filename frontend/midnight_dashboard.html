@@ -623,8 +623,51 @@
               </div>
               <div class="form-group"><label class="form-label">Policy Owner</label><input class="form-input" id="cp-owner" placeholder="e.g. Jane Smith"></div>
             </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Policy Number</label><input class="form-input" id="cp-policy-number" placeholder="e.g. AC-001"></div>
+              <div class="form-group"><label class="form-label">Version</label><input class="form-input" id="cp-version" value="1.0" placeholder="e.g. 1.0"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">GRC ID</label><input class="form-input" id="cp-grc-id" placeholder="e.g. GRC-AC-001"></div>
+              <div class="form-group"><label class="form-label">Supersedes</label><input class="form-input" id="cp-supersedes" placeholder="e.g. Access Control Policy v0.9"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Effective Date</label><input class="form-input" id="cp-effective-date" type="date"></div>
+              <div class="form-group"><label class="form-label">Last Reviewed</label><input class="form-input" id="cp-last-reviewed" type="date"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Last Revised</label><input class="form-input" id="cp-last-revised" type="date"></div>
+              <div class="form-group"><label class="form-label">Date Signed</label><input class="form-input" id="cp-date-signed" type="date"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Date Approved</label><input class="form-input" id="cp-date-approved" type="date"></div>
+              <div class="form-group"><label class="form-label">Owner Title</label><input class="form-input" id="cp-owner-title" placeholder="e.g. Chief Compliance Officer"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Approver Name</label><input class="form-input" id="cp-approver-name" placeholder="e.g. Jane Smith"></div>
+              <div class="form-group"><label class="form-label">Approver Title</label><input class="form-input" id="cp-approver-title" placeholder="e.g. Chief Executive Officer"></div>
+            </div>
             <div class="form-row single">
-              <div class="form-group"><label class="form-label">Description / Scope</label><textarea class="form-textarea" id="cp-desc" placeholder="Describe the purpose and scope of this policy..."></textarea></div>
+              <div class="form-group"><label class="form-label">Custodians</label><textarea class="form-textarea" id="cp-custodians" placeholder="List teams or people responsible for maintaining this policy..."></textarea></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Policy Content</div>
+            <div class="form-row single">
+              <div class="form-group"><label class="form-label">Purpose and Scope</label><textarea class="form-textarea" id="cp-purpose-scope" placeholder="Describe the purpose and scope of this policy..."></textarea></div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group"><label class="form-label">Definitions</label><textarea class="form-textarea" id="cp-definitions" placeholder="Term: Definition&#10;One per line"></textarea></div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group"><label class="form-label">Policy Statement</label><textarea class="form-textarea" id="cp-policy-statement" placeholder="State the governing policy requirements..."></textarea></div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group"><label class="form-label">Procedures</label><textarea class="form-textarea" id="cp-procedures" placeholder="- Step one&#10;- Step two&#10;- Step three"></textarea></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Related Policies</label><textarea class="form-textarea" id="cp-related-policies" placeholder="One per line"></textarea></div>
+              <div class="form-group"><label class="form-label">Citations / References</label><textarea class="form-textarea" id="cp-citations" placeholder="One per line"></textarea></div>
             </div>
           </div>
           <div class="form-section">
@@ -1324,6 +1367,64 @@ async function logoutUser() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+function getCreateFieldValue(id) {
+  const el = document.getElementById(id);
+  return el ? String(el.value || '').trim() : '';
+}
+
+function syncCreatePolicyDateDefaults(force = false) {
+  const effectiveDate = getCreateFieldValue('cp-effective-date');
+  if (!effectiveDate) return;
+
+  ['cp-last-reviewed', 'cp-last-revised', 'cp-date-signed', 'cp-date-approved'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (force || !String(el.value || '').trim()) el.value = effectiveDate;
+  });
+}
+
+function wireCreatePolicyDateDefaults() {
+  const effectiveDate = document.getElementById('cp-effective-date');
+  if (!effectiveDate || effectiveDate.dataset.wired === 'true') return;
+  effectiveDate.dataset.wired = 'true';
+
+  const syncDates = () => syncCreatePolicyDateDefaults(false);
+  effectiveDate.addEventListener('input', syncDates);
+  effectiveDate.addEventListener('change', syncDates);
+}
+
+function buildCreatePolicyDescription() {
+  syncCreatePolicyDateDefaults(false);
+
+  return [
+    `Policy Number: ${getCreateFieldValue('cp-policy-number') || 'Not provided'}`,
+    `Version: ${getCreateFieldValue('cp-version') || '1.0'}`,
+    `GRC ID: ${getCreateFieldValue('cp-grc-id') || 'Not provided'}`,
+    `Effective Date: ${getCreateFieldValue('cp-effective-date') || 'Not provided'}`,
+    `Last Reviewed: ${getCreateFieldValue('cp-last-reviewed') || 'Not provided'}`,
+    `Last Revised: ${getCreateFieldValue('cp-last-revised') || 'Not provided'}`,
+    `Supersedes: ${getCreateFieldValue('cp-supersedes') || 'Not provided'}`,
+    `Custodians: ${getCreateFieldValue('cp-custodians') || 'Not provided'}`,
+    `Owner Title: ${getCreateFieldValue('cp-owner-title') || 'Not provided'}`,
+    `Approver Name: ${getCreateFieldValue('cp-approver-name') || 'Not provided'}`,
+    `Approver Title: ${getCreateFieldValue('cp-approver-title') || 'Not provided'}`,
+    `Date Signed: ${getCreateFieldValue('cp-date-signed') || 'Not provided'}`,
+    `Date Approved: ${getCreateFieldValue('cp-date-approved') || 'Not provided'}`,
+    '',
+    `Purpose and Scope:\n${getCreateFieldValue('cp-purpose-scope') || 'Not provided'}`,
+    '',
+    `Definitions:\n${getCreateFieldValue('cp-definitions') || 'Not provided'}`,
+    '',
+    `Policy Statement:\n${getCreateFieldValue('cp-policy-statement') || 'Not provided'}`,
+    '',
+    `Procedures:\n${getCreateFieldValue('cp-procedures') || 'Not provided'}`,
+    '',
+    `Related Policies:\n${getCreateFieldValue('cp-related-policies') || 'Not provided'}`,
+    '',
+    `Citations/References:\n${getCreateFieldValue('cp-citations') || 'Not provided'}`,
+  ].join('\n');
+}
+
 // DOWNLOAD HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 function getFilenameFromHeader(header, fallback) {
@@ -1452,6 +1553,7 @@ function animateProgress(fillId, labelId, steps, onDone) {
 async function createPolicy() {
   const name = document.getElementById('cp-name').value.trim();
   if (!name) { showToast('Please enter a policy name', true); return; }
+  syncCreatePolicyDateDefaults(false);
 
   const btn = document.getElementById('cp-submit');
   btn.disabled = true; btn.textContent = 'Generating...';
@@ -1490,7 +1592,26 @@ async function createPolicy() {
           industry:    document.getElementById('cp-industry').value,
           frameworks:  getSelectedFrameworks('cp-frameworks'),
           owner:       document.getElementById('cp-owner').value || 'Compliance Team',
-          description: document.getElementById('cp-desc').value,
+          description: buildCreatePolicyDescription(),
+          policy_number: getCreateFieldValue('cp-policy-number'),
+          version: getCreateFieldValue('cp-version') || '1.0',
+          grc_id: getCreateFieldValue('cp-grc-id'),
+          effective_date: getCreateFieldValue('cp-effective-date'),
+          last_reviewed: getCreateFieldValue('cp-last-reviewed'),
+          last_revised: getCreateFieldValue('cp-last-revised'),
+          supersedes: getCreateFieldValue('cp-supersedes'),
+          custodians: getCreateFieldValue('cp-custodians'),
+          owner_title: getCreateFieldValue('cp-owner-title'),
+          approver_name: getCreateFieldValue('cp-approver-name'),
+          approver_title: getCreateFieldValue('cp-approver-title'),
+          date_signed: getCreateFieldValue('cp-date-signed'),
+          date_approved: getCreateFieldValue('cp-date-approved'),
+          purpose_scope: getCreateFieldValue('cp-purpose-scope'),
+          definitions_text: getCreateFieldValue('cp-definitions'),
+          policy_statement: getCreateFieldValue('cp-policy-statement'),
+          procedures_text: getCreateFieldValue('cp-procedures'),
+          related_policies: getCreateFieldValue('cp-related-policies'),
+          citations_references: getCreateFieldValue('cp-citations'),
         }),
       });
 
@@ -2347,6 +2468,7 @@ async function downloadFromEditor(prefix) {
 // INIT
 // ─────────────────────────────────────────────────────────────────────────────
 // Check session on load — redirect to login if not authenticated
+wireCreatePolicyDateDefaults();
 ensureAuthenticated().then(() => {
   refreshDashboardData().catch(() => {});
 }).catch(() => {
