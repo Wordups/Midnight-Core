@@ -5,9 +5,14 @@ Takeoff LLC
 
 import json
 import os
+import base64
+import csv
+import mimetypes
 import re
 import tempfile
 import uuid
+import zipfile
+import xml.etree.ElementTree as ET
 from io import BytesIO
 from typing import Optional
 
@@ -89,6 +94,27 @@ async def smoke_docx():
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = "claude-opus-4-5"
 SUPPORTED_EXTENSIONS = {".docx", ".txt", ".md"}
+SUPPORTED_TEMPLATE_EXTENSIONS = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".pdf",
+    ".docx",
+    ".xlsx",
+    ".csv",
+    ".txt",
+    ".md",
+}
+
+MIGRATE_OUTPUT_SECTION_LABELS = {
+    "purpose": "Purpose and Scope",
+    "definitions": "Definitions",
+    "policy_statement": "Policy Statement",
+    "procedures": "Procedures",
+    "related_policies": "Related Policies",
+    "citations_references": "Citations / References",
+    "revision_history": "Revision History",
+}
 
 MIGRATE_SECTION_ALIASES = {
     "purpose": ["Purpose", "Purpose and Scope", "Background", "Overview", "Objective", "Introduction"],
@@ -150,6 +176,20 @@ def _require_supported_file(upload: UploadFile, field_name: str = "file") -> Non
         raise HTTPException(
             status_code=400,
             detail=f"{field_name} must be .docx, .txt, or .md. Got '{upload.filename}'.",
+        )
+
+
+def _require_supported_template_file(upload: UploadFile, field_name: str = "template_file") -> None:
+    filename = (upload.filename or field_name).lower()
+    ext = "." + filename.rsplit(".", 1)[-1] if "." in filename else ""
+    if ext not in SUPPORTED_TEMPLATE_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name} must be one of "
+                ".png, .jpg, .jpeg, .pdf, .docx, .xlsx, .csv, .txt, or .md. "
+                f"Got '{upload.filename}'."
+            ),
         )
 
 
@@ -482,6 +522,412 @@ def _apply_migrate_source_mapping(policy_data: dict, mapped_source: dict) -> dic
     return updated
 
 
+def _guess_media_type(filename: str, default: str = "application/octet-stream") -> str:
+    return mimetypes.guess_type(filename or "")[0] or default
+
+
+def _canonical_template_section_key(label: str) -> Optional[str]:
+    normalized = _normalize_source_label(label)
+    if not normalized:
+        return None
+
+    for key, output_label in MIGRATE_OUTPUT_SECTION_LABELS.items():
+        if normalized == _normalize_source_label(output_label):
+            return key
+
+    for key, aliases in MIGRATE_SECTION_ALIASES.items():
+        for alias in aliases:
+            if normalized == _normalize_source_label(alias):
+                return key
+    return None
+
+
+def _empty_template_section_map(template_name: str, template_type: str, mode: str) -> dict:
+    return {
+        "template_name": template_name,
+        "template_type": template_type,
+        "extraction_mode": mode,
+        "header_fields": [],
+        "sections": [],
+        "field_mappings": [],
+        "section_order": [],
+        "raw_outline": [],
+    }
+
+
+def _finalize_template_section_map(section_map: dict) -> dict:
+    ordered_sections: list[str] = []
+    for section in section_map.get("sections", []):
+        label = section.get("output_section")
+        if label and label not in ordered_sections:
+            ordered_sections.append(label)
+    section_map["section_order"] = ordered_sections
+    return section_map
+
+
+def _append_template_heading(section_map: dict, label: str, source_type: str, *, structure: str = "heading"):
+    canonical_key = _canonical_template_section_key(label)
+    output_label = MIGRATE_OUTPUT_SECTION_LABELS.get(canonical_key) if canonical_key else None
+    entry = {
+        "detected_label": label.strip(),
+        "output_section": output_label or label.strip(),
+        "canonical_key": canonical_key,
+        "source_type": source_type,
+        "structure": structure,
+    }
+    section_map["sections"].append(entry)
+    section_map["raw_outline"].append(label.strip())
+
+
+def _append_template_header_field(section_map: dict, label: str, sample_value: str = ""):
+    canonical_key, _ = _match_header_value(f"{label}: {sample_value or 'value'}")
+    entry = {
+        "detected_label": label.strip(),
+        "canonical_key": canonical_key,
+        "sample_value": sample_value.strip(),
+    }
+    section_map["header_fields"].append(entry)
+
+
+def _extract_markdown_text_section_map(text: str, filename: str, template_type: str) -> dict:
+    section_map = _empty_template_section_map(filename, template_type, "text-parse")
+    lines = text.splitlines()
+
+    for line in lines:
+        raw = line.rstrip()
+        stripped = raw.strip()
+        if not stripped:
+            continue
+
+        header_key, header_value = _match_header_value(stripped)
+        if header_key:
+            _append_template_header_field(section_map, stripped.split(":", 1)[0], header_value or "")
+            continue
+
+        heading_label = None
+        if stripped.startswith("#"):
+            heading_label = stripped.lstrip("#").strip()
+        else:
+            section_key, _ = _match_section_heading(stripped)
+            if section_key:
+                heading_label = stripped.rstrip(":")
+            elif len(stripped) < 80 and re.fullmatch(r"[A-Za-z0-9 /&\-\(\)]+:?", stripped):
+                if _canonical_template_section_key(stripped):
+                    heading_label = stripped.rstrip(":")
+
+        if heading_label:
+            _append_template_heading(section_map, heading_label, template_type)
+
+    return _finalize_template_section_map(section_map)
+
+
+def _extract_docx_template_section_map(file_bytes: bytes, filename: str) -> dict:
+    section_map = _empty_template_section_map(filename, "docx", "docx-parse")
+    doc = Document(BytesIO(file_bytes))
+
+    for kind, item in _iter_docx_blocks(doc):
+        if kind == "paragraph":
+            text = (item.text or "").strip()
+            if not text:
+                continue
+
+            header_key, header_value = _match_header_value(text)
+            if header_key:
+                _append_template_header_field(section_map, text.split(":", 1)[0], header_value or "")
+                continue
+
+            style_name = getattr(getattr(item, "style", None), "name", "") or ""
+            if "Heading" in style_name or _canonical_template_section_key(text):
+                _append_template_heading(section_map, text.rstrip(":"), "docx")
+        else:
+            rows = _table_rows_to_lists(item)
+            if not rows:
+                continue
+            first_row = rows[0]
+            if _capture_header_rows(rows, {}):
+                for row in rows:
+                    if len(row) >= 2:
+                        key, value = _match_header_value(f"{row[0]}: {row[1]}")
+                        if key:
+                            _append_template_header_field(section_map, row[0], row[1])
+                continue
+
+            for row in rows:
+                label = next((str(cell).strip() for cell in row if str(cell).strip()), "")
+                if not label:
+                    continue
+                canonical = _canonical_template_section_key(label)
+                if canonical:
+                    _append_template_heading(section_map, label.rstrip(":"), "docx", structure="table")
+
+            if first_row:
+                section_map["field_mappings"].append(
+                    {
+                        "columns": [str(cell).strip() for cell in first_row],
+                        "rows": rows[1:] if len(rows) > 1 else [],
+                    }
+                )
+
+    return _finalize_template_section_map(section_map)
+
+
+def _extract_csv_template_section_map(file_bytes: bytes, filename: str) -> dict:
+    text = _extract_text_from_upload(file_bytes, filename)
+    reader = csv.reader(text.splitlines())
+    rows = [row for row in reader if any(str(cell).strip() for cell in row)]
+    section_map = _empty_template_section_map(filename, "csv", "tabular-parse")
+    if not rows:
+        return section_map
+
+    header_row = [str(cell).strip() for cell in rows[0]]
+    section_map["field_mappings"].append({"columns": header_row, "rows": rows[1:]})
+
+    for row in rows[1:] if len(rows) > 1 else []:
+        label = next((str(cell).strip() for cell in row if str(cell).strip()), "")
+        if not label:
+            continue
+        if _canonical_template_section_key(label):
+            _append_template_heading(section_map, label.rstrip(":"), "csv", structure="row")
+
+    return _finalize_template_section_map(section_map)
+
+
+def _xlsx_shared_strings(zf: zipfile.ZipFile) -> list[str]:
+    if "xl/sharedStrings.xml" not in zf.namelist():
+        return []
+    root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
+    ns = {"a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+    values = []
+    for si in root.findall("a:si", ns):
+        text = "".join(node.text or "" for node in si.findall(".//a:t", ns))
+        values.append(text)
+    return values
+
+
+def _xlsx_rows(file_bytes: bytes) -> list[list[str]]:
+    with zipfile.ZipFile(BytesIO(file_bytes)) as zf:
+        shared_strings = _xlsx_shared_strings(zf)
+        worksheet_names = sorted(name for name in zf.namelist() if name.startswith("xl/worksheets/sheet") and name.endswith(".xml"))
+        if not worksheet_names:
+            return []
+
+        root = ET.fromstring(zf.read(worksheet_names[0]))
+        ns = {"a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+        rows: list[list[str]] = []
+        for row in root.findall(".//a:sheetData/a:row", ns):
+            values: list[str] = []
+            for cell in row.findall("a:c", ns):
+                cell_type = cell.attrib.get("t")
+                value_node = cell.find("a:v", ns)
+                if value_node is None:
+                    values.append("")
+                    continue
+                raw = value_node.text or ""
+                if cell_type == "s":
+                    try:
+                        values.append(shared_strings[int(raw)])
+                    except Exception:
+                        values.append(raw)
+                else:
+                    values.append(raw)
+            if any(str(value).strip() for value in values):
+                rows.append(values)
+        return rows
+
+
+def _extract_xlsx_template_section_map(file_bytes: bytes, filename: str) -> dict:
+    rows = _xlsx_rows(file_bytes)
+    section_map = _empty_template_section_map(filename, "xlsx", "tabular-parse")
+    if not rows:
+        return section_map
+
+    header_row = [str(cell).strip() for cell in rows[0]]
+    section_map["field_mappings"].append({"columns": header_row, "rows": rows[1:]})
+
+    for row in rows[1:] if len(rows) > 1 else []:
+        label = next((str(cell).strip() for cell in row if str(cell).strip()), "")
+        if label and _canonical_template_section_key(label):
+            _append_template_heading(section_map, label.rstrip(":"), "xlsx", structure="row")
+
+    return _finalize_template_section_map(section_map)
+
+
+def _extract_pdf_text_basic(file_bytes: bytes) -> str:
+    text_chunks = []
+    for match in re.findall(rb"\((.*?)\)", file_bytes, flags=re.DOTALL):
+        decoded = match.replace(rb"\(", b"(").replace(rb"\)", b")").replace(rb"\\n", b"\n")
+        candidate = decoded.decode("latin-1", errors="ignore")
+        if any(ch.isalpha() for ch in candidate):
+            text_chunks.append(candidate)
+    return "\n".join(text_chunks)
+
+
+TEMPLATE_MAP_SYSTEM_PROMPT = """You are a template structure extraction engine for Midnight.
+
+Return valid JSON only with this structure:
+{
+  "template_name": "...",
+  "template_type": "...",
+  "extraction_mode": "...",
+  "header_fields": [
+    {"detected_label": "...", "canonical_key": "...", "sample_value": "..."}
+  ],
+  "sections": [
+    {
+      "detected_label": "...",
+      "output_section": "...",
+      "canonical_key": "...",
+      "source_type": "...",
+      "structure": "heading|table|field_map|image"
+    }
+  ],
+  "field_mappings": [],
+  "section_order": ["..."],
+  "raw_outline": ["..."]
+}
+
+Recognize these canonical output sections:
+- Purpose and Scope
+- Definitions
+- Policy Statement
+- Procedures
+- Related Policies
+- Citations / References
+- Revision History
+
+Recognize these header fields wherever present:
+- Policy Name
+- Policy Number
+- Version
+- GRC ID
+- Effective Date
+- Supersedes Policy
+- Last Reviewed Date
+- Last Revised Date
+- Policy Custodian
+- Policy Owner
+- Policy Approver
+
+Rules:
+- Identify visible section headers and layout structure only.
+- Do not invent sections that are not present.
+- Return JSON only, no markdown."""
+
+
+def _parse_template_map_json(raw_text: str) -> dict:
+    data = json.loads(_strip_json_fences(raw_text))
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=500, detail="Template extraction returned an invalid section map.")
+    return _finalize_template_section_map(data)
+
+
+def _extract_template_section_map_with_model(
+    *,
+    template_bytes: bytes,
+    filename: str,
+    source_type: str,
+) -> dict:
+    client = _get_anthropic_client()
+    media_type = _guess_media_type(filename, "application/octet-stream")
+    encoded = base64.b64encode(template_bytes).decode("utf-8")
+
+    if source_type in {"png", "jpg", "jpeg"}:
+        content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": media_type,
+                    "data": encoded,
+                },
+            },
+            {
+                "type": "text",
+                "text": f"Extract the section map for template file '{filename}'.",
+            },
+        ]
+    else:
+        content = [
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": media_type,
+                    "data": encoded,
+                },
+            },
+            {
+                "type": "text",
+                "text": f"Extract the section map for template file '{filename}'.",
+            },
+        ]
+
+    message = client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=2048,
+        system=TEMPLATE_MAP_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": content}],
+    )
+    return _parse_template_map_json(message.content[0].text)
+
+
+def _default_template_section_map(template_name: str) -> dict:
+    section_map = _empty_template_section_map(template_name, "named-template", "default")
+    for key in (
+        "purpose",
+        "definitions",
+        "policy_statement",
+        "procedures",
+        "related_policies",
+        "citations_references",
+        "revision_history",
+    ):
+        _append_template_heading(section_map, MIGRATE_OUTPUT_SECTION_LABELS[key], "default")
+    return _finalize_template_section_map(section_map)
+
+
+def _extract_template_section_map(
+    *,
+    template_name: str,
+    template_file_bytes: Optional[bytes] = None,
+    template_filename: Optional[str] = None,
+) -> dict:
+    if not template_file_bytes or not template_filename:
+        return _default_template_section_map(template_name)
+
+    lower = template_filename.lower()
+    ext = "." + lower.rsplit(".", 1)[-1] if "." in lower else ""
+    source_type = ext.lstrip(".")
+
+    if ext == ".docx":
+        return _extract_docx_template_section_map(template_file_bytes, template_filename)
+    if ext == ".csv":
+        return _extract_csv_template_section_map(template_file_bytes, template_filename)
+    if ext == ".xlsx":
+        return _extract_xlsx_template_section_map(template_file_bytes, template_filename)
+    if ext in {".txt", ".md"}:
+        text = _extract_text_from_upload(template_file_bytes, template_filename)
+        return _extract_markdown_text_section_map(text, template_filename, source_type)
+    if ext == ".pdf":
+        text = _extract_pdf_text_basic(template_file_bytes)
+        parsed = _extract_markdown_text_section_map(text, template_filename, "pdf")
+        if parsed.get("sections") or parsed.get("header_fields"):
+            return parsed
+        return _extract_template_section_map_with_model(
+            template_bytes=template_file_bytes,
+            filename=template_filename,
+            source_type="pdf",
+        )
+    if ext in {".png", ".jpg", ".jpeg"}:
+        return _extract_template_section_map_with_model(
+            template_bytes=template_file_bytes,
+            filename=template_filename,
+            source_type=source_type,
+        )
+
+    return _default_template_section_map(template_name)
+
+
 def _strip_json_fences(raw: str) -> str:
     return raw.replace("```json", "").replace("```", "").strip()
 
@@ -666,6 +1112,7 @@ async def _extract_policy_data(
     filename: str,
     template_name: str,
     frameworks: list[str],
+    template_section_map: Optional[dict] = None,
 ) -> dict:
     raw_text = _extract_text_from_upload(file_bytes, filename)
     if len(raw_text.strip()) < 50:
@@ -679,6 +1126,7 @@ async def _extract_policy_data(
     user_msg = (
         f"DOCUMENT: {filename}\n"
         f"TEMPLATE TYPE: {template_name}\n"
+        f"TEMPLATE SECTION MAP:\n{json.dumps(template_section_map or _default_template_section_map(template_name), ensure_ascii=False)}\n\n"
         f"FRAMEWORKS TO MAP: {', '.join(normalized_frameworks)}\n"
         f"FRAMEWORK CONTROLS REFERENCE:\n{chr(10).join(fw_context)}\n\n"
         f"MAPPING RULES: {mapping_rules}\n\n"
@@ -914,6 +1362,7 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
 @router.post("/migrate/preview")
 async def migrate_preview(
     source_file: UploadFile = File(...),
+    template_file: UploadFile | None = File(default=None),
     template_name: str = Form(default="generic_policy"),
     industry: str = Form(default="Healthcare"),
     frameworks: str = Form(default="HIPAA,HITRUST"),
@@ -924,6 +1373,20 @@ async def migrate_preview(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
+    template_section_map = _default_template_section_map(template_name)
+    template_reference_name = template_name
+
+    if template_file is not None:
+        _require_supported_template_file(template_file, "template_file")
+        template_file_bytes = await template_file.read()
+        if not template_file_bytes:
+            raise HTTPException(status_code=400, detail="Template reference file is empty.")
+        template_reference_name = template_file.filename or template_name
+        template_section_map = _extract_template_section_map(
+            template_name=template_name,
+            template_file_bytes=template_file_bytes,
+            template_filename=template_reference_name,
+        )
 
     try:
         policy_data = await _extract_policy_data(
@@ -931,6 +1394,7 @@ async def migrate_preview(
             filename=source_file.filename or "document.txt",
             template_name=template_name,
             frameworks=framework_list,
+            template_section_map=template_section_map,
         )
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
@@ -942,16 +1406,19 @@ async def migrate_preview(
     policy_data["_session"] = {
         "source_filename": source_file.filename or "document",
         "template_name": template_name,
+        "template_reference_name": template_reference_name,
         "frameworks": framework_list,
         "industry": industry,
         "preview_id": str(uuid.uuid4()),
     }
+    policy_data["template_section_map"] = template_section_map
 
     return JSONResponse(
         content={
             "policy_data": policy_data,
             "framework_map": policy_data.get("framework_map"),
             "quality_score": policy_data.get("quality_score", 0),
+            "template_section_map": template_section_map,
             "preview_id": policy_data["_session"]["preview_id"],
         }
     )
@@ -987,6 +1454,7 @@ async def migrate_generate(request: MigrateGenerateRequest):
 async def migrate_document(
     file: UploadFile | None = File(default=None),
     source_file: UploadFile | None = File(default=None),
+    template_file: UploadFile | None = File(default=None),
     template_name: str = Form(default="generic_policy"),
     industry: str = Form(default="Healthcare"),
     frameworks: str = Form(default="HIPAA,HITRUST"),
@@ -1001,6 +1469,18 @@ async def migrate_document(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
+    template_section_map = _default_template_section_map(template_name)
+
+    if template_file is not None:
+        _require_supported_template_file(template_file, "template_file")
+        template_file_bytes = await template_file.read()
+        if not template_file_bytes:
+            raise HTTPException(status_code=400, detail="Template reference file is empty.")
+        template_section_map = _extract_template_section_map(
+            template_name=template_name,
+            template_file_bytes=template_file_bytes,
+            template_filename=template_file.filename or template_name,
+        )
 
     try:
         policy_data = await _extract_policy_data(
@@ -1008,6 +1488,7 @@ async def migrate_document(
             filename=upload.filename or "document.txt",
             template_name=template_name,
             frameworks=framework_list,
+            template_section_map=template_section_map,
         )
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
