@@ -146,7 +146,7 @@ def _generate_unique_org_slug(company_name: str) -> str:
     while True:
         try:
             response = (
-                supabase_admin.table("organizations")
+                supabase_admin.table("tenants")
                 .select("id")
                 .eq("slug", slug)
                 .limit(1)
@@ -165,8 +165,8 @@ def _generate_unique_org_slug(company_name: str) -> str:
 def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
     try:
         user_response = (
-            supabase_admin.table("users")
-            .select("id, org_id, email, name, role, created_at")
+            supabase_admin.table("profiles")
+            .select("id, tenant_id, email, name, organization_name, role, created_at")
             .eq("id", user_id)
             .limit(1)
             .execute()
@@ -181,18 +181,18 @@ def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] 
             detail="User is not provisioned for a Midnight organization.",
         )
 
-    org_id = user_record.get("org_id")
-    if not org_id:
+    tenant_id = user_record.get("tenant_id")
+    if not tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is missing an organization assignment.",
+            detail="User is missing a tenant assignment.",
         )
 
     try:
         org_response = (
-            supabase_admin.table("organizations")
+            supabase_admin.table("tenants")
             .select("id, slug, name, industry, region, employee_count, plan_type, created_at")
-            .eq("id", org_id)
+            .eq("id", tenant_id)
             .limit(1)
             .execute()
         )
@@ -218,17 +218,23 @@ def _build_session_payload(
 
     display_name = _normalize_display_name(user_name or metadata_name, email)
     role = str((user_record or {}).get("role") or "owner").replace("_", " ").title()
-    org_id = (user_record or {}).get("org_id")
+    tenant_id = (user_record or {}).get("tenant_id")
+    organization_name = (
+        (organization or {}).get("name")
+        or (user_record or {}).get("organization_name")
+        or "Midnight Workspace"
+    )
 
     return {
         "authenticated": authenticated,
-        "workspace_id": org_id,
+        "workspace_id": tenant_id,
         "user_id": (user_record or {}).get("id") or getattr(auth_user, "id", None),
-        "org_id": org_id,
+        "tenant_id": tenant_id,
+        "org_id": tenant_id,
         "org_slug": (organization or {}).get("slug"),
         "email": email,
         "display_name": display_name,
-        "organization_name": (organization or {}).get("name") or "Midnight Workspace",
+        "organization_name": organization_name,
         "role": role,
         "environment": settings.ENVIRONMENT,
     }
@@ -278,7 +284,8 @@ def verify_access(request: Request) -> dict[str, Any]:
     )
     request.state.access_token = access_token
     request.state.user_id = auth_context["user_id"]
-    request.state.org_id = auth_context["org_id"]
+    request.state.tenant_id = auth_context["tenant_id"]
+    request.state.org_id = auth_context["tenant_id"]
     request.state.org_slug = auth_context["org_slug"]
     request.state.user_email = auth_context["email"]
     request.state.auth_context = auth_context
@@ -355,7 +362,7 @@ async def signup(payload: SignupRequest, response: Response):
 
     try:
         org_response = (
-            supabase_admin.table("organizations")
+            supabase_admin.table("tenants")
             .insert(
                 {
                     "slug": org_slug,
@@ -376,13 +383,14 @@ async def signup(payload: SignupRequest, response: Response):
             )
 
         user_response = (
-            supabase_admin.table("users")
+            supabase_admin.table("profiles")
             .insert(
                 {
                     "id": str(auth_user.id),
-                    "org_id": organization["id"],
+                    "tenant_id": organization["id"],
                     "email": payload.email.strip().lower(),
                     "name": (payload.name or "").strip() or None,
+                    "organization_name": payload.company_name.strip(),
                     "role": "owner",
                 }
             )
@@ -390,9 +398,10 @@ async def signup(payload: SignupRequest, response: Response):
         )
         user_record = _first_row(user_response.data) or {
             "id": str(auth_user.id),
-            "org_id": organization["id"],
+            "tenant_id": organization["id"],
             "email": payload.email.strip().lower(),
             "name": (payload.name or "").strip() or None,
+            "organization_name": payload.company_name.strip(),
             "role": "owner",
         }
 
@@ -400,7 +409,7 @@ async def signup(payload: SignupRequest, response: Response):
             supabase_admin.table("onboarding_sessions")
             .insert(
                 {
-                    "org_id": organization["id"],
+                    "tenant_id": organization["id"],
                     "current_step": "plan",
                     "progress": 0,
                     "completed": False,
