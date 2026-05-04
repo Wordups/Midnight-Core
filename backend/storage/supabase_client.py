@@ -184,6 +184,19 @@ class AuthClient:
             )
         return AuthResponseData(user=user, session=session)
 
+    def sign_in_with_otp(self, payload: dict[str, Any]) -> dict[str, Any]:
+        response = requests.post(
+            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/otp",
+            headers=_auth_headers(),
+            json=payload,
+            timeout=30,
+        )
+        if response.status_code >= 400:
+            _raise_auth_error(response)
+        if not response.content:
+            return {}
+        return response.json()
+
     def get_user(self, access_token: str) -> SimpleNamespace:
         response = requests.get(
             f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/user",

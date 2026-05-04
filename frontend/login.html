@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Midnight — Sign In</title>
+<title>Midnight - Sign In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -39,7 +39,6 @@ html, body {
   overflow: hidden;
 }
 
-/* Background grid + glow */
 body::before {
   content: '';
   position: fixed;
@@ -56,16 +55,19 @@ body::before {
 .scene {
   position: relative;
   z-index: 1;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
 }
 
 .card {
   width: 100%;
-  max-width: 420px;
-  padding: 48px 44px 44px;
+  max-width: 460px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 40px 40px 32px;
   background: var(--s1);
   border: 1px solid var(--cyan-bd);
   border-radius: 20px;
@@ -77,15 +79,14 @@ body::before {
 }
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Logo */
 .logo-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 .logo-icon {
   width: 40px;
@@ -99,7 +100,6 @@ body::before {
   box-shadow: 0 0 20px rgba(0,212,245,0.4);
 }
 .logo-icon svg { width: 18px; height: 18px; }
-.logo-text { flex: 1; }
 .logo-name {
   font-family: var(--display);
   font-size: 24px;
@@ -116,7 +116,6 @@ body::before {
   margin-top: 3px;
 }
 
-/* Headline */
 .headline {
   font-family: var(--display);
   font-size: 34px;
@@ -129,12 +128,37 @@ body::before {
   font-size: 13px;
   color: var(--t2);
   font-weight: 300;
-  margin-bottom: 32px;
-  line-height: 1.5;
+  margin-bottom: 24px;
+  line-height: 1.55;
 }
 
-/* Form */
-.field { margin-bottom: 16px; }
+.mode-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.mode-btn {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--b1);
+  background: var(--s2);
+  color: var(--t2);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mode-btn.active {
+  border-color: var(--cyan-bd);
+  color: var(--t0);
+  background: rgba(0,212,245,0.08);
+  box-shadow: 0 0 0 2px rgba(0,212,245,0.08);
+}
+
+.field { margin-bottom: 14px; }
 .field-label {
   display: block;
   font-family: var(--mono);
@@ -165,8 +189,9 @@ body::before {
   border-color: var(--red);
   box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
 }
+.signup-fields { display: none; }
+.signup-fields.active { display: block; }
 
-/* Error message */
 .error-msg {
   display: none;
   font-family: var(--mono);
@@ -181,11 +206,10 @@ body::before {
 }
 .error-msg.show { display: block; }
 
-/* Submit */
 .submit-btn {
   width: 100%;
   padding: 13px;
-  margin-top: 24px;
+  margin-top: 18px;
   background: var(--cyan);
   color: #000;
   border: none;
@@ -204,9 +228,6 @@ body::before {
   opacity: 0.9;
   transform: translateY(-1px);
   box-shadow: 0 0 32px rgba(0,212,245,0.5);
-}
-.submit-btn:active:not(:disabled) {
-  transform: translateY(0);
 }
 .submit-btn:disabled {
   opacity: 0.5;
@@ -235,10 +256,71 @@ body::before {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Footer */
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--t3);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.social-divider::before,
+.social-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--b0);
+}
+.social-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.social-btn,
+.secondary-btn {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: var(--body);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.social-btn {
+  border: 1px solid var(--b1);
+  background: var(--s2);
+  color: var(--t1);
+  font-weight: 500;
+}
+.social-btn:hover {
+  border-color: var(--cyan-bd);
+  color: var(--t0);
+  box-shadow: 0 0 0 2px rgba(0,212,245,0.08);
+}
+.secondary-btn {
+  margin-top: 10px;
+  border: 1px solid var(--cyan-bd);
+  background: rgba(0,212,245,0.06);
+  color: var(--cyan);
+  font-weight: 600;
+}
+.secondary-btn:hover {
+  background: rgba(0,212,245,0.1);
+}
+.helper-copy {
+  margin-top: 12px;
+  color: var(--t3);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .card-footer {
-  margin-top: 28px;
-  padding-top: 20px;
+  margin-top: 24px;
+  padding-top: 18px;
   border-top: 1px solid var(--b0);
   display: flex;
   align-items: center;
@@ -263,7 +345,7 @@ body::before {
 }
 @keyframes pulse {
   0%,100% { box-shadow: 0 0 4px var(--green); opacity: 1; }
-  50%      { box-shadow: 0 0 10px var(--green); opacity: 0.7; }
+  50% { box-shadow: 0 0 10px var(--green); opacity: 0.7; }
 }
 .footer-version {
   font-family: var(--mono);
@@ -277,7 +359,6 @@ body::before {
 
 <div class="scene">
   <div class="card">
-
     <div class="logo-row">
       <div class="logo-icon">
         <svg viewBox="0 0 18 18" fill="none">
@@ -290,39 +371,76 @@ body::before {
       </div>
     </div>
 
-    <div class="headline">SIGN IN</div>
-    <div class="subline">Enter your credentials to access your compliance workspace.</div>
+    <div class="headline" id="login-headline">SIGN IN</div>
+    <div class="subline" id="login-subline">Enter your credentials to access your compliance workspace.</div>
+
+    <div class="mode-row">
+      <button class="mode-btn active" id="mode-signin-btn" type="button" onclick="setMode('signin')">Sign In</button>
+      <button class="mode-btn" id="mode-signup-btn" type="button" onclick="setMode('signup')">Start Now</button>
+    </div>
 
     <div class="field">
       <label class="field-label" for="login-email">Email</label>
-      <input
-        class="field-input"
-        type="email"
-        id="login-email"
-        placeholder="you@organization.com"
-        autocomplete="email"
-        onkeydown="if(event.key==='Enter') handleLogin()"
-      >
+      <input class="field-input" type="email" id="login-email" placeholder="you@organization.com" autocomplete="email" onkeydown="if(event.key==='Enter') handlePrimaryAction()">
     </div>
 
     <div class="field">
       <label class="field-label" for="login-password">Password</label>
-      <input
-        class="field-input"
-        type="password"
-        id="login-password"
-        placeholder="••••••••••••"
-        autocomplete="current-password"
-        onkeydown="if(event.key==='Enter') handleLogin()"
-      >
+      <input class="field-input" type="password" id="login-password" placeholder="••••••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') handlePrimaryAction()">
+    </div>
+
+    <div class="signup-fields" id="signup-fields">
+      <div class="field">
+        <label class="field-label" for="signup-name">Full Name</label>
+        <input class="field-input" type="text" id="signup-name" placeholder="Your name" autocomplete="name">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="signup-company">Company Name</label>
+        <input class="field-input" type="text" id="signup-company" placeholder="Organization name" autocomplete="organization">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="signup-industry">Industry</label>
+        <select class="field-input" id="signup-industry">
+          <option value="">Select industry</option>
+          <option>Healthcare</option>
+          <option>Financial Services</option>
+          <option>Technology / SaaS</option>
+          <option>Legal</option>
+          <option>Insurance</option>
+          <option>Government</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="signup-region">Region</label>
+        <input class="field-input" type="text" id="signup-region" placeholder="e.g. North America">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="signup-employee-count">Employee Count</label>
+        <input class="field-input" type="text" id="signup-employee-count" placeholder="e.g. 1-50">
+      </div>
     </div>
 
     <div class="error-msg" id="login-error">Incorrect credentials. Please try again.</div>
 
-    <button class="submit-btn" id="login-btn" onclick="handleLogin()">
-      <span class="btn-text">Sign In →</span>
+    <button class="submit-btn" id="login-btn" onclick="handlePrimaryAction()">
+      <span class="btn-text" id="login-btn-text">Sign In →</span>
       <span class="spinner"><span class="spinner-ring"></span></span>
     </button>
+
+    <div class="social-divider">or continue with</div>
+    <div class="social-stack">
+      <button class="social-btn" type="button" onclick="startOAuth('google')">Continue with Google</button>
+      <button class="social-btn" type="button" onclick="startOAuth('microsoft')">Continue with Microsoft</button>
+      <button class="social-btn" type="button" onclick="sendMagicLink()">Magic Link passwordless email</button>
+    </div>
+
+    <button class="secondary-btn" type="button" onclick="window.location.assign('/onboarding/plan')">Start Now →</button>
+    <div class="helper-copy" id="login-helper-copy">Use your Supabase-backed workspace credentials, or continue with a secure provider.</div>
 
     <div class="card-footer">
       <div class="footer-badge">
@@ -331,56 +449,144 @@ body::before {
       </div>
       <div class="footer-version">Core v2.0</div>
     </div>
-
   </div>
 </div>
 
 <script>
 const API = window.location.origin;
+let authMode = 'signin';
 
-// If already authenticated, go straight to dashboard
-(async () => {
+function showError(message) {
+  const errorEl = document.getElementById('login-error');
+  if (!errorEl) return;
+  errorEl.textContent = message;
+  errorEl.classList.add('show');
+}
+
+function clearError() {
+  const errorEl = document.getElementById('login-error');
+  const emailEl = document.getElementById('login-email');
+  const passwordEl = document.getElementById('login-password');
+  errorEl?.classList.remove('show');
+  emailEl?.classList.remove('error');
+  passwordEl?.classList.remove('error');
+}
+
+function setLoading(isLoading) {
+  const btn = document.getElementById('login-btn');
+  if (!btn) return;
+  btn.disabled = isLoading;
+  btn.classList.toggle('loading', isLoading);
+}
+
+function setMode(mode) {
+  authMode = mode === 'signup' ? 'signup' : 'signin';
+  document.getElementById('signup-fields')?.classList.toggle('active', authMode === 'signup');
+  document.getElementById('mode-signin-btn')?.classList.toggle('active', authMode === 'signin');
+  document.getElementById('mode-signup-btn')?.classList.toggle('active', authMode === 'signup');
+
+  const headline = document.getElementById('login-headline');
+  const subline = document.getElementById('login-subline');
+  const helper = document.getElementById('login-helper-copy');
+  const buttonText = document.getElementById('login-btn-text');
+  const passwordEl = document.getElementById('login-password');
+
+  if (authMode === 'signup') {
+    if (headline) headline.textContent = 'START NOW';
+    if (subline) subline.textContent = 'Create your tenant, begin onboarding, and land in a multi-tenant Midnight workspace.';
+    if (helper) helper.textContent = 'Email/password signup still works, and social login or magic link can take the same path.';
+    if (buttonText) buttonText.textContent = 'Start Now →';
+    if (passwordEl) passwordEl.autocomplete = 'new-password';
+  } else {
+    if (headline) headline.textContent = 'SIGN IN';
+    if (subline) subline.textContent = 'Enter your credentials to access your compliance workspace.';
+    if (helper) helper.textContent = 'Use your Supabase-backed workspace credentials, or continue with a secure provider.';
+    if (buttonText) buttonText.textContent = 'Sign In →';
+    if (passwordEl) passwordEl.autocomplete = 'current-password';
+  }
+}
+
+async function exchangeAuthTokenFromUrl() {
+  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+  if (!hash) return false;
+
+  const params = new URLSearchParams(hash);
+  const accessToken = params.get('access_token');
+  const errorDescription = params.get('error_description') || params.get('error');
+
+  if (errorDescription) {
+    showError(decodeURIComponent(errorDescription));
+    history.replaceState({}, '', window.location.pathname + window.location.search);
+    return false;
+  }
+
+  if (!accessToken) return false;
+
+  setLoading(true);
+  try {
+    const res = await fetch(API + '/auth/exchange', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.detail || 'Authentication exchange failed.');
+    window.location.replace(payload.redirect_to || '/midnight_dashboard.html');
+    return true;
+  } catch (err) {
+    showError(err.message || 'Authentication exchange failed.');
+    history.replaceState({}, '', window.location.pathname + window.location.search);
+    return false;
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function checkExistingSession() {
   try {
     const res = await fetch(API + '/auth/session', { credentials: 'include' });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.authenticated) {
-        window.location.replace('/midnight_dashboard.html');
-        return;
-      }
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (data.authenticated) {
+      window.location.replace('/midnight_dashboard.html');
+      return true;
     }
   } catch (_) {}
-})();
+  return false;
+}
+
+function signupPayload() {
+  return {
+    email: (document.getElementById('login-email')?.value || '').trim(),
+    password: document.getElementById('login-password')?.value || '',
+    company_name: (document.getElementById('signup-company')?.value || '').trim(),
+    name: (document.getElementById('signup-name')?.value || '').trim(),
+    industry: document.getElementById('signup-industry')?.value || '',
+    region: (document.getElementById('signup-region')?.value || '').trim(),
+    employee_count: (document.getElementById('signup-employee-count')?.value || '').trim(),
+  };
+}
 
 async function handleLogin() {
-  const emailEl    = document.getElementById('login-email');
+  const emailEl = document.getElementById('login-email');
   const passwordEl = document.getElementById('login-password');
-  const btn        = document.getElementById('login-btn');
-  const errorEl    = document.getElementById('login-error');
+  const email = emailEl?.value.trim() || '';
+  const password = passwordEl?.value || '';
 
-  const email    = emailEl.value.trim();
-  const password = passwordEl.value;
-
-  // Clear previous errors
-  errorEl.classList.remove('show');
-  emailEl.classList.remove('error');
-  passwordEl.classList.remove('error');
-
+  clearError();
   if (!email) {
-    emailEl.classList.add('error');
-    emailEl.focus();
+    emailEl?.classList.add('error');
+    emailEl?.focus();
     return;
   }
   if (!password) {
-    passwordEl.classList.add('error');
-    passwordEl.focus();
+    passwordEl?.classList.add('error');
+    passwordEl?.focus();
     return;
   }
 
-  // Loading state
-  btn.disabled = true;
-  btn.classList.add('loading');
-
+  setLoading(true);
   try {
     const res = await fetch(API + '/auth/login', {
       method: 'POST',
@@ -388,25 +594,99 @@ async function handleLogin() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.detail || 'Invalid credentials.');
+    window.location.replace(payload.redirect_to || '/midnight_dashboard.html');
+  } catch (err) {
+    passwordEl?.classList.add('error');
+    if (passwordEl) passwordEl.value = '';
+    passwordEl?.focus();
+    showError(err.message || 'Connection error. Check your network and try again.');
+  } finally {
+    setLoading(false);
+  }
+}
 
-    if (res.ok) {
-      // Success — go to dashboard
-      window.location.replace('/midnight_dashboard.html');
-    } else {
-      // Wrong credentials
-      passwordEl.classList.add('error');
-      errorEl.classList.add('show');
-      passwordEl.value = '';
-      passwordEl.focus();
-    }
-  } catch (_) {
-    errorEl.textContent = 'Connection error. Check your network and try again.';
-    errorEl.classList.add('show');
+async function handleSignup() {
+  const payload = signupPayload();
+  clearError();
+
+  if (!payload.email) {
+    document.getElementById('login-email')?.classList.add('error');
+    document.getElementById('login-email')?.focus();
+    return;
+  }
+  if (!payload.password) {
+    document.getElementById('login-password')?.classList.add('error');
+    document.getElementById('login-password')?.focus();
+    return;
+  }
+  if (!payload.company_name) {
+    showError('Company name is required to start onboarding.');
+    document.getElementById('signup-company')?.focus();
+    return;
   }
 
-  btn.disabled = false;
-  btn.classList.remove('loading');
+  setLoading(true);
+  try {
+    const res = await fetch(API + '/auth/signup', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.detail || 'Signup failed.');
+    window.location.replace(body.redirect_to || '/onboarding/plan');
+  } catch (err) {
+    showError(err.message || 'Signup failed.');
+  } finally {
+    setLoading(false);
+  }
 }
+
+function handlePrimaryAction() {
+  if (authMode === 'signup') return handleSignup();
+  return handleLogin();
+}
+
+function startOAuth(provider) {
+  window.location.assign(`${API}/auth/oauth/${encodeURIComponent(provider)}`);
+}
+
+async function sendMagicLink() {
+  clearError();
+  const email = (document.getElementById('login-email')?.value || '').trim();
+  if (!email) {
+    document.getElementById('login-email')?.classList.add('error');
+    document.getElementById('login-email')?.focus();
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const res = await fetch(API + '/auth/magic-link', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.detail || 'Magic link request failed.');
+    showError(body.message || 'Magic link sent. Check your inbox.');
+  } catch (err) {
+    showError(err.message || 'Magic link request failed.');
+  } finally {
+    setLoading(false);
+  }
+}
+
+(async () => {
+  const url = new URL(window.location.href);
+  setMode(url.searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
+  if (await exchangeAuthTokenFromUrl()) return;
+  await checkExistingSession();
+})();
 </script>
 </body>
 </html>

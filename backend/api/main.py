@@ -22,6 +22,7 @@ import base64
 import json
 import os
 import re
+from urllib.parse import urlencode
 
 from backend.storage.supabase_client import supabase, supabase_admin
 from errors import register_exception_handlers
@@ -69,6 +70,14 @@ class SignupRequest(BaseModel):
     employee_count: str | None = None
 
 
+class MagicLinkRequest(BaseModel):
+    email: str
+
+
+class TokenExchangeRequest(BaseModel):
+    access_token: str
+
+
 def _is_secure_cookie() -> bool:
     return settings.ENVIRONMENT == "prod"
 
@@ -99,6 +108,23 @@ def _set_auth_cookie(response: Response, access_token: str, expires_in: int | No
         max_age=_cookie_max_age(expires_in),
         path="/",
     )
+
+
+def _public_app_url(request: Request, path: str) -> str:
+    base = str(request.base_url).rstrip("/")
+    return f"{base}{path}"
+
+
+def _oauth_provider_name(provider: str) -> str:
+    normalized = provider.strip().lower()
+    mapping = {
+        "google": "google",
+        "microsoft": "azure",
+    }
+    resolved = mapping.get(normalized)
+    if not resolved:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported auth provider.")
+    return resolved
 
 
 def _extract_user_id_from_token(access_token: str) -> str:
@@ -458,6 +484,67 @@ async def signup(payload: SignupRequest, response: Response):
     }
 
 
+@app.get("/auth/oauth/{provider}")
+async def oauth_redirect(request: Request, provider: str):
+    supabase_provider = _oauth_provider_name(provider)
+    redirect_to = _public_app_url(request, "/login.html")
+    params = urlencode({"provider": supabase_provider, "redirect_to": redirect_to})
+    return RedirectResponse(
+        url=f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/authorize?{params}",
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+    )
+
+
+@app.post("/auth/magic-link")
+async def magic_link(request: Request, payload: MagicLinkRequest):
+    redirect_to = _public_app_url(request, "/login.html")
+    try:
+        supabase.auth.sign_in_with_otp(
+            {
+                "email": payload.email.strip().lower(),
+                "create_user": True,
+                "options": {
+                    "email_redirect_to": redirect_to,
+                },
+            }
+        )
+    except AuthApiError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return {
+        "sent": True,
+        "redirect_to": redirect_to,
+        "message": "Magic link sent. Check your email to continue.",
+    }
+
+
+@app.post("/auth/exchange")
+async def exchange_token(payload: TokenExchangeRequest, response: Response):
+    access_token = payload.access_token.strip()
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Access token is required.",
+        )
+
+    user_record, organization, auth_user = _authenticate_token(access_token)
+    _set_auth_cookie(response, access_token, 60 * 60)
+
+    return {
+        **_build_session_payload(
+            authenticated=True,
+            user_record=user_record,
+            organization=organization,
+            auth_user=auth_user,
+        ),
+        "access_token": access_token,
+        "redirect_to": "/midnight_dashboard.html",
+    }
+
+
 @app.post("/auth/logout")
 async def logout(request: Request, response: Response):
     access_token = request.cookies.get(session_cookie_name, "").strip()
@@ -473,6 +560,11 @@ async def logout(request: Request, response: Response):
         path="/",
     )
     return {"authenticated": False}
+
+
+@app.get("/onboarding/plan")
+async def onboarding_plan_entry():
+    return RedirectResponse(url="/login.html?mode=signup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 @app.get("/auth/session")
