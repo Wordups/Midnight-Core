@@ -1898,7 +1898,7 @@ async def create_org(request: Request, payload: TenantCreateRequest):
 async def update_org_onboarding(request: Request, tenant_id: str, payload: OnboardingUpdateRequest):
     tenant = _assert_tenant_access(request, tenant_id)
     frameworks = [item.strip() for item in (payload.frameworks or []) if item and item.strip()]
-    if frameworks:
+    if payload.frameworks is not None:
         _enforce_trial_limits(request, frameworks=frameworks)
 
     updates: dict[str, object] = {}

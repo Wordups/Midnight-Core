@@ -51,6 +51,7 @@ register_exception_handlers(app)
 app.include_router(health_router)
 
 session_cookie_name = "midnight_session"
+TRIAL_MAX_USERS = 1
 
 
 class LoginRequest(BaseModel):
@@ -159,6 +160,19 @@ def _generate_unique_org_slug(company_name: str) -> str:
         slug = f"{base_slug}-{counter}"
 
 
+def _count_profiles_for_tenant(tenant_id: str) -> int:
+    try:
+        response = (
+            supabase_admin.table("profiles")
+            .select("id")
+            .eq("tenant_id", tenant_id)
+            .execute()
+        )
+    except Exception as exc:
+        raise _database_setup_error(exc) from exc
+    return len(response.data or [])
+
+
 def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
     try:
         user_response = (
@@ -197,6 +211,13 @@ def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] 
         raise _database_setup_error(exc) from exc
 
     organization = _first_row(org_response.data)
+    if organization and str(organization.get("plan_type") or "").lower() == "trial":
+        profile_count = _count_profiles_for_tenant(str(tenant_id))
+        if profile_count > TRIAL_MAX_USERS:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Trial plans support only {TRIAL_MAX_USERS} user. Upgrade to add more seats.",
+            )
     return user_record, organization
 
 
@@ -462,8 +483,10 @@ async def session_status(request: Request):
 
     try:
         user_record, organization, auth_user = _authenticate_token(access_token)
-    except HTTPException:
-        return _build_session_payload(authenticated=False)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            return _build_session_payload(authenticated=False)
+        raise
 
     return _build_session_payload(
         authenticated=True,
