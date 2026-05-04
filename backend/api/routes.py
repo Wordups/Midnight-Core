@@ -5,12 +5,15 @@ Takeoff LLC
 
 import json
 import os
+import re
 import tempfile
 import uuid
 from io import BytesIO
 from typing import Optional
 
 from docx import Document
+from docx.table import Table
+from docx.text.paragraph import Paragraph
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 from dotenv import load_dotenv
@@ -87,6 +90,43 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = "claude-opus-4-5"
 SUPPORTED_EXTENSIONS = {".docx", ".txt", ".md"}
 
+MIGRATE_SECTION_ALIASES = {
+    "purpose": ["Purpose", "Purpose and Scope", "Background", "Overview", "Objective", "Introduction"],
+    "definitions": ["Glossary", "Key Terms", "Definitions", "Terminology"],
+    "policy_statement": [
+        "Policy Statement",
+        "Policy Body",
+        "Policy Details",
+        "Policy Content",
+        "Policy Requirements",
+        "Rules",
+    ],
+    "procedures": ["Procedures", "Process Steps", "Controls", "Implementation", "Guidelines"],
+    "related_policies": ["Related Policies", "See Also", "References", "Associated Documents"],
+    "citations_references": [
+        "Citations / References",
+        "Standards",
+        "Regulatory References",
+        "Citations",
+        "Compliance References",
+    ],
+    "revision_history": ["Revision History", "Change Log", "Document History", "Version History"],
+}
+
+MIGRATE_HEADER_ALIASES = {
+    "policy_name": ["Policy Name"],
+    "policy_number": ["Policy Number"],
+    "version": ["Version"],
+    "grc_id": ["GRC ID"],
+    "effective_date": ["Effective Date"],
+    "supersedes_policy": ["Supersedes Policy"],
+    "last_reviewed_date": ["Last Reviewed Date", "Last Reviewed"],
+    "last_revised_date": ["Last Revised Date", "Last Revised"],
+    "policy_custodian": ["Policy Custodian"],
+    "policy_owner": ["Policy Owner"],
+    "policy_approver": ["Policy Approver"],
+}
+
 
 def _get_workspace_id() -> str:
     return os.getenv("WORKSPACE_ID", "personal")
@@ -137,6 +177,309 @@ def _extract_text_from_upload(file_bytes: bytes, filename: str) -> str:
         return file_bytes.decode("utf-8")
     except UnicodeDecodeError:
         return file_bytes.decode("latin-1")
+
+
+def _iter_docx_blocks(doc: Document):
+    for child in doc.element.body.iterchildren():
+        if child.tag.endswith("}p"):
+            yield "paragraph", Paragraph(child, doc)
+        elif child.tag.endswith("}tbl"):
+            yield "table", Table(child, doc)
+
+
+def _table_rows_to_lists(table: Table) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for row in table.rows:
+        values = [cell.text or "" for cell in row.cells]
+        if any(value.strip() for value in values):
+            rows.append(values)
+    return rows
+
+
+def _extract_source_blocks(file_bytes: bytes, filename: str) -> list[dict]:
+    lower = filename.lower()
+    blocks: list[dict] = []
+
+    if lower.endswith(".docx"):
+        doc = Document(BytesIO(file_bytes))
+        for kind, item in _iter_docx_blocks(doc):
+            if kind == "paragraph":
+                blocks.append({"kind": "paragraph", "text": item.text or ""})
+            else:
+                rows = _table_rows_to_lists(item)
+                if rows:
+                    blocks.append(
+                        {
+                            "kind": "table",
+                            "rows": rows,
+                            "text": "\n".join(" | ".join(row) for row in rows),
+                        }
+                    )
+        return blocks
+
+    text = _extract_text_from_upload(file_bytes, filename)
+    for line in text.splitlines():
+        blocks.append({"kind": "paragraph", "text": line})
+    return blocks
+
+
+def _normalize_source_label(text: str) -> str:
+    normalized = re.sub(r"^[#>\-\*\s]+", "", str(text or "").strip())
+    normalized = normalized.rstrip(":").strip().lower()
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized
+
+
+def _split_semicolons(value: str) -> str:
+    return str(value or "").replace(";", "\n")
+
+
+def _match_header_value(text: str) -> tuple[Optional[str], Optional[str]]:
+    raw = str(text or "").strip()
+    if not raw:
+        return None, None
+
+    for output_key, aliases in MIGRATE_HEADER_ALIASES.items():
+        for alias in aliases:
+            match = re.match(
+                rf"^\s*{re.escape(alias)}\s*[:\-–]\s*(.+?)\s*$",
+                raw,
+                flags=re.IGNORECASE,
+            )
+            if match:
+                return output_key, match.group(1)
+    return None, None
+
+
+def _match_section_heading(text: str) -> tuple[Optional[str], Optional[str]]:
+    raw = str(text or "").strip()
+    if not raw:
+        return None, None
+
+    normalized = _normalize_source_label(raw)
+    for output_key, aliases in MIGRATE_SECTION_ALIASES.items():
+        for alias in aliases:
+            alias_normalized = _normalize_source_label(alias)
+            if normalized == alias_normalized:
+                return output_key, None
+
+            match = re.match(
+                rf"^\s*{re.escape(alias)}\s*[:\-–]\s*(.+?)\s*$",
+                raw,
+                flags=re.IGNORECASE,
+            )
+            if match:
+                return output_key, match.group(1)
+    return None, None
+
+
+def _capture_header_rows(rows: list[list[str]], header_values: dict) -> bool:
+    captured = False
+    for row in rows:
+        if len(row) < 2:
+            continue
+        key, value = _match_header_value(f"{row[0]}: {row[1]}")
+        if key and value and not header_values.get(key):
+            header_values[key] = value
+            captured = True
+    return captured
+
+
+def _looks_like_revision_history_header(row: list[str]) -> bool:
+    normalized = [_normalize_source_label(cell) for cell in row if str(cell or "").strip()]
+    if not normalized:
+        return False
+    header_tokens = {"version", "date", "description", "change", "change log", "history"}
+    return sum(token in header_tokens for token in normalized) >= 2
+
+
+def _build_revision_history(rows: list[list[str]]) -> list[dict]:
+    entries: list[dict] = []
+    filtered_rows = [row for row in rows if any(str(cell or "").strip() for cell in row)]
+    if filtered_rows and _looks_like_revision_history_header(filtered_rows[0]):
+        filtered_rows = filtered_rows[1:]
+
+    for row in filtered_rows:
+        cleaned = [_split_semicolons(cell).strip() for cell in row]
+        if not any(cleaned):
+            continue
+        entries.append(
+            {
+                "version": cleaned[0] if len(cleaned) > 0 else "",
+                "date": cleaned[1] if len(cleaned) > 1 else "",
+                "description": " | ".join(cell for cell in cleaned[2:] if cell) if len(cleaned) > 2 else "",
+            }
+        )
+    return entries
+
+
+def _join_verbatim_content(parts: list[str]) -> str:
+    if not parts:
+        return ""
+    text = "\n".join(parts)
+    return text.strip("\n")
+
+
+def _map_migrate_source(file_bytes: bytes, filename: str) -> dict:
+    blocks = _extract_source_blocks(file_bytes, filename)
+    header_values: dict[str, str] = {}
+    section_parts: dict[str, list[str]] = {key: [] for key in MIGRATE_SECTION_ALIASES}
+    revision_rows: list[list[str]] = []
+    current_section: Optional[str] = None
+
+    for block in blocks:
+        if block["kind"] == "paragraph":
+            text = str(block.get("text", ""))
+            if not text.strip():
+                if current_section and current_section != "revision_history" and section_parts[current_section]:
+                    section_parts[current_section].append("")
+                continue
+
+            header_key, header_value = _match_header_value(text)
+            if header_key and header_value and not header_values.get(header_key):
+                header_values[header_key] = header_value
+                continue
+
+            section_key, inline_value = _match_section_heading(text)
+            if section_key:
+                current_section = section_key
+                if inline_value:
+                    if section_key == "revision_history":
+                        revision_rows.append([_split_semicolons(inline_value)])
+                    else:
+                        section_parts[section_key].append(_split_semicolons(inline_value))
+                continue
+
+            if current_section == "revision_history":
+                revision_rows.append([_split_semicolons(text)])
+            elif current_section:
+                section_parts[current_section].append(_split_semicolons(text))
+            continue
+
+        rows = block.get("rows", [])
+        if not rows:
+            continue
+
+        if _capture_header_rows(rows, header_values) and current_section is None:
+            continue
+
+        if current_section == "revision_history":
+            revision_rows.extend(rows)
+        elif current_section:
+            for row in rows:
+                section_parts[current_section].append(_split_semicolons(" | ".join(row)))
+
+    related_policies = _join_verbatim_content(section_parts["related_policies"])
+    citations_references = _join_verbatim_content(section_parts["citations_references"])
+    combined_references_parts = []
+    if related_policies:
+        combined_references_parts.append(f"Related Policies\n{related_policies}")
+    if citations_references:
+        combined_references_parts.append(f"Citations / References\n{citations_references}")
+
+    return {
+        "headers": header_values,
+        "purpose": _join_verbatim_content(section_parts["purpose"]),
+        "definitions": _join_verbatim_content(section_parts["definitions"]),
+        "policy_statement": _join_verbatim_content(section_parts["policy_statement"]),
+        "procedures": _join_verbatim_content(section_parts["procedures"]),
+        "related_policies": related_policies,
+        "citations_references": citations_references,
+        "combined_references": "\n\n".join(part for part in combined_references_parts if part),
+        "revision_history": _build_revision_history(revision_rows),
+    }
+
+
+def _build_migrate_mapping_context(mapped_source: dict) -> str:
+    header_lines = []
+    for key in (
+        "policy_name",
+        "policy_number",
+        "version",
+        "grc_id",
+        "effective_date",
+        "supersedes_policy",
+        "last_reviewed_date",
+        "last_revised_date",
+        "policy_custodian",
+        "policy_owner",
+        "policy_approver",
+    ):
+        value = mapped_source.get("headers", {}).get(key)
+        if value:
+            header_lines.append(f"{key}: {value}")
+
+    section_lines = []
+    for key in (
+        "purpose",
+        "definitions",
+        "policy_statement",
+        "procedures",
+        "related_policies",
+        "citations_references",
+    ):
+        value = mapped_source.get(key)
+        if value:
+            section_lines.append(f"{key.upper()}:\n{value}")
+
+    revision_history = mapped_source.get("revision_history") or []
+    if revision_history:
+        revision_lines = ["REVISION_HISTORY:"]
+        for entry in revision_history:
+            revision_lines.append(
+                f"{entry.get('version', '')} | {entry.get('date', '')} | {entry.get('description', '')}"
+            )
+        section_lines.append("\n".join(revision_lines))
+
+    return "\n\n".join(
+        part for part in ["\n".join(header_lines).strip(), "\n\n".join(section_lines).strip()] if part
+    )
+
+
+def _apply_migrate_source_mapping(policy_data: dict, mapped_source: dict) -> dict:
+    updated = dict(policy_data or {})
+    headers = mapped_source.get("headers", {}) or {}
+
+    if headers.get("policy_name"):
+        updated["policy_name"] = headers["policy_name"]
+    if headers.get("version"):
+        updated["version"] = headers["version"]
+    if headers.get("effective_date"):
+        updated["effective_date"] = headers["effective_date"]
+    if headers.get("policy_owner"):
+        updated["owner"] = headers["policy_owner"]
+
+    for field in (
+        "policy_number",
+        "grc_id",
+        "supersedes_policy",
+        "last_reviewed_date",
+        "last_revised_date",
+        "policy_custodian",
+        "policy_owner",
+        "policy_approver",
+    ):
+        if headers.get(field):
+            updated[field] = headers[field]
+
+    if mapped_source.get("purpose"):
+        updated["purpose"] = mapped_source["purpose"]
+    if mapped_source.get("definitions"):
+        updated["definitions"] = mapped_source["definitions"]
+    if mapped_source.get("policy_statement"):
+        updated["policy_statement"] = mapped_source["policy_statement"]
+    if mapped_source.get("procedures"):
+        updated["procedures"] = mapped_source["procedures"]
+    if mapped_source.get("related_policies"):
+        updated["related_policies"] = mapped_source["related_policies"]
+    if mapped_source.get("citations_references"):
+        updated["citations_references"] = mapped_source["citations_references"]
+    if mapped_source.get("combined_references"):
+        updated["references"] = mapped_source["combined_references"]
+    if mapped_source.get("revision_history"):
+        updated["revision_history"] = mapped_source["revision_history"]
+
+    return updated
 
 
 def _strip_json_fences(raw: str) -> str:
@@ -305,7 +648,12 @@ Your output must be valid JSON with this exact structure:
 
 Rules:
 - Never invent content not in the source.
-- Preserve the source meaning in plain business language.
+- For mapped source sections and header fields, copy content verbatim.
+- Never paraphrase or summarize mapped source sections.
+- Preserve bullets, indentation, and numbered lists exactly for mapped source sections.
+- Replace semicolons in mapped body content with line breaks.
+- Never append unmapped content to the end of the document.
+- Do not restructure source tables.
 - Map only to the provided framework controls or HITRUST-aligned domains.
 - framework_map.gaps must list specific missing controls with risk level and remediation suggestion.
 - quality_score is 0-100 based on completeness.
@@ -322,6 +670,8 @@ async def _extract_policy_data(
     raw_text = _extract_text_from_upload(file_bytes, filename)
     if len(raw_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="Document appears to be empty or unreadable.")
+    mapped_source = _map_migrate_source(file_bytes, filename)
+    mapped_context = _build_migrate_mapping_context(mapped_source)
 
     normalized_frameworks, fw_context = build_framework_prompt_context(frameworks)
     mapping_rules = build_framework_mapping_rules(frameworks)
@@ -332,6 +682,7 @@ async def _extract_policy_data(
         f"FRAMEWORKS TO MAP: {', '.join(normalized_frameworks)}\n"
         f"FRAMEWORK CONTROLS REFERENCE:\n{chr(10).join(fw_context)}\n\n"
         f"MAPPING RULES: {mapping_rules}\n\n"
+        f"VERBATIM SOURCE MAPPING:\n---\n{mapped_context or 'No deterministic section matches found.'}\n---\n\n"
         f"SOURCE CONTENT:\n---\n{raw_text[:14000]}\n---\n\n"
         "Reconstruct this policy into the required JSON structure. Return only JSON."
     )
@@ -343,7 +694,8 @@ async def _extract_policy_data(
         system=MIGRATION_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_msg}],
     )
-    return json.loads(_strip_json_fences(message.content[0].text))
+    policy_data = json.loads(_strip_json_fences(message.content[0].text))
+    return _apply_migrate_source_mapping(policy_data, mapped_source)
 
 
 CREATE_SYSTEM_PROMPT = """You are a policy creation engine for Midnight, Takeoff LLC's enterprise compliance platform.
