@@ -12,11 +12,15 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any
 import json
+import logging
 
 import requests
 from gotrue.errors import AuthApiError, ErrorCode
 
 from config import settings
+
+
+logger = logging.getLogger("midnight.supabase")
 
 
 def _base_headers(api_key: str, *, json_body: bool = True) -> dict[str, str]:
@@ -44,6 +48,14 @@ def _raise_auth_error(response: requests.Response) -> None:
         payload = response.json()
     except ValueError:
         payload = {"message": response.text or "Unexpected Supabase auth error."}
+    logger.warning(
+        "Supabase auth request failed",
+        extra={
+            "status_code": response.status_code,
+            "url": response.request.url if response.request else None,
+            "payload": payload,
+        },
+    )
     message = payload.get("msg") or payload.get("message") or "Supabase auth request failed."
     code = payload.get("code") or "unexpected_failure"
     raise AuthApiError(message, response.status_code, code)  # type: ignore[arg-type]
@@ -69,6 +81,8 @@ class SessionData:
 class AuthResponseData:
     user: Any | None
     session: SessionData | None
+    raw_payload: dict[str, Any] | None = None
+    error_message: str | None = None
 
 
 @dataclass
@@ -159,7 +173,7 @@ class AuthClient:
             token_type=payload.get("token_type"),
             user=user,
         )
-        return AuthResponseData(user=user, session=session)
+        return AuthResponseData(user=user, session=session, raw_payload=payload)
 
     def sign_up(self, credentials: dict[str, Any]) -> AuthResponseData:
         response = requests.post(
@@ -172,6 +186,12 @@ class AuthClient:
             _raise_auth_error(response)
         payload = response.json()
         user = _coerce_user(payload.get("user"))
+        error_message = (
+            payload.get("msg")
+            or payload.get("message")
+            or payload.get("error_description")
+            or payload.get("error")
+        )
         session = None
         if payload.get("access_token"):
             session = SessionData(
@@ -182,7 +202,20 @@ class AuthClient:
                 token_type=payload.get("token_type"),
                 user=user,
             )
-        return AuthResponseData(user=user, session=session)
+        if user is None:
+            logger.warning(
+                "Supabase signup succeeded without user payload",
+                extra={
+                    "email": credentials.get("email"),
+                    "payload": payload,
+                },
+            )
+        return AuthResponseData(
+            user=user,
+            session=session,
+            raw_payload=payload,
+            error_message=error_message,
+        )
 
     def sign_in_with_otp(self, payload: dict[str, Any]) -> dict[str, Any]:
         response = requests.post(

@@ -8,6 +8,7 @@ from typing import Any
 
 from config import settings
 from logging_config import configure_logging
+import logging
 
 configure_logging(level=settings.LOG_LEVEL)
 
@@ -50,6 +51,8 @@ app.add_middleware(
 app.add_middleware(RequestIdMiddleware)
 register_exception_handlers(app)
 app.include_router(health_router)
+
+logger = logging.getLogger("midnight.auth")
 
 session_cookie_name = "midnight_session"
 TRIAL_MAX_USERS = 1
@@ -379,10 +382,11 @@ async def login(payload: LoginRequest, response: Response):
 
 @app.post("/auth/signup")
 async def signup(payload: SignupRequest, response: Response):
+    normalized_email = payload.email.strip().lower()
     try:
         auth_response = supabase.auth.sign_up(
             {
-                "email": payload.email.strip().lower(),
+                "email": normalized_email,
                 "password": payload.password,
                 "options": {
                     "data": {
@@ -400,9 +404,21 @@ async def signup(payload: SignupRequest, response: Response):
 
     auth_user = auth_response.user
     if auth_user is None:
+        signup_error = auth_response.error_message or "Supabase signup did not return a user."
+        raw_payload = auth_response.raw_payload or {}
+        logger.warning(
+            "Supabase signup completed without user",
+            extra={
+                "email": normalized_email,
+                "payload": raw_payload,
+            },
+        )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Supabase signup did not return a user.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Supabase signup did not return a user. "
+                f"Supabase response: {signup_error}"
+            ),
         )
 
     org_slug = _generate_unique_org_slug(payload.company_name)
@@ -435,7 +451,7 @@ async def signup(payload: SignupRequest, response: Response):
                 {
                     "id": str(auth_user.id),
                     "tenant_id": organization["id"],
-                    "email": payload.email.strip().lower(),
+                    "email": normalized_email,
                     "name": (payload.name or "").strip() or None,
                     "organization_name": payload.company_name.strip(),
                     "role": "owner",
@@ -446,7 +462,7 @@ async def signup(payload: SignupRequest, response: Response):
         user_record = _first_row(user_response.data) or {
             "id": str(auth_user.id),
             "tenant_id": organization["id"],
-            "email": payload.email.strip().lower(),
+            "email": normalized_email,
             "name": (payload.name or "").strip() or None,
             "organization_name": payload.company_name.strip(),
             "role": "owner",
