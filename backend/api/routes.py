@@ -22,8 +22,8 @@ from docx.text.paragraph import Paragraph
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 from dotenv import load_dotenv
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
 from backend.core.framework_layer import (
@@ -31,7 +31,21 @@ from backend.core.framework_layer import (
     build_framework_prompt_context,
 )
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
-from backend.storage.file_store import save_generated_document, list_generated_documents
+from backend.storage.file_store import (
+    SupabaseStoreError,
+    count_activity_for_tenant,
+    create_activity_event,
+    create_onboarding_session,
+    create_tenant,
+    get_onboarding_session,
+    get_tenant,
+    get_tenant_by_slug,
+    list_generated_documents,
+    replace_enabled_modules,
+    save_generated_document,
+    update_onboarding_session,
+    update_profile_membership,
+)
 
 try:
     import anthropic
@@ -45,8 +59,9 @@ except ImportError:  # pragma: no cover
 
 load_dotenv()
 
-router = APIRouter(prefix="/pipeline", tags=["pipeline"])
-router = APIRouter(prefix="/pipeline", tags=["pipeline"])
+router = APIRouter()
+pipeline_router = APIRouter(prefix="/pipeline", tags=["pipeline"])
+org_router = APIRouter(prefix="/api/orgs", tags=["orgs"])
 
 GO_SERVICE_URL = os.getenv("GO_SERVICE_URL", "http://localhost:8080")
 
@@ -58,6 +73,92 @@ _FW_TO_GO = {
     "HITRUST": "HITRUST",
     "ISO 27001": "ISO_27001",
 }
+
+TRIAL_MAX_UPLOADS = 3
+TRIAL_MAX_FRAMEWORKS = 1
+TRIAL_WATERMARK_TEXT = "TRIAL - Midnight Preview"
+
+
+def _slugify_value(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", str(value or "").strip().lower()).strip("-")
+    return slug or "tenant"
+
+
+def _tenant_id_from_request(request: Request) -> str:
+    tenant_id = getattr(request.state, "tenant_id", None)
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Authenticated tenant context is missing.")
+    return tenant_id
+
+
+def _tenant_context_from_request(request: Request) -> dict:
+    auth_context = getattr(request.state, "auth_context", None) or {}
+    tenant_id = auth_context.get("tenant_id") or getattr(request.state, "tenant_id", None)
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Authenticated tenant context is missing.")
+    try:
+        tenant = get_tenant(tenant_id)
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if tenant is None:
+        raise HTTPException(status_code=403, detail="Tenant record not found.")
+    return tenant
+
+
+def _assert_tenant_access(request: Request, tenant_id: str) -> dict:
+    current_tenant_id = _tenant_id_from_request(request)
+    if str(current_tenant_id) != str(tenant_id):
+        raise HTTPException(status_code=403, detail="Cross-tenant access is not allowed.")
+    return _tenant_context_from_request(request)
+
+
+def _enforce_trial_limits(
+    request: Request,
+    *,
+    frameworks: list[str] | None = None,
+    upload_action: str | None = None,
+) -> dict:
+    tenant = _tenant_context_from_request(request)
+    if str(tenant.get("plan_type") or "").lower() != "trial":
+        return tenant
+
+    if frameworks is not None and len([fw for fw in frameworks if fw]) > TRIAL_MAX_FRAMEWORKS:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Trial plans support only {TRIAL_MAX_FRAMEWORKS} framework at a time. Upgrade to continue.",
+        )
+
+    if upload_action:
+        try:
+            upload_count = count_activity_for_tenant(tenant["id"], action=upload_action)
+        except SupabaseStoreError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        if upload_count >= TRIAL_MAX_UPLOADS:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Trial plans are limited to {TRIAL_MAX_UPLOADS} uploads. Upgrade to continue.",
+            )
+    return tenant
+
+
+def _watermark_docx_bytes(docx_bytes: bytes, *, watermark_text: str = TRIAL_WATERMARK_TEXT) -> bytes:
+    doc = Document(BytesIO(docx_bytes))
+    notice = doc.paragraphs[0].insert_paragraph_before()
+    notice.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = notice.add_run(watermark_text)
+    run.bold = True
+    run.font.color.rgb = RGBColor(0x99, 0x00, 0x00)
+    run.font.size = Pt(14)
+
+    footer = doc.sections[0].footer.paragraphs[0]
+    existing_footer = footer.text.strip()
+    footer.text = f"{watermark_text} · {existing_footer}" if existing_footer else watermark_text
+    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer.read()
 
 
 def _go_framework_coverage(document: str, frameworks: list[str], title: str = "") -> list | None:
@@ -78,7 +179,7 @@ def _go_framework_coverage(document: str, frameworks: list[str], title: str = ""
         return None
 
 
-@router.get("/smoke-docx")
+@pipeline_router.get("/smoke-docx")
 async def smoke_docx():
     path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.docx")
 
@@ -154,8 +255,8 @@ MIGRATE_HEADER_ALIASES = {
 }
 
 
-def _get_workspace_id() -> str:
-    return os.getenv("WORKSPACE_ID", "personal")
+def _get_workspace_id(request: Request) -> str:
+    return _tenant_id_from_request(request)
 
 
 def _get_anthropic_client():
@@ -958,12 +1059,14 @@ def _write_temp_docx(docx_bytes: bytes) -> str:
 
 def _file_docx_response(
     *,
+    tenant_id: str,
     policy_data: dict,
     template_name: str,
     output_name: str,
     document_name: str,
     doc_type: str,
     source_name: str,
+    watermark_exports: bool = False,
 ) -> FileResponse:
     try:
         docx_bytes = _build_docx(policy_data, template_name)
@@ -973,17 +1076,25 @@ def _file_docx_response(
     if not docx_bytes:
         raise HTTPException(status_code=500, detail="Document rendering produced an empty file.")
 
+    if watermark_exports:
+        docx_bytes = _watermark_docx_bytes(docx_bytes)
+
     preview_text = _build_preview_text(policy_data)
-    record = save_generated_document(
-        workspace_id=_get_workspace_id(),
-        filename=output_name,
-        document_name=document_name,
-        doc_type=doc_type,
-        preview=preview_text,
-        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        file_bytes=docx_bytes,
-        source_name=source_name,
-    )
+    try:
+        record = save_generated_document(
+            workspace_id=tenant_id,
+            filename=output_name,
+            document_name=document_name,
+            doc_type=doc_type,
+            preview=preview_text,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            file_bytes=docx_bytes,
+            source_name=source_name,
+            policy_number=policy_data.get("policy_number"),
+            version=policy_data.get("version"),
+        )
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     temp_path = _write_temp_docx(docx_bytes)
 
@@ -1003,7 +1114,7 @@ class BirdsongRequest(BaseModel):
     system: Optional[str] = None
 
 
-@router.get("/smoke-docx")
+@pipeline_router.get("/smoke-docx")
 async def smoke_docx():
     doc = Document()
     doc.add_paragraph("Hello world from Midnight Core")
@@ -1020,7 +1131,7 @@ async def smoke_docx():
     )
 
 
-@router.post("/birdsong")
+@pipeline_router.post("/birdsong")
 async def birdsong(request: BirdsongRequest):
     try:
         client = _get_anthropic_client()
@@ -1359,8 +1470,9 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
     return buffer.read()
 
 
-@router.post("/migrate/preview")
+@pipeline_router.post("/migrate/preview")
 async def migrate_preview(
+    request: Request,
     source_file: UploadFile = File(...),
     template_file: UploadFile | None = File(default=None),
     template_name: str = Form(default="generic_policy"),
@@ -1373,6 +1485,7 @@ async def migrate_preview(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
+    tenant = _enforce_trial_limits(request, frameworks=framework_list, upload_action="migrate_upload")
     template_section_map = _default_template_section_map(template_name)
     template_reference_name = template_name
 
@@ -1403,6 +1516,8 @@ async def migrate_preview(
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Extraction error: {exc}") from exc
 
+    create_activity_event(tenant_id=tenant["id"], action="migrate_upload")
+
     policy_data["_session"] = {
         "source_filename": source_file.filename or "document",
         "template_name": template_name,
@@ -1410,6 +1525,8 @@ async def migrate_preview(
         "frameworks": framework_list,
         "industry": industry,
         "preview_id": str(uuid.uuid4()),
+        "tenant_id": tenant["id"],
+        "plan_type": tenant.get("plan_type", "trial"),
     }
     policy_data["template_section_map"] = template_section_map
 
@@ -1428,9 +1545,9 @@ class MigrateGenerateRequest(BaseModel):
     policy_data: dict
 
 
-@router.post("/migrate/generate")
-async def migrate_generate(request: MigrateGenerateRequest):
-    policy_data = dict(request.policy_data or {})
+@pipeline_router.post("/migrate/generate")
+async def migrate_generate(request: Request, payload: MigrateGenerateRequest):
+    policy_data = dict(payload.policy_data or {})
     if not policy_data:
         raise HTTPException(status_code=400, detail="policy_data is required.")
 
@@ -1439,19 +1556,23 @@ async def migrate_generate(request: MigrateGenerateRequest):
     template_name = session.get("template_name", "generic_policy")
     base_name = source_name.rsplit(".", 1)[0]
     output_name = f"{base_name}_migrated.docx"
+    tenant = _tenant_context_from_request(request)
 
     return _file_docx_response(
+        tenant_id=tenant["id"],
         policy_data=policy_data,
         template_name=template_name,
         output_name=output_name,
         document_name=policy_data.get("policy_name", base_name),
         doc_type=policy_data.get("doc_type", template_name),
         source_name=source_name,
+        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
     )
 
 
-@router.post("/migrate")
+@pipeline_router.post("/migrate")
 async def migrate_document(
+    request: Request,
     file: UploadFile | None = File(default=None),
     source_file: UploadFile | None = File(default=None),
     template_file: UploadFile | None = File(default=None),
@@ -1469,6 +1590,7 @@ async def migrate_document(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
+    tenant = _enforce_trial_limits(request, frameworks=framework_list, upload_action="migrate_upload")
     template_section_map = _default_template_section_map(template_name)
 
     if template_file is not None:
@@ -1497,21 +1619,27 @@ async def migrate_document(
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Migration error: {exc}") from exc
 
+    create_activity_event(tenant_id=tenant["id"], action="migrate_upload")
+
     base_name = (upload.filename or "document").rsplit(".", 1)[0]
     return _file_docx_response(
+        tenant_id=tenant["id"],
         policy_data=policy_data,
         template_name=template_name,
         output_name=f"{base_name}_migrated.docx",
         document_name=policy_data.get("policy_name", base_name),
         doc_type=policy_data.get("doc_type", template_name),
         source_name=upload.filename or "document",
+        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
     )
 
 
-@router.post("/create/preview")
-async def create_preview(request: CreatePolicyRequest):
+@pipeline_router.post("/create/preview")
+async def create_preview(request: Request, payload: CreatePolicyRequest):
     try:
-        policy_data = await _generate_policy_data(request)
+        framework_list = [item.strip() for item in payload.frameworks if item.strip()]
+        tenant = _enforce_trial_limits(request, frameworks=framework_list)
+        policy_data = await _generate_policy_data(payload)
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
@@ -1520,11 +1648,13 @@ async def create_preview(request: CreatePolicyRequest):
         raise HTTPException(status_code=500, detail=f"Creation error: {exc}") from exc
 
     policy_data["_session"] = {
-        "doc_type": request.doc_type,
-        "industry": request.industry,
-        "frameworks": request.frameworks,
-        "source_name": request.policy_name,
+        "doc_type": payload.doc_type,
+        "industry": payload.industry,
+        "frameworks": payload.frameworks,
+        "source_name": payload.policy_name,
         "preview_id": str(uuid.uuid4()),
+        "tenant_id": tenant["id"],
+        "plan_type": tenant.get("plan_type", "trial"),
     }
 
     return JSONResponse(
@@ -1540,9 +1670,9 @@ class CreateGenerateRequest(BaseModel):
     policy_data: dict
 
 
-@router.post("/create/generate")
-async def create_generate(request: CreateGenerateRequest):
-    policy_data = dict(request.policy_data or {})
+@pipeline_router.post("/create/generate")
+async def create_generate(request: Request, payload: CreateGenerateRequest):
+    policy_data = dict(payload.policy_data or {})
     if not policy_data:
         raise HTTPException(status_code=400, detail="policy_data is required.")
 
@@ -1550,21 +1680,26 @@ async def create_generate(request: CreateGenerateRequest):
     policy_name = policy_data.get("policy_name", session.get("source_name", "Policy"))
     doc_type = policy_data.get("doc_type", session.get("doc_type", "POLICY"))
     output_name = f"{policy_name.replace(' ', '_')}_v{policy_data.get('version', '1.0')}.docx"
+    tenant = _tenant_context_from_request(request)
 
     return _file_docx_response(
+        tenant_id=tenant["id"],
         policy_data=policy_data,
         template_name=str(doc_type).lower(),
         output_name=output_name,
         document_name=policy_name,
         doc_type=doc_type,
         source_name=session.get("source_name", policy_name),
+        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
     )
 
 
-@router.post("/create")
-async def create_document(request: CreatePolicyRequest):
+@pipeline_router.post("/create")
+async def create_document(request: Request, payload: CreatePolicyRequest):
     try:
-        policy_data = await _generate_policy_data(request)
+        framework_list = [item.strip() for item in payload.frameworks if item.strip()]
+        tenant = _enforce_trial_limits(request, frameworks=framework_list)
+        policy_data = await _generate_policy_data(payload)
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
@@ -1572,14 +1707,16 @@ async def create_document(request: CreatePolicyRequest):
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Creation error: {exc}") from exc
 
-    output_name = f"{request.policy_name.replace(' ', '_')}_v1.0.docx"
+    output_name = f"{payload.policy_name.replace(' ', '_')}_v1.0.docx"
     return _file_docx_response(
+        tenant_id=tenant["id"],
         policy_data=policy_data,
-        template_name=request.doc_type,
+        template_name=payload.doc_type,
         output_name=output_name,
-        document_name=policy_data.get("policy_name", request.policy_name),
-        doc_type=request.doc_type,
-        source_name=request.policy_name,
+        document_name=policy_data.get("policy_name", payload.policy_name),
+        doc_type=payload.doc_type,
+        source_name=payload.policy_name,
+        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
     )
 
 
@@ -1590,35 +1727,70 @@ class GrcSummaryRequest(BaseModel):
     policy_data: Optional[dict] = None
 
 
-@router.post("/grc-summary")
-async def create_grc_summary(request: GrcSummaryRequest):
-    normalized_frameworks, _ = build_framework_prompt_context(request.frameworks)
-    workspace_id = _get_workspace_id()
-    documents = list_generated_documents(workspace_id)
+class TenantCreateRequest(BaseModel):
+    company_name: str
+    industry: Optional[str] = None
+    region: Optional[str] = None
+    employee_count: Optional[str] = None
+
+
+class OnboardingUpdateRequest(BaseModel):
+    current_step: Optional[str] = None
+    progress: Optional[int] = None
+    build_method: Optional[str] = None
+    primary_objective: Optional[str] = None
+    frameworks: Optional[list[str]] = None
+    enabled_modules: Optional[list[str]] = None
+    completed: Optional[bool] = None
+
+
+class TenantActivateRequest(BaseModel):
+    enabled_modules: list[str] = []
+
+
+@pipeline_router.post("/grc-summary")
+async def create_grc_summary(request: Request, payload: GrcSummaryRequest):
+    normalized_frameworks, _ = build_framework_prompt_context(payload.frameworks)
+    tenant = _enforce_trial_limits(request, frameworks=normalized_frameworks)
+    try:
+        documents = list_generated_documents(tenant["id"])
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     pdf_bytes = build_grc_summary_pdf(
-        organization_name=request.organization_name.strip() or "Organization",
-        industry=request.industry.strip() or "Unspecified",
+        organization_name=payload.organization_name.strip() or "Organization",
+        industry=payload.industry.strip() or "Unspecified",
         frameworks=normalized_frameworks,
         documents=documents,
     )
 
-    org_slug = (request.organization_name.strip() or "organization").replace(" ", "_")
+    if str(tenant.get("plan_type") or "").lower() == "trial":
+        pdf_bytes = build_grc_summary_pdf(
+            organization_name=f"{TRIAL_WATERMARK_TEXT} - {payload.organization_name.strip() or 'Organization'}",
+            industry=payload.industry.strip() or "Unspecified",
+            frameworks=normalized_frameworks,
+            documents=documents,
+        )
+
+    org_slug = (payload.organization_name.strip() or "organization").replace(" ", "_")
     output_name = f"{org_slug}_grc_summary.pdf"
     preview_text = (
-        f"GRC summary for {request.organization_name.strip() or 'your workspace'} "
+        f"GRC summary for {payload.organization_name.strip() or 'your workspace'} "
         f"covering {', '.join(normalized_frameworks) or 'selected frameworks'}."
     )
-    record = save_generated_document(
-        workspace_id=workspace_id,
-        filename=output_name,
-        document_name=f"{request.organization_name.strip() or 'Organization'} GRC Summary",
-        doc_type="PDF",
-        preview=preview_text,
-        content_type="application/pdf",
-        file_bytes=pdf_bytes,
-        source_name=request.organization_name.strip() or output_name,
-    )
+    try:
+        record = save_generated_document(
+            workspace_id=tenant["id"],
+            filename=output_name,
+            document_name=f"{payload.organization_name.strip() or 'Organization'} GRC Summary",
+            doc_type="PDF",
+            preview=preview_text,
+            content_type="application/pdf",
+            file_bytes=pdf_bytes,
+            source_name=payload.organization_name.strip() or output_name,
+        )
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return StreamingResponse(
         BytesIO(pdf_bytes),
@@ -1631,8 +1803,9 @@ async def create_grc_summary(request: GrcSummaryRequest):
     )
 
 
-@router.post("/analyze")
+@pipeline_router.post("/analyze")
 async def analyze_document(
+    request: Request,
     file: UploadFile = File(...),
     frameworks: str = Form(default="HIPAA,PCI DSS,NIST CSF"),
 ):
@@ -1643,6 +1816,7 @@ async def analyze_document(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
+    _enforce_trial_limits(request, frameworks=framework_list, upload_action="analysis_upload")
     raw_text = _extract_text_from_upload(file_bytes, file.filename or "document")[:10000]
 
     normalized_frameworks, fw_context = build_framework_prompt_context(framework_list)
@@ -1666,6 +1840,7 @@ async def analyze_document(
             messages=[{"role": "user", "content": user_msg}],
         )
         result = json.loads(_strip_json_fences(message.content[0].text))
+        create_activity_event(tenant_id=_tenant_id_from_request(request), action="analysis_upload")
         go_coverage = _go_framework_coverage(raw_text, normalized_frameworks, file.filename or "")
         if go_coverage:
             result["framework_coverage"] = go_coverage
@@ -1674,3 +1849,132 @@ async def analyze_document(
         raise
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Analysis error: {exc}") from exc
+
+
+@org_router.post("")
+async def create_org(request: Request, payload: TenantCreateRequest):
+    current_tenant_id = getattr(request.state, "tenant_id", None)
+    if current_tenant_id:
+        tenant = _tenant_context_from_request(request)
+        return {
+            "tenant_id": tenant["id"],
+            "org_id": tenant["id"],
+            "slug": tenant.get("slug"),
+            "created": False,
+        }
+
+    slug = _slugify_value(payload.company_name)
+    try:
+        existing = get_tenant_by_slug(slug)
+        if existing is not None:
+            raise HTTPException(status_code=409, detail="A tenant with this slug already exists.")
+
+        tenant = create_tenant(
+            name=payload.company_name.strip(),
+            slug=slug,
+            industry=payload.industry,
+            region=payload.region,
+            employee_count=payload.employee_count,
+            plan_type="trial",
+        )
+        update_profile_membership(
+            user_id=getattr(request.state, "user_id", ""),
+            tenant_id=tenant["id"],
+            organization_name=payload.company_name.strip(),
+        )
+        create_onboarding_session(tenant_id=tenant["id"])
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "tenant_id": tenant["id"],
+        "org_id": tenant["id"],
+        "slug": tenant.get("slug"),
+        "created": True,
+    }
+
+
+@org_router.patch("/{tenant_id}/onboarding")
+async def update_org_onboarding(request: Request, tenant_id: str, payload: OnboardingUpdateRequest):
+    tenant = _assert_tenant_access(request, tenant_id)
+    frameworks = [item.strip() for item in (payload.frameworks or []) if item and item.strip()]
+    if frameworks:
+        _enforce_trial_limits(request, frameworks=frameworks)
+
+    updates: dict[str, object] = {}
+    for field in ("current_step", "progress", "build_method", "primary_objective", "completed"):
+        value = getattr(payload, field)
+        if value is not None:
+            updates[field] = value
+    if payload.frameworks is not None:
+        updates["frameworks"] = frameworks
+    if payload.enabled_modules is not None:
+        updates["enabled_modules"] = [item.strip() for item in payload.enabled_modules if item and item.strip()]
+
+    try:
+        session = update_onboarding_session(tenant["id"], updates)
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return session
+
+
+@org_router.post("/{tenant_id}/activate")
+async def activate_org(request: Request, tenant_id: str, payload: TenantActivateRequest):
+    tenant = _assert_tenant_access(request, tenant_id)
+    modules = [item.strip() for item in payload.enabled_modules if item and item.strip()]
+
+    try:
+        session = update_onboarding_session(
+            tenant["id"],
+            {
+                "completed": True,
+                "current_step": "complete",
+                "progress": 100,
+                "enabled_modules": modules,
+            },
+        )
+        enabled_modules = replace_enabled_modules(tenant["id"], modules)
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "tenant_id": tenant["id"],
+        "org_id": tenant["id"],
+        "slug": tenant.get("slug"),
+        "enabled_modules": enabled_modules,
+        "dashboard_config_url": f"/api/orgs/{tenant.get('slug')}/dashboard-config",
+        "redirect_to": f"/{tenant.get('slug')}/dashboard",
+        "onboarding_session": session,
+    }
+
+
+@org_router.get("/{org_slug}/dashboard-config")
+async def get_dashboard_config(request: Request, org_slug: str):
+    tenant = _tenant_context_from_request(request)
+    if tenant.get("slug") != org_slug:
+        raise HTTPException(status_code=403, detail="Cross-tenant access is not allowed.")
+
+    try:
+        session = get_onboarding_session(tenant["id"])
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "tenant_id": tenant["id"],
+        "slug": tenant.get("slug"),
+        "organization_name": tenant.get("name"),
+        "plan_type": tenant.get("plan_type"),
+        "industry": tenant.get("industry"),
+        "region": tenant.get("region"),
+        "employee_count": tenant.get("employee_count"),
+        "frameworks": (session or {}).get("frameworks", []),
+        "enabled_modules": (session or {}).get("enabled_modules", []),
+        "build_method": (session or {}).get("build_method"),
+        "primary_objective": (session or {}).get("primary_objective"),
+        "completed": bool((session or {}).get("completed")),
+    }
+
+
+router.include_router(pipeline_router)
+router.include_router(org_router)

@@ -17,9 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from gotrue.errors import AuthApiError
-from postgrest.exceptions import APIError
 from pydantic import BaseModel, Field
-import jwt
+import base64
+import json
 import os
 import re
 
@@ -102,15 +102,12 @@ def _set_auth_cookie(response: Response, access_token: str, expires_in: int | No
 
 def _extract_user_id_from_token(access_token: str) -> str:
     try:
-        payload = jwt.decode(
-            access_token,
-            options={
-                "verify_signature": False,
-                "verify_exp": False,
-                "verify_aud": False,
-            },
-        )
-    except jwt.PyJWTError as exc:
+        parts = access_token.split(".")
+        if len(parts) < 2:
+            raise ValueError("JWT payload segment is missing.")
+        payload_segment = parts[1] + "=" * (-len(parts[1]) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_segment.encode("utf-8")).decode("utf-8"))
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid session token.",
@@ -152,7 +149,7 @@ def _generate_unique_org_slug(company_name: str) -> str:
                 .limit(1)
                 .execute()
             )
-        except APIError as exc:
+        except Exception as exc:
             raise _database_setup_error(exc) from exc
 
         if not response.data:
@@ -171,7 +168,7 @@ def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] 
             .limit(1)
             .execute()
         )
-    except APIError as exc:
+    except Exception as exc:
         raise _database_setup_error(exc) from exc
 
     user_record = _first_row(user_response.data)
@@ -196,7 +193,7 @@ def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] 
             .limit(1)
             .execute()
         )
-    except APIError as exc:
+    except Exception as exc:
         raise _database_setup_error(exc) from exc
 
     organization = _first_row(org_response.data)
@@ -224,6 +221,7 @@ def _build_session_payload(
         or (user_record or {}).get("organization_name")
         or "Midnight Workspace"
     )
+    plan_type = (organization or {}).get("plan_type") or "trial"
 
     return {
         "authenticated": authenticated,
@@ -236,6 +234,7 @@ def _build_session_payload(
         "display_name": display_name,
         "organization_name": organization_name,
         "role": role,
+        "plan_type": plan_type,
         "environment": settings.ENVIRONMENT,
     }
 
@@ -287,6 +286,7 @@ def verify_access(request: Request) -> dict[str, Any]:
     request.state.tenant_id = auth_context["tenant_id"]
     request.state.org_id = auth_context["tenant_id"]
     request.state.org_slug = auth_context["org_slug"]
+    request.state.plan_type = auth_context["plan_type"]
     request.state.user_email = auth_context["email"]
     request.state.auth_context = auth_context
     return auth_context
@@ -417,7 +417,7 @@ async def signup(payload: SignupRequest, response: Response):
             )
             .execute()
         )
-    except APIError as exc:
+    except Exception as exc:
         raise _database_setup_error(exc) from exc
 
     session = auth_response.session

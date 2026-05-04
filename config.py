@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +14,11 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str = Field(..., min_length=1)
     SUPABASE_URL: str = Field(..., min_length=1)
-    SUPABASE_ANON_KEY: str = Field(..., min_length=1)
+    SUPABASE_ANON_KEY: str = Field(
+        ...,
+        min_length=1,
+        validation_alias=AliasChoices("SUPABASE_ANON_KEY", "SUPABASE_KEY"),
+    )
     SUPABASE_SERVICE_ROLE_KEY: str = Field(..., min_length=1)
     ENVIRONMENT: Literal["dev", "prod"] = "dev"
     LOG_LEVEL: str = "INFO"
