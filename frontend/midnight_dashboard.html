@@ -207,6 +207,18 @@
   .launcher-title { font-family: var(--font-display); font-size: 14px; color: var(--text); margin-bottom: 6px; }
   .launcher-sub { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 14px; }
   .launcher-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .module-card { background: linear-gradient(145deg, rgba(255,255,255,0.02) 0%, rgba(0,212,245,0.04) 100%); border: 1px solid rgba(0,212,245,0.12); border-radius: 16px; padding: 18px; min-height: 210px; display: flex; flex-direction: column; gap: 12px; }
+  .module-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .module-kicker { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  .module-title { font-family: var(--font-display); font-size: 22px; color: var(--text); letter-spacing: 0.02em; line-height: 1; }
+  .module-copy { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .module-status { padding: 4px 9px; border-radius: 999px; background: rgba(0,212,245,0.08); border: 1px solid rgba(0,212,245,0.18); color: var(--accent); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+  .module-feature-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .module-feature-pill { padding: 6px 9px; border-radius: 999px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 11px; font-family: var(--font-mono); }
+  .module-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+  .module-empty { background: var(--bg2); border: 1px dashed rgba(0,212,245,0.22); border-radius: 16px; padding: 22px; margin-bottom: 20px; color: var(--text2); font-size: 12px; line-height: 1.7; }
+  .module-hidden { display: none !important; }
 
   /* FW BARS */
   .fw-section { padding: 16px 20px; }
@@ -290,8 +302,11 @@
   .profile-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
   .profile-note { margin-top: 18px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(0,212,245,0.12); background: rgba(0,212,245,0.05); font-size: 12px; color: var(--text2); line-height: 1.6; }
   .profile-note strong { color: var(--text); }
+  .profile-module-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .profile-module-pill { padding: 6px 10px; border-radius: 999px; background: rgba(0,212,245,0.08); border: 1px solid rgba(0,212,245,0.18); color: var(--text2); font-size: 11px; font-family: var(--font-mono); }
   @media (max-width: 1020px) {
-    .profile-grid { grid-template-columns: 1fr; }
+    .profile-grid,
+    .module-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 720px) {
     .topbar { padding: 14px 18px; }
@@ -541,6 +556,8 @@
           <button class="run-btn" onclick="showView('birdtalk', document.getElementById('nav-birdtalk'), 'Bird Talk')">Bird Talk</button>
         </div>
       </div>
+      <div id="module-grid" class="module-grid"></div>
+      <div id="module-empty" class="module-empty" style="display:none;"></div>
       <div class="metrics-row">
         <div class="metric-card green">
           <div class="metric-top"><div><div class="metric-label">Policies processed</div><div class="metric-val green" id="m-policies">0</div></div><div class="metric-icon green"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
@@ -1029,6 +1046,7 @@
             <div class="profile-note">
               <strong>What saves here:</strong> display name, workspace label, default industry, default policy owner, and your default GRC organization. Midnight uses those values to keep the tool feeling like your workspace instead of a blank form every time.
             </div>
+            <div class="profile-module-list" id="profile-module-list"></div>
           </div>
           <div class="profile-card">
             <div class="profile-settings-copy">
@@ -1130,6 +1148,65 @@ const PROFILE_DEFAULTS = {
 };
 let sessionProfile = null;
 let profileSettings = { ...PROFILE_DEFAULTS };
+let dashboardConfig = null;
+
+const DASHBOARD_MODULES = {
+  policy_migration: {
+    title: 'Policy Migration',
+    kicker: 'Operational Workspace',
+    description: 'Run the document conversion lane for legacy policies, template alignment, and export packaging.',
+    status: 'Primary',
+    views: ['migrate', 'create', 'library', 'gaps', 'grc'],
+    features: ['Policy Inventory', 'Upload Center', 'Template Mapping', 'Export Center', 'Gap Review'],
+    ctaLabel: 'Open Migrate',
+    ctaView: 'migrate',
+    ctaTitle: 'Migrate Document',
+  },
+  gap_analysis: {
+    title: 'Gap Analysis',
+    kicker: 'Compliance Coverage',
+    description: 'Focus the workspace on framework posture, gap reporting, and remediation planning.',
+    status: 'Live',
+    views: ['gaps', 'grc', 'library'],
+    features: ['Framework Coverage', 'Gap Reports', 'Risk Summary', 'Remediation Queue'],
+    ctaLabel: 'Review Gaps',
+    ctaView: 'gaps',
+    ctaTitle: 'Gap Analysis',
+  },
+  audit_readiness: {
+    title: 'Audit Readiness',
+    kicker: 'Evidence Readout',
+    description: 'Keep the tenant centered on evidence quality, control status, and executive reporting before audit.',
+    status: 'Ready',
+    views: ['create', 'library', 'gaps', 'grc'],
+    features: ['Audit Tracker', 'Evidence Center', 'Control Status', 'Executive Summary', 'Findings Log'],
+    ctaLabel: 'Open Summary',
+    ctaView: 'grc',
+    ctaTitle: 'GRC Summary',
+  },
+  consultant: {
+    title: 'Consultant Mode',
+    kicker: 'Partner Workspace',
+    description: 'Expose the reusable portfolio layer for firms managing multiple clients, exports, and packaged delivery.',
+    status: 'Advisor',
+    views: ['library', 'grc', 'profile'],
+    features: ['Client Portfolio', 'Workspace Switcher', 'Export Packages', 'Billing', 'Reusable Templates'],
+    ctaLabel: 'Open Library',
+    ctaView: 'library',
+    ctaTitle: 'Policy Library',
+  },
+};
+
+const VIEW_MODULE_MAP = {
+  overview: ['policy_migration', 'gap_analysis', 'audit_readiness', 'consultant'],
+  birdtalk: ['policy_migration', 'gap_analysis', 'audit_readiness', 'consultant'],
+  profile: ['policy_migration', 'gap_analysis', 'audit_readiness', 'consultant'],
+  migrate: ['policy_migration'],
+  create: ['policy_migration', 'audit_readiness'],
+  library: ['policy_migration', 'gap_analysis', 'audit_readiness', 'consultant'],
+  gaps: ['policy_migration', 'gap_analysis', 'audit_readiness'],
+  grc: ['policy_migration', 'gap_analysis', 'audit_readiness', 'consultant'],
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NAVIGATION
@@ -1197,6 +1274,7 @@ async function ensureAuthenticated() {
         sessionProfile = data;
         profileSettings = loadProfileSettings();
         applyProfileSettingsToUI({ force: true });
+        await loadDashboardConfig();
         return true;
       }
     }
@@ -1214,6 +1292,156 @@ async function apiRequest(path, options = {}) {
   }
 
   return response;
+}
+
+function getEnabledModuleKeys() {
+  const configured = Array.isArray(dashboardConfig?.enabled_modules)
+    ? dashboardConfig.enabled_modules.filter(key => DASHBOARD_MODULES[key])
+    : [];
+  if (configured.length) return configured;
+  return ['policy_migration', 'gap_analysis', 'audit_readiness'];
+}
+
+function getAccessibleViews(moduleKeys = getEnabledModuleKeys()) {
+  const allowed = new Set(['overview', 'birdtalk', 'profile']);
+  Object.entries(VIEW_MODULE_MAP).forEach(([viewId, owners]) => {
+    if (viewId === 'overview' || viewId === 'birdtalk' || viewId === 'profile') {
+      allowed.add(viewId);
+      return;
+    }
+    if (owners.some(key => moduleKeys.includes(key))) allowed.add(viewId);
+  });
+  return allowed;
+}
+
+function renderModuleCards(moduleKeys = getEnabledModuleKeys()) {
+  const grid = document.getElementById('module-grid');
+  const empty = document.getElementById('module-empty');
+  const profileList = document.getElementById('profile-module-list');
+  if (!grid || !empty || !profileList) return;
+
+  if (!moduleKeys.length) {
+    grid.innerHTML = '';
+    profileList.innerHTML = '';
+    empty.style.display = 'block';
+    empty.innerHTML = 'No onboarding modules are enabled yet. Finish onboarding to unlock a tenant-specific workspace layout and feature stack.';
+    return;
+  }
+
+  empty.style.display = 'none';
+  grid.innerHTML = moduleKeys.map(key => {
+    const module = DASHBOARD_MODULES[key];
+    if (!module) return '';
+    return `
+      <div class="module-card">
+        <div class="module-card-head">
+          <div>
+            <div class="module-kicker">${escHtml(module.kicker)}</div>
+            <div class="module-title">${escHtml(module.title)}</div>
+          </div>
+          <div class="module-status">${escHtml(module.status)}</div>
+        </div>
+        <div class="module-copy">${escHtml(module.description)}</div>
+        <div class="module-feature-list">
+          ${module.features.map(feature => `<span class="module-feature-pill">${escHtml(feature)}</span>`).join('')}
+        </div>
+        <div class="module-card-actions">
+          <button class="run-btn" onclick="openModuleView('${module.ctaView}')">${escHtml(module.ctaLabel)}</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  profileList.innerHTML = moduleKeys.map(key => {
+    const module = DASHBOARD_MODULES[key];
+    return module ? `<span class="profile-module-pill">${escHtml(module.title)}</span>` : '';
+  }).join('');
+}
+
+function syncDashboardNavigation(moduleKeys = getEnabledModuleKeys()) {
+  const allowedViews = getAccessibleViews(moduleKeys);
+  Object.keys(VIEW_MODULE_MAP).forEach(viewId => {
+    const navEl = document.getElementById(`nav-${viewId}`);
+    const viewEl = document.getElementById(`view-${viewId}`);
+    const isAllowed = allowedViews.has(viewId);
+    if (navEl) navEl.classList.toggle('module-hidden', !isAllowed);
+    if (viewEl) viewEl.classList.toggle('module-hidden', !isAllowed);
+  });
+
+  const activeView = document.querySelector('.view.active');
+  if (activeView) {
+    const activeId = activeView.id.replace('view-', '');
+    if (!allowedViews.has(activeId)) {
+      showView('overview', document.getElementById('nav-overview'), 'Overview');
+    }
+  }
+}
+
+function applyDashboardConfigToUI() {
+  const moduleKeys = getEnabledModuleKeys();
+  renderModuleCards(moduleKeys);
+  syncDashboardNavigation(moduleKeys);
+
+  const orgLabel = document.getElementById('org-label');
+  if (orgLabel) {
+    const orgName = getProfileSettings().organization_name || dashboardConfig?.organization_name || 'Midnight Workspace';
+    const planType = String(dashboardConfig?.plan_type || sessionProfile?.plan_type || 'trial').toUpperCase();
+    orgLabel.textContent = `${orgName} · ${planType}`;
+  }
+
+  const bannerTitle = document.getElementById('dashboard-banner-title');
+  const bannerSub = document.getElementById('dashboard-banner-sub');
+  const meta = document.getElementById('be-status-meta');
+  if (bannerTitle && moduleKeys.length) {
+    bannerTitle.textContent = `${moduleKeys.length} onboarding module${moduleKeys.length === 1 ? '' : 's'} active in this tenant`;
+  }
+  if (bannerSub) {
+    const objective = dashboardConfig?.primary_objective || 'Midnight is shaping this workspace from your onboarding selections.';
+    bannerSub.textContent = objective;
+  }
+  if (meta) {
+    const buildMethod = dashboardConfig?.build_method || 'guided';
+    const frameworks = Array.isArray(dashboardConfig?.frameworks) ? dashboardConfig.frameworks.filter(Boolean) : [];
+    meta.textContent = frameworks.length
+      ? `${frameworks.join(' · ')} · ${buildMethod} build`
+      : `Module-aware dashboard · ${buildMethod} build`;
+  }
+}
+
+async function loadDashboardConfig() {
+  const slug = sessionProfile?.org_slug;
+  if (!slug) {
+    dashboardConfig = null;
+    applyDashboardConfigToUI();
+    return null;
+  }
+
+  try {
+    const res = await fetch(`${API}/api/orgs/${encodeURIComponent(slug)}/dashboard-config`, { credentials: 'include' });
+    if (!res.ok) throw new Error(`dashboard config ${res.status}`);
+    dashboardConfig = await res.json();
+  } catch (_) {
+    dashboardConfig = null;
+  }
+
+  applyProfileSettingsToUI({ force: true });
+  applyDashboardConfigToUI();
+  return dashboardConfig;
+}
+
+function openModuleView(viewId) {
+  const navEl = document.getElementById(`nav-${viewId}`);
+  const pageTitle = {
+    migrate: 'Migrate Document',
+    create: 'Create Policy',
+    library: 'Policy Library',
+    gaps: 'Gap Analysis',
+    grc: 'GRC Summary',
+    overview: 'Overview',
+    profile: 'Profile & Settings',
+    birdtalk: 'Bird Talk',
+  }[viewId] || 'Overview';
+  showView(viewId, navEl, pageTitle);
 }
 
 function getSessionDefaults() {
@@ -1289,12 +1517,13 @@ function getInitials(name) {
 function applyProfileSettingsToUI({ force = false } = {}) {
   const settings = getProfileSettings();
   const displayName = settings.display_name || 'Workspace Owner';
-  const orgName = settings.organization_name || 'Midnight Workspace';
+  const orgName = settings.organization_name || dashboardConfig?.organization_name || 'Midnight Workspace';
   const title = settings.title || (sessionProfile?.role || 'Owner');
   const initials = getInitials(displayName);
+  const planType = String(dashboardConfig?.plan_type || sessionProfile?.plan_type || 'trial').toUpperCase();
 
   const orgLabel = document.getElementById('org-label');
-  if (orgLabel) orgLabel.textContent = `${orgName} · Ready`;
+  if (orgLabel) orgLabel.textContent = `${orgName} · ${planType}`;
 
   const topbarAvatar = document.getElementById('topbar-profile-avatar');
   if (topbarAvatar) topbarAvatar.textContent = initials;
@@ -1308,7 +1537,7 @@ function applyProfileSettingsToUI({ force = false } = {}) {
   const profileEmail = document.getElementById('profile-email');
   if (profileEmail) profileEmail.textContent = sessionProfile?.email || 'admin@midnight.ai';
   const profileWorkspace = document.getElementById('profile-workspace');
-  if (profileWorkspace) profileWorkspace.textContent = sessionProfile?.workspace_id || 'personal';
+  if (profileWorkspace) profileWorkspace.textContent = sessionProfile?.workspace_id || dashboardConfig?.tenant_id || 'personal';
   const profileOrgDisplay = document.getElementById('profile-organization-display');
   if (profileOrgDisplay) profileOrgDisplay.textContent = orgName;
   const profileRole = document.getElementById('profile-role-pill');
