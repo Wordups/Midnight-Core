@@ -2250,6 +2250,15 @@ async function generateFromEditor(prefix) {
     const fallback = (finalData.policy_name || 'policy').replace(/\s+/g, '_') + '_migrated.docx';
     storeDownload('mg', blob, res.headers.get('Content-Disposition'), fallback, preview);
     _previewedPolicyData = finalData;
+    document.getElementById('mg-out-status').textContent = 'Complete';
+    document.getElementById('mg-out-status').className = 'output-status done';
+    document.getElementById('mg-out-text').textContent = preview || 'Document generated. If the download did not start automatically, use the download button below.';
+    document.getElementById('mg-out-actions').style.display = 'flex';
+    document.getElementById('mg-out-actions').innerHTML = `
+      <button class="output-btn primary" onclick="downloadOutput('mg')">Download .docx</button>
+      <button class="output-btn" onclick="showView('grc', document.getElementById('nav-grc'), 'GRC Summary')">Open GRC Summary</button>
+      <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
+    `;
 
     // Swap Generate → Download in editor actions
     if (btn) {
@@ -2258,6 +2267,7 @@ async function generateFromEditor(prefix) {
       btn.onclick   = () => downloadOutput('mg');
     }
 
+    downloadOutput('mg');
     _mgSetState('DONE');
     await refreshDashboardData();
     showToast('Document generated — ' + (finalData.policy_name || 'policy'));
@@ -2297,6 +2307,7 @@ async function generateCreateDoc(useEditor = false) {
     const fallback = (finalData.policy_name || 'policy').replace(/\s+/g, '_') + `_v${finalData.version || '1.0'}.docx`;
     storeDownload('cp', blob, res.headers.get('Content-Disposition'), fallback, preview);
     _previewedCreatePolicyData = finalData;
+    downloadOutput('cp');
 
     document.getElementById('cp-out-status').textContent = 'Complete';
     document.getElementById('cp-out-status').className = 'output-status done';
