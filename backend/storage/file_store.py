@@ -172,6 +172,10 @@ def _insert_policy(
     status: str,
     policy_number: str | None = None,
     version: str | None = None,
+    document_type: str | None = None,
+    organization: str | None = None,
+    owner: str | None = None,
+    schema_version: str | None = None,
 ) -> dict[str, Any]:
     created = _postgrest(
         "POST",
@@ -182,6 +186,10 @@ def _insert_policy(
             "policy_number": policy_number,
             "version": version,
             "status": status,
+            "document_type": document_type,
+            "organization": organization,
+            "owner": owner,
+            "schema_version": schema_version,
         },
         prefer="return=representation",
     )
@@ -189,6 +197,106 @@ def _insert_policy(
     if not record:
         raise SupabaseStoreError("Supabase did not return a policy record.")
     return record
+
+
+def _update_policy(policy_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    updated = _postgrest(
+        "PATCH",
+        "policies",
+        params={"id": f"eq.{policy_id}", "select": "*"},
+        payload=payload,
+        prefer="return=representation",
+    )
+    record = _first_row(updated)
+    if not record:
+        raise SupabaseStoreError("Supabase did not return an updated policy record.")
+    return record
+
+
+def _delete_policy_sections(*, policy_id: str) -> None:
+    _postgrest(
+        "DELETE",
+        "policy_sections",
+        params={"policy_id": f"eq.{policy_id}"},
+        prefer="return=minimal",
+    )
+
+
+def _insert_policy_sections(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not sections:
+        return []
+    created = _postgrest(
+        "POST",
+        "policy_sections",
+        payload=sections,
+        prefer="return=representation",
+    )
+    return created or []
+
+
+def save_policy_draft(
+    *,
+    tenant_id: str,
+    title: str,
+    document_type: str,
+    organization: str,
+    owner: str,
+    status: str,
+    schema_version: str,
+    selected_frameworks: list[str],
+    sections: list[dict[str, Any]],
+    policy_number: str | None = None,
+    version: str | None = None,
+    policy_id: str | None = None,
+) -> dict[str, Any]:
+    if policy_id:
+        policy = _update_policy(
+            policy_id,
+            {
+                "tenant_id": tenant_id,
+                "policy_name": title,
+                "policy_number": policy_number,
+                "version": version,
+                "status": status,
+                "document_type": document_type,
+                "organization": organization,
+                "owner": owner,
+                "schema_version": schema_version,
+                "selected_frameworks": selected_frameworks,
+            },
+        )
+    else:
+        policy = _insert_policy(
+            tenant_id=tenant_id,
+            name=title,
+            status=status,
+            policy_number=policy_number,
+            version=version,
+            document_type=document_type,
+            organization=organization,
+            owner=owner,
+            schema_version=schema_version,
+        )
+        policy_id = policy["id"]
+        policy = _update_policy(policy_id, {"selected_frameworks": selected_frameworks})
+
+    _delete_policy_sections(policy_id=policy_id)
+    section_payloads = []
+    for index, section in enumerate(sections, start=1):
+        section_payloads.append(
+            {
+                "policy_id": policy_id,
+                "tenant_id": tenant_id,
+                "slot_id": section.get("slot_id"),
+                "heading": section.get("heading"),
+                "content": section.get("content"),
+                "sort_order": index,
+                "source_origin": section.get("source_origin") or "ai_generated",
+                "confidence_score": section.get("confidence_score"),
+            }
+        )
+    stored_sections = _insert_policy_sections(section_payloads)
+    return {"policy": policy, "sections": stored_sections}
 
 
 def _insert_document_row(payload: dict[str, Any]) -> dict[str, Any]:

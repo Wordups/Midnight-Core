@@ -53,6 +53,12 @@ class JsonParserTests(unittest.TestCase):
         with self.assertRaises(ParsedModelOutputError):
             parse_model_json("")
 
+    def test_unterminated_string_raises(self):
+        with self.assertRaises(ParsedModelOutputError):
+            parse_model_json(
+                '{"title":"IT Asset Disposal Policy","organization":"Takeoff LLC / Midnight","status":"Draft","sections":[{"heading":"Purpose","content":"Asset disposal requires'
+            )
+
     def test_python_style_dict_raises(self):
         with self.assertRaises(ParsedModelOutputError):
             parse_model_json(

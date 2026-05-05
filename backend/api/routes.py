@@ -15,7 +15,7 @@ import uuid
 import zipfile
 import xml.etree.ElementTree as ET
 from io import BytesIO
-from typing import Optional
+from typing import Any, Optional
 
 from docx import Document
 from docx.table import Table
@@ -49,6 +49,7 @@ from backend.storage.file_store import (
     get_tenant_by_slug,
     list_generated_documents,
     replace_enabled_modules,
+    save_policy_draft,
     save_generated_document,
     update_onboarding_session,
     update_profile_membership,
@@ -86,6 +87,72 @@ _FW_TO_GO = {
 TRIAL_MAX_UPLOADS = 3
 TRIAL_MAX_FRAMEWORKS = 1
 TRIAL_WATERMARK_TEXT = "TRIAL - Midnight Preview"
+POLICY_SCHEMA_VERSION = "midnight-policy-v2"
+POLICY_REQUIRED_SLOTS = [
+    "purpose",
+    "scope",
+    "definitions",
+    "roles_responsibilities",
+    "policy_statement",
+    "procedures",
+    "compliance_requirements",
+    "exceptions",
+    "review_cycle",
+    "approval",
+]
+POLICY_SLOT_SPECS = [
+    {
+        "slot_id": "purpose",
+        "heading": "Purpose",
+        "instruction": "State why the policy exists, the business objective, and the risk or compliance need it addresses.",
+    },
+    {
+        "slot_id": "scope",
+        "heading": "Scope",
+        "instruction": "Define which people, systems, data, locations, and business processes the policy applies to.",
+    },
+    {
+        "slot_id": "definitions",
+        "heading": "Definitions",
+        "instruction": "List and explain the specific terms, acronyms, or concepts needed to understand the policy.",
+    },
+    {
+        "slot_id": "roles_responsibilities",
+        "heading": "Roles and Responsibilities",
+        "instruction": "Identify the accountable roles and what each role is responsible for under this policy.",
+    },
+    {
+        "slot_id": "policy_statement",
+        "heading": "Policy Statement",
+        "instruction": "Write the core mandatory policy requirements in direct compliance-ready language.",
+    },
+    {
+        "slot_id": "procedures",
+        "heading": "Procedures",
+        "instruction": "Describe the operational steps, required actions, or workflow expectations needed to carry out the policy.",
+    },
+    {
+        "slot_id": "compliance_requirements",
+        "heading": "Compliance Requirements",
+        "instruction": "State the control obligations, evidence expectations, and framework-related requirements that support compliance.",
+    },
+    {
+        "slot_id": "exceptions",
+        "heading": "Exceptions",
+        "instruction": "Explain how exceptions are requested, approved, documented, and reviewed.",
+    },
+    {
+        "slot_id": "review_cycle",
+        "heading": "Review Cycle",
+        "instruction": "Describe how often this policy must be reviewed, updated, and re-approved.",
+    },
+    {
+        "slot_id": "approval",
+        "heading": "Approval",
+        "instruction": "Describe the approval authority, approval workflow, and what constitutes policy approval.",
+    },
+]
+SECTION_CONTENT_LIMIT = 12000
 
 
 def _slugify_value(value: str) -> str:
@@ -1117,6 +1184,14 @@ def _normalize_policy_payload_or_400(
 
 
 def _build_preview_text(policy_data: dict) -> str:
+    sections = policy_data.get("sections")
+    if isinstance(sections, list):
+        for slot_id in ("purpose", "scope", "policy_statement"):
+            for section in sections:
+                if isinstance(section, dict) and str(section.get("slot_id")) == slot_id:
+                    candidate = str(section.get("content") or "").strip()
+                    if candidate:
+                        return candidate.replace("\n", " ")[:280]
     for key in ("purpose", "scope", "policy_statement"):
         candidate = policy_data.get(key)
         if isinstance(candidate, str) and candidate.strip():
@@ -1149,6 +1224,7 @@ def _file_docx_response(
     document_name: str,
     doc_type: str,
     source_name: str,
+    policy_id: str | None = None,
     watermark_exports: bool = False,
 ) -> FileResponse:
     try:
@@ -1175,6 +1251,7 @@ def _file_docx_response(
             source_name=source_name,
             policy_number=policy_data.get("policy_number"),
             version=policy_data.get("version"),
+            policy_id=policy_id,
         )
     except SupabaseStoreError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -1396,39 +1473,402 @@ class CreatePolicyRequest(BaseModel):
     frameworks: list[str]
     owner: str
     description: Optional[str] = None
+    policy_number: Optional[str] = None
+    version: Optional[str] = None
+    grc_id: Optional[str] = None
+    effective_date: Optional[str] = None
+    last_reviewed: Optional[str] = None
+    last_revised: Optional[str] = None
+    supersedes: Optional[str] = None
+    custodians: Optional[str] = None
+    owner_title: Optional[str] = None
+    approver_name: Optional[str] = None
+    approver_title: Optional[str] = None
+    date_signed: Optional[str] = None
+    date_approved: Optional[str] = None
+    purpose_scope: Optional[str] = None
+    definitions_text: Optional[str] = None
+    policy_statement: Optional[str] = None
+    procedures_text: Optional[str] = None
+    related_policies: Optional[str] = None
+    citations_references: Optional[str] = None
 
 
-async def _generate_policy_data(request: CreatePolicyRequest, *, organization_hint: str = "") -> dict:
+def _anthropic_text_response(message: Any) -> tuple[str, str]:
+    chunks: list[str] = []
+    for block in getattr(message, "content", []) or []:
+        text = getattr(block, "text", None)
+        if text:
+            chunks.append(text)
+    return "\n".join(chunks).strip(), str(getattr(message, "stop_reason", "") or "")
+
+
+def _call_model_json_object(
+    *,
+    system_prompt: str,
+    user_prompt: str,
+    flow: str,
+    context: dict[str, object] | None = None,
+    max_tokens: int = 1200,
+) -> dict[str, Any]:
+    client = _get_anthropic_client()
+    last_error: Exception | None = None
+    last_raw_text = ""
+    prompt = user_prompt
+
+    for attempt in range(2):
+        message = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=max_tokens,
+            system=system_prompt,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw_text, stop_reason = _anthropic_text_response(message)
+        last_raw_text = raw_text
+
+        try:
+            if stop_reason == "max_tokens":
+                raise ParsedModelOutputError("AI response was truncated before completing valid JSON.")
+            parsed = parse_model_json(raw_text)
+            if not isinstance(parsed, dict):
+                raise PolicySchemaError("Model output must be a JSON object.")
+            return parsed
+        except (ParsedModelOutputError, PolicySchemaError) as exc:
+            last_error = exc
+            if attempt == 0:
+                prompt = (
+                    f"{user_prompt}\n\n"
+                    f"Your previous response was invalid because: {exc}\n"
+                    "Return one compact JSON object only. Use double-quoted keys, escape internal quotes, and do not include markdown fences or prose."
+                )
+                continue
+            _log_model_output_failure(flow=flow, raw_text=last_raw_text, error=exc, context=context)
+            raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {exc}") from exc
+
+    raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {last_error}")
+
+
+def _validate_policy_metadata(
+    metadata: dict[str, Any],
+    *,
+    request: CreatePolicyRequest,
+    organization_hint: str,
+    normalized_frameworks: list[str],
+) -> dict[str, Any]:
+    title = str(metadata.get("title") or request.policy_name).strip()
+    organization = str(metadata.get("organization") or organization_hint).strip()
+    owner = str(metadata.get("owner") or request.owner).strip()
+    document_type = str(metadata.get("document_type") or request.doc_type or "Policy").strip()
+    status = str(metadata.get("status") or "Draft").strip() or "Draft"
+    schema_version = str(metadata.get("schema_version") or POLICY_SCHEMA_VERSION).strip() or POLICY_SCHEMA_VERSION
+    selected_frameworks = metadata.get("selected_frameworks") or normalized_frameworks
+    if not isinstance(selected_frameworks, list):
+        raise HTTPException(status_code=502, detail="AI returned invalid metadata: selected_frameworks must be a list.")
+    selected_frameworks = [str(item).strip() for item in selected_frameworks if str(item).strip()]
+
+    required = {
+        "title": title,
+        "organization": organization,
+        "owner": owner,
+        "document_type": document_type,
+        "status": status,
+        "schema_version": schema_version,
+    }
+    missing = [key for key, value in required.items() if not value]
+    if missing:
+        raise HTTPException(status_code=502, detail=f"AI returned invalid metadata: missing {', '.join(missing)}.")
+
+    return {
+        "title": title,
+        "organization": organization,
+        "owner": owner,
+        "document_type": document_type,
+        "status": status,
+        "selected_frameworks": selected_frameworks,
+        "schema_version": schema_version,
+        "policy_number": request.policy_number or "",
+        "version": request.version or "1.0",
+        "grc_id": request.grc_id or "",
+        "effective_date": request.effective_date or "",
+        "last_reviewed": request.last_reviewed or "",
+        "last_revised": request.last_revised or "",
+        "supersedes": request.supersedes or "",
+        "custodians": request.custodians or "",
+        "owner_title": request.owner_title or "",
+        "approver_name": request.approver_name or "",
+        "approver_title": request.approver_title or "",
+        "date_signed": request.date_signed or "",
+        "date_approved": request.date_approved or "",
+        "description": request.description or "",
+        "industry": request.industry,
+    }
+
+
+def _validate_generated_section(section: dict[str, Any], *, slot_spec: dict[str, str]) -> dict[str, Any]:
+    slot_id = str(section.get("slot_id") or slot_spec["slot_id"]).strip()
+    heading = str(section.get("heading") or section.get("title") or slot_spec["heading"]).strip()
+    content = str(section.get("content") or section.get("body") or "").strip()
+
+    if slot_id != slot_spec["slot_id"]:
+        raise PolicySchemaError(f"Expected slot_id '{slot_spec['slot_id']}' but received '{slot_id}'.")
+    if not heading:
+        raise PolicySchemaError(f"Section '{slot_id}' is missing a heading.")
+    if not content:
+        raise PolicySchemaError(f"Section '{slot_id}' is missing content.")
+    if len(content) > SECTION_CONTENT_LIMIT:
+        raise PolicySchemaError(f"Section '{slot_id}' exceeded the maximum content length.")
+
+    return {
+        "slot_id": slot_id,
+        "heading": heading,
+        "content": content,
+        "sort_order": POLICY_REQUIRED_SLOTS.index(slot_id) + 1,
+        "source_origin": "ai_generated",
+    }
+
+
+def _build_policy_payload_from_sections(
+    *,
+    metadata: dict[str, Any],
+    sections: list[dict[str, Any]],
+    section_errors: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
+    section_map = {section["slot_id"]: section for section in sections}
+    framework_mappings = {
+        framework: [] for framework in metadata.get("selected_frameworks", [])
+    } if metadata.get("selected_frameworks") else {}
+
+    payload: dict[str, Any] = {
+        "title": metadata["title"],
+        "policy_name": metadata["title"],
+        "organization": metadata["organization"],
+        "owner": metadata["owner"],
+        "doc_type": metadata["document_type"],
+        "status": metadata["status"],
+        "version": metadata.get("version") or "1.0",
+        "policy_number": metadata.get("policy_number") or "",
+        "grc_id": metadata.get("grc_id") or "",
+        "effective_date": metadata.get("effective_date") or "",
+        "last_reviewed": metadata.get("last_reviewed") or "",
+        "last_revised": metadata.get("last_revised") or "",
+        "supersedes": metadata.get("supersedes") or "",
+        "custodians": metadata.get("custodians") or "",
+        "owner_title": metadata.get("owner_title") or "",
+        "approver_name": metadata.get("approver_name") or "",
+        "approver_title": metadata.get("approver_title") or "",
+        "date_signed": metadata.get("date_signed") or "",
+        "date_approved": metadata.get("date_approved") or "",
+        "metadata": {
+            "owner": metadata["owner"],
+            "document_type": metadata["document_type"],
+            "schema_version": metadata["schema_version"],
+            "selected_frameworks": metadata.get("selected_frameworks", []),
+        },
+        "sections": sections,
+        "framework_mappings": framework_mappings,
+        "framework_map": {
+            "overall_coverage": "In progress" if framework_mappings else "Not selected",
+            "total_controls_mapped": 0,
+            "total_gaps": 0,
+            "frameworks_covered": list(framework_mappings.keys()),
+            "audit_summary": "Framework mappings will be refined as policy sections are reviewed.",
+            "mapped_citations": [],
+            "gaps": [],
+        },
+        "section_errors": section_errors or [],
+    }
+
+    for slot_spec in POLICY_SLOT_SPECS:
+        payload[slot_spec["slot_id"]] = section_map.get(slot_spec["slot_id"], {}).get("content", "")
+    return payload
+
+
+def _ensure_required_slots(policy_data: dict[str, Any]) -> list[str]:
+    sections = policy_data.get("sections") if isinstance(policy_data.get("sections"), list) else []
+    present = {str(section.get("slot_id") or "").strip() for section in sections if isinstance(section, dict)}
+    missing = [slot for slot in POLICY_REQUIRED_SLOTS if slot not in present]
+    return missing
+
+
+def _ensure_required_slots_or_400(policy_data: dict[str, Any]) -> dict[str, Any]:
+    missing = _ensure_required_slots(policy_data)
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Policy draft is incomplete. Missing required sections: {', '.join(missing)}.",
+        )
+    return policy_data
+
+
+def _merge_sections_from_top_level(policy_data: dict[str, Any]) -> dict[str, Any]:
+    section_map: dict[str, dict[str, Any]] = {}
+    for section in policy_data.get("sections", []) if isinstance(policy_data.get("sections"), list) else []:
+        if isinstance(section, dict):
+            slot_id = str(section.get("slot_id") or "").strip()
+            if slot_id:
+                section_map[slot_id] = dict(section)
+
+    for index, spec in enumerate(POLICY_SLOT_SPECS, start=1):
+        top_level_value = policy_data.get(spec["slot_id"])
+        if isinstance(top_level_value, str) and top_level_value.strip():
+            section_map[spec["slot_id"]] = {
+                "slot_id": spec["slot_id"],
+                "heading": spec["heading"],
+                "content": top_level_value.strip(),
+                "sort_order": index,
+            }
+        elif spec["slot_id"] in section_map:
+            section_map[spec["slot_id"]].setdefault("heading", spec["heading"])
+            section_map[spec["slot_id"]].setdefault("sort_order", index)
+
+    ordered_sections = [
+        section_map[spec["slot_id"]]
+        for spec in POLICY_SLOT_SPECS
+        if spec["slot_id"] in section_map
+    ]
+    merged = dict(policy_data)
+    merged["sections"] = ordered_sections
+    return merged
+
+
+def _build_metadata_prompt(
+    request: CreatePolicyRequest,
+    *,
+    organization_hint: str,
+    normalized_frameworks: list[str],
+) -> str:
+    return (
+        f"Policy Name: {request.policy_name}\n"
+        f"Requested Document Type: {request.doc_type}\n"
+        f"Organization: {organization_hint or 'Not provided'}\n"
+        f"Industry: {request.industry}\n"
+        f"Owner: {request.owner}\n"
+        f"Description: {request.description or 'Not provided'}\n"
+        f"Frameworks: {', '.join(normalized_frameworks) or 'None selected'}\n\n"
+        "Return valid JSON only with the fields: "
+        "title, organization, owner, document_type, status, selected_frameworks, schema_version."
+    )
+
+
+def _build_section_prompt(
+    request: CreatePolicyRequest,
+    *,
+    metadata: dict[str, Any],
+    slot_spec: dict[str, str],
+    normalized_frameworks: list[str],
+    fw_context: list[str],
+    mapping_rules: str,
+) -> str:
+    return (
+        f"Policy Title: {metadata['title']}\n"
+        f"Organization: {metadata['organization']}\n"
+        f"Owner: {metadata['owner']}\n"
+        f"Industry: {request.industry}\n"
+        f"Frameworks: {', '.join(normalized_frameworks) or 'None selected'}\n"
+        f"Document Type: {metadata['document_type']}\n"
+        f"Policy Description: {request.description or 'Not provided'}\n"
+        f"Requested Slot: {slot_spec['slot_id']}\n"
+        f"Required Heading: {slot_spec['heading']}\n"
+        f"Section Guidance: {slot_spec['instruction']}\n"
+        f"Framework Controls Reference:\n{chr(10).join(fw_context)}\n\n"
+        f"Mapping Rules: {mapping_rules}\n\n"
+        "Generate only one policy section. Return valid JSON only in this shape:\n"
+        '{\n  "slot_id": "' + slot_spec["slot_id"] + '",\n  "heading": "' + slot_spec["heading"] + '",\n  "content": "..."\n}\n'
+        "Do not include markdown fences or prose."
+    )
+
+
+async def _generate_policy_data(
+    request: CreatePolicyRequest,
+    *,
+    tenant_id: str,
+    organization_hint: str = "",
+    existing_policy_id: str | None = None,
+) -> tuple[dict[str, Any], str]:
     normalized_frameworks, fw_context = build_framework_prompt_context(request.frameworks)
     mapping_rules = build_framework_mapping_rules(request.frameworks)
 
-    user_msg = (
-        f"Policy Name: {request.policy_name}\n"
-        f"Document Type: {request.doc_type}\n"
-        f"Organization: {organization_hint or 'Not provided'}\n"
-        f"Industry: {request.industry}\n"
-        f"Frameworks: {', '.join(normalized_frameworks)}\n"
-        f"Owner: {request.owner}\n"
-        f"Description/Scope: {request.description or 'Not provided'}\n\n"
-        f"Framework Controls Reference:\n{chr(10).join(fw_context)}\n\n"
-        f"Mapping Rules: {mapping_rules}\n\n"
-        "Create a complete enterprise policy document. Return only JSON."
+    metadata_raw = _call_model_json_object(
+        system_prompt="You are Midnight's policy metadata generator. Return JSON only.",
+        user_prompt=_build_metadata_prompt(request, organization_hint=organization_hint, normalized_frameworks=normalized_frameworks),
+        flow="create_policy_metadata",
+        context={"policy_name": request.policy_name, "doc_type": request.doc_type},
+        max_tokens=700,
+    )
+    metadata = _validate_policy_metadata(
+        metadata_raw,
+        request=request,
+        organization_hint=organization_hint,
+        normalized_frameworks=normalized_frameworks,
     )
 
-    client = _get_anthropic_client()
-    message = client.messages.create(
-        model=ANTHROPIC_MODEL,
-        max_tokens=4096,
-        system=CREATE_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_msg}],
+    draft_record = save_policy_draft(
+        tenant_id=tenant_id,
+        title=metadata["title"],
+        document_type=metadata["document_type"],
+        organization=metadata["organization"],
+        owner=metadata["owner"],
+        status=metadata["status"],
+        schema_version=metadata["schema_version"],
+        selected_frameworks=metadata["selected_frameworks"],
+        sections=[],
+        policy_number=metadata.get("policy_number") or None,
+        version=metadata.get("version") or None,
+        policy_id=existing_policy_id,
     )
-    return _parse_policy_model_output(
-        message.content[0].text,
-        flow="create_policy",
-        organization_hint=organization_hint,
-        required_frameworks=normalized_frameworks,
-        context={"policy_name": request.policy_name, "doc_type": request.doc_type},
+    policy_id = draft_record["policy"]["id"]
+
+    sections: list[dict[str, Any]] = []
+    section_errors: list[dict[str, str]] = []
+
+    for slot_spec in POLICY_SLOT_SPECS:
+        try:
+            raw_section = _call_model_json_object(
+                system_prompt="You are Midnight's policy section generator. Return JSON only for one section.",
+                user_prompt=_build_section_prompt(
+                    request,
+                    metadata=metadata,
+                    slot_spec=slot_spec,
+                    normalized_frameworks=normalized_frameworks,
+                    fw_context=fw_context,
+                    mapping_rules=mapping_rules,
+                ),
+                flow=f"create_policy_section_{slot_spec['slot_id']}",
+                context={"policy_name": request.policy_name, "slot_id": slot_spec["slot_id"]},
+                max_tokens=1100,
+            )
+            section = _validate_generated_section(raw_section, slot_spec=slot_spec)
+            sections.append(section)
+            save_policy_draft(
+                tenant_id=tenant_id,
+                title=metadata["title"],
+                document_type=metadata["document_type"],
+                organization=metadata["organization"],
+                owner=metadata["owner"],
+                status=metadata["status"],
+                schema_version=metadata["schema_version"],
+                selected_frameworks=metadata["selected_frameworks"],
+                sections=sections,
+                policy_number=metadata.get("policy_number") or None,
+                version=metadata.get("version") or None,
+                policy_id=policy_id,
+            )
+        except HTTPException as exc:
+            section_errors.append(
+                {
+                    "slot_id": slot_spec["slot_id"],
+                    "heading": slot_spec["heading"],
+                    "error": str(exc.detail),
+                }
+            )
+
+    policy_payload = _build_policy_payload_from_sections(
+        metadata=metadata,
+        sections=sections,
+        section_errors=section_errors,
     )
+    policy_payload["_draft"] = {"policy_id": policy_id}
+    return policy_payload, policy_id
 
 
 def _build_docx(policy_data: dict, template_name: str) -> bytes:
@@ -1467,21 +1907,34 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
 
     doc.add_paragraph()
 
-    sections = [
-        ("1. Purpose", "purpose"),
-        ("2. Scope", "scope"),
-        ("3. Policy Statement", "policy_statement"),
-        ("4. Definitions", "definitions"),
-        ("5. Procedures", "procedures"),
-        ("6. Roles & Responsibilities", "roles_responsibilities"),
-        ("7. Exceptions", "exceptions"),
-        ("8. Enforcement", "enforcement"),
-        ("9. References", "references"),
-    ]
+    rendered_sections = policy_data.get("sections")
+    if isinstance(rendered_sections, list) and rendered_sections:
+        sections = [
+            (f"{index}. {section.get('heading') or 'Section'}", str(section.get("slot_id") or f"section_{index}"))
+            for index, section in enumerate(rendered_sections, start=1)
+        ]
+        section_content_map = {
+            str(section.get("slot_id") or f"section_{index}"): section.get("content")
+            for index, section in enumerate(rendered_sections, start=1)
+            if isinstance(section, dict)
+        }
+    else:
+        sections = [
+            ("1. Purpose", "purpose"),
+            ("2. Scope", "scope"),
+            ("3. Policy Statement", "policy_statement"),
+            ("4. Definitions", "definitions"),
+            ("5. Procedures", "procedures"),
+            ("6. Roles & Responsibilities", "roles_responsibilities"),
+            ("7. Exceptions", "exceptions"),
+            ("8. Enforcement", "enforcement"),
+            ("9. References", "references"),
+        ]
+        section_content_map = {key: policy_data.get(key) for _, key in sections}
 
     for title, key in sections:
         add_heading(title, level=1)
-        content = policy_data.get(key)
+        content = section_content_map.get(key)
 
         if not content:
             add_body("[Section not found in source document]")
@@ -1739,7 +2192,11 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
-        policy_data = await _generate_policy_data(payload, organization_hint=str(tenant.get("name") or ""))
+        policy_data, policy_id = await _generate_policy_data(
+            payload,
+            tenant_id=tenant["id"],
+            organization_hint=str(tenant.get("name") or ""),
+        )
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover
@@ -1753,6 +2210,7 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
         "preview_id": str(uuid.uuid4()),
         "tenant_id": tenant["id"],
         "plan_type": tenant.get("plan_type", "trial"),
+        "policy_id": policy_id,
     }
 
     return JSONResponse(
@@ -1760,6 +2218,7 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
             "policy_data": policy_data,
             "framework_map": policy_data.get("framework_map"),
             "preview_id": policy_data["_session"]["preview_id"],
+            "section_errors": policy_data.get("section_errors", []),
         }
     )
 
@@ -1779,11 +2238,30 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
     doc_type = policy_data.get("doc_type", session.get("doc_type", "POLICY"))
     output_name = f"{policy_name.replace(' ', '_')}_v{policy_data.get('version', '1.0')}.docx"
     tenant = _tenant_context_from_request(request)
+    policy_data = _merge_sections_from_top_level(policy_data)
     policy_data = _normalize_policy_payload_or_400(
         policy_data,
         organization_hint=str(tenant.get("name") or ""),
         required_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
     )
+    policy_data = _ensure_required_slots_or_400(policy_data)
+    try:
+        save_policy_draft(
+            tenant_id=tenant["id"],
+            title=policy_data.get("title") or policy_name,
+            document_type=policy_data.get("doc_type") or doc_type,
+            organization=policy_data.get("organization") or str(tenant.get("name") or ""),
+            owner=policy_data.get("owner") or "Unknown",
+            status=policy_data.get("status") or "Draft",
+            schema_version=(policy_data.get("metadata") or {}).get("schema_version", POLICY_SCHEMA_VERSION),
+            selected_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
+            sections=policy_data.get("sections", []),
+            policy_number=policy_data.get("policy_number") or None,
+            version=policy_data.get("version") or None,
+            policy_id=session.get("policy_id"),
+        )
+    except SupabaseStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return _file_docx_response(
         tenant_id=tenant["id"],
@@ -1793,6 +2271,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
         document_name=policy_name,
         doc_type=doc_type,
         source_name=session.get("source_name", policy_name),
+        policy_id=session.get("policy_id"),
         watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
     )
 
@@ -1802,7 +2281,12 @@ async def create_document(request: Request, payload: CreatePolicyRequest):
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
-        policy_data = await _generate_policy_data(payload, organization_hint=str(tenant.get("name") or ""))
+        policy_data, policy_id = await _generate_policy_data(
+            payload,
+            tenant_id=tenant["id"],
+            organization_hint=str(tenant.get("name") or ""),
+        )
+        policy_data = _ensure_required_slots_or_400(policy_data)
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover
@@ -1817,6 +2301,7 @@ async def create_document(request: Request, payload: CreatePolicyRequest):
         document_name=policy_data.get("policy_name", payload.policy_name),
         doc_type=payload.doc_type,
         source_name=payload.policy_name,
+        policy_id=policy_id,
         watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
     )
 
