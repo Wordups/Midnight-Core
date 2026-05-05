@@ -348,6 +348,14 @@
   .media-asset-name { font-family: var(--font-display); font-size: 14px; color: var(--text); }
   .media-asset-tag { padding: 5px 8px; border-radius: 999px; border: 1px solid rgba(0,212,245,0.16); background: rgba(0,212,245,0.07); color: var(--accent); font-size: 10px; font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
   .media-empty-state { padding: 18px; border-radius: 14px; border: 1px dashed rgba(0,212,245,0.22); background: rgba(0,212,245,0.03); color: var(--text2); font-size: 12px; line-height: 1.7; }
+  .export-studio-shell { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.04); display: none; }
+  .export-studio-shell.active { display: block; }
+  .export-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .export-card { border-radius: 16px; border: 1px solid rgba(0,212,245,0.12); background: linear-gradient(155deg, rgba(255,255,255,0.02) 0%, rgba(0,212,245,0.04) 100%); padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 180px; }
+  .export-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .export-card-title { font-family: var(--font-display); font-size: 16px; color: var(--text); }
+  .export-card-copy { font-size: 11px; line-height: 1.65; color: var(--text2); }
+  .export-card-status { padding: 5px 8px; border-radius: 999px; border: 1px solid rgba(0,212,245,0.16); background: rgba(0,212,245,0.07); color: var(--accent); font-size: 10px; font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -493,7 +501,8 @@
     .ai-gov-output-grid,
     .ai-gov-mapping-list { grid-template-columns: 1fr; }
     .media-studio-grid,
-    .media-studio-tools { grid-template-columns: 1fr; }
+    .media-studio-tools,
+    .export-card-grid { grid-template-columns: 1fr; }
   }
 
   /* SECTION EDITOR */
@@ -1227,6 +1236,17 @@
               <input id="cp-media-image" type="file" accept="image/png,image/jpeg,image/jpg" style="display:none;" onchange="handleCreateMediaFiles('image', this.files)">
               <input id="cp-media-video" type="file" accept="video/mp4,video/webm" style="display:none;" onchange="handleCreateMediaFiles('video', this.files)">
             </div>
+            <div class="export-studio-shell" id="cp-export-studio">
+              <div class="studio-workspace-head" style="margin-bottom:14px;">
+                <div>
+                  <div class="studio-workspace-kicker">Step 5 · Export Studio</div>
+                  <div class="studio-workspace-title" style="font-size:20px;">Destination-aware output paths</div>
+                  <div class="studio-workspace-copy" id="cp-export-copy">Select a document type to see how Midnight can package and deliver the final artifact.</div>
+                </div>
+                <div class="studio-selected-pill" id="cp-export-status-pill">Exports idle</div>
+              </div>
+              <div class="export-card-grid" id="cp-export-card-grid"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1911,6 +1931,53 @@ let sopStepSeed = 1;
 let draggingSopStepId = null;
 let createMediaAssets = [];
 let createMediaAssetSeed = 1;
+let exportStudioReady = false;
+
+const EXPORT_STUDIO_CONFIG = {
+  POLICY: [
+    { name: 'Word (.docx)', status: 'ready path', copy: 'Primary policy artifact with section editor support and framework-aware formatting.' },
+    { name: 'PDF', status: 'packaged', copy: 'Portable executive/shareable version of the generated policy document.' },
+  ],
+  SOP: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Procedure document with embedded screenshots and role/timer context.' },
+    { name: 'Interactive HTML', status: 'planned', copy: 'Browser-friendly SOP with playable clips, branching, and captions.' },
+    { name: 'QR Code Poster', status: 'planned', copy: 'Wall-posted SOP access path for frontline teams.' },
+    { name: 'PDF', status: 'planned', copy: 'Printable operating procedure with QR linkage.' },
+  ],
+  STANDARD: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Formal technical standard artifact with evidence hooks.' },
+    { name: 'PDF', status: 'planned', copy: 'Static distribution format for technical governance.' },
+  ],
+  PROCESS_FLOW: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Narrative process documentation with flow inserts.' },
+    { name: 'PowerPoint (.pptx)', status: 'planned', copy: 'Storyboard export for executive walk-throughs and workshops.' },
+    { name: 'PDF', status: 'planned', copy: 'Shareable process artifact for static review.' },
+  ],
+  TRAINING_MODULE: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Supporting facilitator notes and policy-aligned narrative.' },
+    { name: 'PowerPoint (.pptx)', status: 'planned', copy: 'Primary training deck with one slide path per module segment.' },
+    { name: 'PDF', status: 'planned', copy: 'Read-only learner handout or audit copy.' },
+  ],
+  INCIDENT_RUNBOOK: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Response playbook with timer and escalation blocks.' },
+    { name: 'Interactive HTML', status: 'planned', copy: 'Operational runbook with clickable branching and media.' },
+    { name: 'PDF', status: 'planned', copy: 'Print-ready response artifact for offline access.' },
+  ],
+  RISK_ASSESSMENT: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Structured assessment narrative with register and mitigation framing.' },
+    { name: 'PDF', status: 'planned', copy: 'Board/shareable export for static review.' },
+  ],
+  AUDIT_PACKAGE: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Findings and checklist narrative for the audit package.' },
+    { name: 'PDF', status: 'planned', copy: 'Static audit narrative and finding summaries.' },
+    { name: 'Audit Package ZIP', status: 'planned', copy: 'Bundle of documents, evidence templates, and framework checklist assets.' },
+  ],
+  AI_GOVERNANCE: [
+    { name: 'Word (.docx)', status: 'planned', copy: 'Governance policy or model-card style narrative output.' },
+    { name: 'PDF', status: 'planned', copy: 'Static governance and regulatory mapping share-out.' },
+    { name: 'Regulatory Mapping Summary', status: 'planned', copy: 'Focused crosswalk artifact for AI governance stakeholders.' },
+  ],
+};
 
 function getCreateDocTypeConfig(key) {
   return CREATE_DOC_TYPES.find(type => type.key === key) || CREATE_DOC_TYPES[0];
@@ -1933,10 +2000,13 @@ function renderCreateDocTypeSelector() {
 
 function resetCreateStudio() {
   selectedCreateDocType = null;
+  exportStudioReady = false;
   const shell = document.getElementById('cp-workspace-shell');
   if (shell) shell.classList.remove('active');
   const mediaShell = document.getElementById('cp-media-studio');
   if (mediaShell) mediaShell.classList.remove('active');
+  const exportShell = document.getElementById('cp-export-studio');
+  if (exportShell) exportShell.classList.remove('active');
   document.querySelectorAll('#view-create .studio-panel-view').forEach(panel => panel.style.display = 'none');
   const selectedPill = document.getElementById('cp-selected-type-pill');
   if (selectedPill) selectedPill.textContent = 'No type selected';
@@ -1954,6 +2024,7 @@ function resetCreateStudio() {
   if (mediaPill) mediaPill.textContent = 'No document selected';
   renderCreateDocTypeSelector();
   renderCreateMediaStudio();
+  renderExportStudio();
 }
 
 function selectCreateDocType(key) {
@@ -1978,10 +2049,13 @@ function selectCreateDocType(key) {
   if (typeField) typeField.value = type.key;
   const mediaShell = document.getElementById('cp-media-studio');
   if (mediaShell) mediaShell.classList.add('active');
+  const exportShell = document.getElementById('cp-export-studio');
+  if (exportShell) exportShell.classList.add('active');
   const mediaPill = document.getElementById('cp-media-context-pill');
   if (mediaPill) mediaPill.textContent = `${type.name} media`;
   renderCreateDocTypeSelector();
   renderCreateMediaStudio();
+  renderExportStudio();
   if (type.key === 'SOP') renderSopBuilder();
   if (type.key === 'AI_GOVERNANCE') refreshAiGovernanceSummary();
 }
@@ -2308,6 +2382,40 @@ function updateCreateMediaAsset(assetId, value) {
 function removeCreateMediaAsset(assetId) {
   createMediaAssets = createMediaAssets.filter(asset => asset.id !== assetId);
   renderCreateMediaStudio();
+}
+
+function renderExportStudio() {
+  const grid = document.getElementById('cp-export-card-grid');
+  if (!grid) return;
+  const statusPill = document.getElementById('cp-export-status-pill');
+  const copyEl = document.getElementById('cp-export-copy');
+  const type = getCreateDocTypeConfig(selectedCreateDocType || 'POLICY');
+  const cards = EXPORT_STUDIO_CONFIG[type.key] || EXPORT_STUDIO_CONFIG.POLICY;
+
+  if (!selectedCreateDocType) {
+    if (statusPill) statusPill.textContent = 'Exports idle';
+    if (copyEl) copyEl.textContent = 'Select a document type to see how Midnight can package and deliver the final artifact.';
+    grid.innerHTML = '<div class="media-empty-state">Choose a document type first. Export options will then adapt to the workflow Midnight is preparing for you.</div>';
+    return;
+  }
+
+  if (statusPill) statusPill.textContent = exportStudioReady ? `${type.name} exports ready` : `${type.name} exports staged`;
+  if (copyEl) {
+    copyEl.textContent = exportStudioReady
+      ? `Midnight now has enough material in ${type.name} mode to light up the export destinations below.`
+      : `These are the export destinations planned for ${type.name}. Finish generation in this lane to fully activate them.`;
+  }
+
+  grid.innerHTML = cards.map(card => `
+    <div class="export-card">
+      <div class="export-card-head">
+        <div class="export-card-title">${escHtml(card.name)}</div>
+        <div class="export-card-status">${escHtml(exportStudioReady ? (type.key === 'POLICY' ? 'ready' : 'staged') : card.status)}</div>
+      </div>
+      <div class="export-card-copy">${escHtml(card.copy)}</div>
+      <button class="sop-icon-btn" type="button">${exportStudioReady ? 'Open path' : 'Queued path'}</button>
+    </div>
+  `).join('');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2861,6 +2969,8 @@ async function createPolicy() {
   document.getElementById('cp-out-text').textContent   = '';
   document.getElementById('cp-out-actions').style.display = 'none';
   document.getElementById('cp-editor').style.display = 'none';
+  exportStudioReady = false;
+  renderExportStudio();
   outEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   if (outputDownloads.cp?.url) URL.revokeObjectURL(outputDownloads.cp.url);
@@ -2920,6 +3030,8 @@ async function createPolicy() {
       document.getElementById('cp-out-text').textContent    = _buildPolicyPreviewText(data.policy_data);
       document.getElementById('cp-out-status').textContent  = 'Preview Ready';
       document.getElementById('cp-out-status').className    = 'output-status done';
+      exportStudioReady = true;
+      renderExportStudio();
       renderEditor('cp', data.policy_data);
       document.getElementById('cp-out-actions').style.display = 'flex';
       document.getElementById('cp-out-actions').innerHTML = `
@@ -2935,6 +3047,8 @@ async function createPolicy() {
       document.getElementById('cp-out-status').textContent  = 'Error';
       document.getElementById('cp-out-status').className    = 'output-status error';
       document.getElementById('cp-out-text').textContent    = e.message || 'Policy generation failed.';
+      exportStudioReady = false;
+      renderExportStudio();
       showToast(e.message || 'Policy generation failed', true);
     }
 
