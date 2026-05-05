@@ -311,6 +311,10 @@
 
   /* BUILD VIEW */
   .build-view { max-width: min(1540px, calc(100vw - 320px)); }
+  #view-create .build-view {
+    width: min(1720px, calc(100vw - 285px));
+    max-width: none;
+  }
   .build-header { margin-bottom: 28px; }
   .build-title { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
   .build-sub { font-size: 14px; color: var(--text2); line-height: 1.75; max-width: 980px; }
@@ -420,7 +424,7 @@
   .media-empty-state { padding: 22px; border-radius: 16px; border: 1px dashed rgba(0,212,245,0.22); background: rgba(0,212,245,0.03); color: var(--text2); font-size: 14px; line-height: 1.8; }
   .export-studio-shell { margin-top: 26px; padding-top: 26px; border-top: 1px solid rgba(255,255,255,0.04); display: none; }
   .export-studio-shell.active { display: block; }
-  .export-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .export-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
   .export-card { border-radius: 18px; border: 1px solid rgba(0,212,245,0.12); background: linear-gradient(155deg, rgba(255,255,255,0.02) 0%, rgba(0,212,245,0.04) 100%); padding: 22px; display: flex; flex-direction: column; gap: 14px; min-height: 220px; }
   .export-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
   .export-card-title { font-family: var(--font-display); font-size: 18px; color: var(--text); }
@@ -490,6 +494,55 @@
     pointer-events: none;
     transition: opacity 0.18s ease, transform 0.18s ease;
     z-index: 12;
+  }
+  #view-create .build-title,
+  #view-create .studio-selector-title,
+  #view-create .studio-workspace-title,
+  #view-create .studio-type-name,
+  #view-create .studio-panel-title,
+  #view-create .media-tool-title,
+  #view-create .media-asset-name,
+  #view-create .export-card-title,
+  #view-create .ai-gov-output-title,
+  #view-create .ai-gov-risk-title,
+  #view-create .sop-media-title {
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-transform: none;
+  }
+  #view-create .build-title {
+    font-size: 30px;
+    font-weight: 700;
+  }
+  #view-create .studio-selector-title,
+  #view-create .studio-workspace-title {
+    font-size: 30px;
+    line-height: 1.1;
+  }
+  #view-create .studio-type-name {
+    font-size: 21px;
+  }
+  #view-create .studio-panel-title,
+  #view-create .media-tool-title,
+  #view-create .export-card-title,
+  #view-create .ai-gov-risk-title {
+    font-size: 20px;
+  }
+  #view-create .media-studio-grid {
+    grid-template-columns: minmax(0, 2.2fr) minmax(360px, 1fr);
+    align-items: stretch;
+  }
+  #view-create .media-studio-tools {
+    grid-template-columns: repeat(3, minmax(260px, 1fr));
+  }
+  #view-create .media-studio-grid > .studio-panel {
+    min-height: 100%;
+  }
+  #view-create .studio-workspace-card,
+  #view-create .studio-selector-card,
+  #view-create .form-card {
+    width: 100%;
   }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
