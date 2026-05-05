@@ -11,6 +11,7 @@ import hashlib
 from typing import Optional
 from enum import Enum
 
+from backend.core.json_parser import parse_model_json
 from docx import Document
 from io import BytesIO
 from dotenv import load_dotenv
@@ -282,9 +283,10 @@ async def llm_map_sections(extracted_text: str, template_sections: list[str]) ->
     )
 
     raw = message.content[0].text.strip()
-    raw = re.sub(r"^```[a-z]*\n?", "", raw)
-    raw = re.sub(r"\n?```$",       "", raw)
-    return json.loads(raw)
+    parsed = parse_model_json(raw)
+    if not isinstance(parsed, dict):
+        raise ValueError("Claude section mapping output must be a JSON object.")
+    return parsed
 
 
 def score_document(mapped: dict, missing: list, partial: list) -> tuple[int, str, dict]:

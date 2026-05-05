@@ -7,6 +7,7 @@ import json
 import os
 import base64
 import csv
+import logging
 import mimetypes
 import re
 import tempfile
@@ -29,6 +30,12 @@ from pydantic import BaseModel
 from backend.core.framework_layer import (
     build_framework_mapping_rules,
     build_framework_prompt_context,
+)
+from backend.core.json_parser import (
+    ParsedModelOutputError,
+    PolicySchemaError,
+    normalize_policy_payload,
+    parse_model_json,
 )
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
 from backend.storage.file_store import (
@@ -58,6 +65,8 @@ except ImportError:  # pragma: no cover
     _requests = None
 
 load_dotenv()
+
+logger = logging.getLogger("midnight.policy_json")
 
 router = APIRouter()
 pipeline_router = APIRouter(prefix="/pipeline", tags=["pipeline"])
@@ -916,9 +925,7 @@ Rules:
 
 
 def _parse_template_map_json(raw_text: str) -> dict:
-    data = json.loads(_strip_json_fences(raw_text))
-    if not isinstance(data, dict):
-        raise HTTPException(status_code=500, detail="Template extraction returned an invalid section map.")
+    data = _parse_generic_model_object(raw_text, flow="template_section_map")
     return _finalize_template_section_map(data)
 
 
@@ -1031,6 +1038,82 @@ def _extract_template_section_map(
 
 def _strip_json_fences(raw: str) -> str:
     return raw.replace("```json", "").replace("```", "").strip()
+
+
+def _log_model_output_failure(
+    *,
+    flow: str,
+    raw_text: str,
+    error: Exception,
+    context: dict[str, object] | None = None,
+) -> None:
+    payload = {
+        "flow": flow,
+        "error": str(error),
+        "raw_output_excerpt": str(raw_text or "")[:4000],
+    }
+    if context:
+        payload.update(context)
+    logger.warning("model_json_parse_failed", extra=payload)
+
+
+def _parse_policy_model_output(
+    raw_text: str,
+    *,
+    flow: str,
+    organization_hint: str,
+    required_frameworks: list[str] | None = None,
+    context: dict[str, object] | None = None,
+) -> dict:
+    try:
+        parsed = parse_model_json(raw_text)
+    except ParsedModelOutputError as exc:
+        _log_model_output_failure(flow=flow, raw_text=raw_text, error=exc, context=context)
+        raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {exc}") from exc
+
+    try:
+        return normalize_policy_payload(
+            parsed,
+            organization_hint=organization_hint,
+            required_frameworks=required_frameworks,
+        )
+    except PolicySchemaError as exc:
+        _log_model_output_failure(flow=flow, raw_text=raw_text, error=exc, context=context)
+        raise HTTPException(status_code=502, detail=f"AI returned invalid policy schema: {exc}") from exc
+
+
+def _parse_generic_model_object(
+    raw_text: str,
+    *,
+    flow: str,
+    context: dict[str, object] | None = None,
+) -> dict:
+    try:
+        parsed = parse_model_json(raw_text)
+    except ParsedModelOutputError as exc:
+        _log_model_output_failure(flow=flow, raw_text=raw_text, error=exc, context=context)
+        raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {exc}") from exc
+    if not isinstance(parsed, dict):
+        error = PolicySchemaError("Model output must be a JSON object.")
+        _log_model_output_failure(flow=flow, raw_text=raw_text, error=error, context=context)
+        raise HTTPException(status_code=502, detail="AI returned an invalid JSON object.")
+    return parsed
+
+
+def _normalize_policy_payload_or_400(
+    policy_data: dict,
+    *,
+    organization_hint: str,
+    required_frameworks: list[str] | None = None,
+) -> dict:
+    try:
+        return normalize_policy_payload(
+            policy_data,
+            organization_hint=organization_hint,
+            required_frameworks=required_frameworks,
+        )
+    except PolicySchemaError as exc:
+        raise HTTPException(status_code=400, detail=f"Policy data is invalid: {exc}") from exc
 
 
 def _build_preview_text(policy_data: dict) -> str:
@@ -1224,6 +1307,7 @@ async def _extract_policy_data(
     template_name: str,
     frameworks: list[str],
     template_section_map: Optional[dict] = None,
+    organization_hint: str = "",
 ) -> dict:
     raw_text = _extract_text_from_upload(file_bytes, filename)
     if len(raw_text.strip()) < 50:
@@ -1242,7 +1326,7 @@ async def _extract_policy_data(
         f"FRAMEWORK CONTROLS REFERENCE:\n{chr(10).join(fw_context)}\n\n"
         f"MAPPING RULES: {mapping_rules}\n\n"
         f"VERBATIM SOURCE MAPPING:\n---\n{mapped_context or 'No deterministic section matches found.'}\n---\n\n"
-        f"SOURCE CONTENT:\n---\n{raw_text[:14000]}\n---\n\n"
+        f"SOURCE CONTENT:\n---\n{raw_text[:8000]}\n---\n\n"
         "Reconstruct this policy into the required JSON structure. Return only JSON."
     )
 
@@ -1253,7 +1337,13 @@ async def _extract_policy_data(
         system=MIGRATION_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_msg}],
     )
-    policy_data = json.loads(_strip_json_fences(message.content[0].text))
+    policy_data = _parse_policy_model_output(
+        message.content[0].text,
+        flow="migrate_policy",
+        organization_hint=organization_hint,
+        required_frameworks=normalized_frameworks,
+        context={"filename": filename, "template_name": template_name},
+    )
     return _apply_migrate_source_mapping(policy_data, mapped_source)
 
 
@@ -1308,13 +1398,14 @@ class CreatePolicyRequest(BaseModel):
     description: Optional[str] = None
 
 
-async def _generate_policy_data(request: CreatePolicyRequest) -> dict:
+async def _generate_policy_data(request: CreatePolicyRequest, *, organization_hint: str = "") -> dict:
     normalized_frameworks, fw_context = build_framework_prompt_context(request.frameworks)
     mapping_rules = build_framework_mapping_rules(request.frameworks)
 
     user_msg = (
         f"Policy Name: {request.policy_name}\n"
         f"Document Type: {request.doc_type}\n"
+        f"Organization: {organization_hint or 'Not provided'}\n"
         f"Industry: {request.industry}\n"
         f"Frameworks: {', '.join(normalized_frameworks)}\n"
         f"Owner: {request.owner}\n"
@@ -1331,7 +1422,13 @@ async def _generate_policy_data(request: CreatePolicyRequest) -> dict:
         system=CREATE_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_msg}],
     )
-    return json.loads(_strip_json_fences(message.content[0].text))
+    return _parse_policy_model_output(
+        message.content[0].text,
+        flow="create_policy",
+        organization_hint=organization_hint,
+        required_frameworks=normalized_frameworks,
+        context={"policy_name": request.policy_name, "doc_type": request.doc_type},
+    )
 
 
 def _build_docx(policy_data: dict, template_name: str) -> bytes:
@@ -1508,9 +1605,8 @@ async def migrate_preview(
             template_name=template_name,
             frameworks=framework_list,
             template_section_map=template_section_map,
+            organization_hint=str(tenant.get("name") or ""),
         )
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover
@@ -1557,6 +1653,11 @@ async def migrate_generate(request: Request, payload: MigrateGenerateRequest):
     base_name = source_name.rsplit(".", 1)[0]
     output_name = f"{base_name}_migrated.docx"
     tenant = _tenant_context_from_request(request)
+    policy_data = _normalize_policy_payload_or_400(
+        policy_data,
+        organization_hint=str(tenant.get("name") or ""),
+        required_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
+    )
 
     return _file_docx_response(
         tenant_id=tenant["id"],
@@ -1611,9 +1712,8 @@ async def migrate_document(
             template_name=template_name,
             frameworks=framework_list,
             template_section_map=template_section_map,
+            organization_hint=str(tenant.get("name") or ""),
         )
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover
@@ -1639,9 +1739,7 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
-        policy_data = await _generate_policy_data(payload)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
+        policy_data = await _generate_policy_data(payload, organization_hint=str(tenant.get("name") or ""))
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover
@@ -1681,6 +1779,11 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
     doc_type = policy_data.get("doc_type", session.get("doc_type", "POLICY"))
     output_name = f"{policy_name.replace(' ', '_')}_v{policy_data.get('version', '1.0')}.docx"
     tenant = _tenant_context_from_request(request)
+    policy_data = _normalize_policy_payload_or_400(
+        policy_data,
+        organization_hint=str(tenant.get("name") or ""),
+        required_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
+    )
 
     return _file_docx_response(
         tenant_id=tenant["id"],
@@ -1699,9 +1802,7 @@ async def create_document(request: Request, payload: CreatePolicyRequest):
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
-        policy_data = await _generate_policy_data(payload)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=500, detail=f"Claude returned invalid JSON: {exc}") from exc
+        policy_data = await _generate_policy_data(payload, organization_hint=str(tenant.get("name") or ""))
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover
@@ -1839,7 +1940,11 @@ async def analyze_document(
             system="You are a GRC analyst. Analyze policy documents against compliance frameworks. Return only valid JSON.",
             messages=[{"role": "user", "content": user_msg}],
         )
-        result = json.loads(_strip_json_fences(message.content[0].text))
+        result = _parse_generic_model_object(
+            message.content[0].text,
+            flow="framework_analysis",
+            context={"filename": file.filename or "document"},
+        )
         create_activity_event(tenant_id=_tenant_id_from_request(request), action="analysis_upload")
         go_coverage = _go_framework_coverage(raw_text, normalized_frameworks, file.filename or "")
         if go_coverage:
