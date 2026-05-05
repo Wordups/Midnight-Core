@@ -292,6 +292,34 @@
   .studio-banner { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(0,212,245,0.12); background: rgba(0,212,245,0.05); font-size: 12px; line-height: 1.65; color: var(--text2); }
   .studio-empty-note { padding: 18px; border-radius: 14px; border: 1px dashed rgba(0,212,245,0.22); background: rgba(0,212,245,0.03); color: var(--text2); font-size: 12px; line-height: 1.7; }
   .studio-empty-note strong { color: var(--text); }
+  .sop-builder-shell { display: flex; flex-direction: column; gap: 16px; }
+  .sop-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .sop-toolbar-copy { max-width: 760px; font-size: 12px; line-height: 1.7; color: var(--text2); }
+  .sop-toolbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sop-count-pill { padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(0,212,245,0.18); background: rgba(0,212,245,0.07); color: var(--accent); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .sop-step-stack { display: flex; flex-direction: column; gap: 14px; }
+  .sop-step-card { background: linear-gradient(155deg, rgba(255,255,255,0.015) 0%, rgba(0,212,245,0.04) 100%); border: 1px solid rgba(0,212,245,0.12); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 16px 34px rgba(0,0,0,0.18); }
+  .sop-step-card.dragging { opacity: 0.55; border-color: rgba(0,212,245,0.42); }
+  .sop-step-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .sop-step-title-wrap { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .sop-drag-handle { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text3); display: inline-flex; align-items: center; justify-content: center; cursor: grab; flex-shrink: 0; }
+  .sop-drag-handle:active { cursor: grabbing; }
+  .sop-step-number { font-family: var(--font-display); font-size: 19px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; }
+  .sop-step-sub { font-size: 11px; color: var(--text3); font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .sop-step-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sop-icon-btn { min-width: 34px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); font-size: 11px; font-family: var(--font-mono); cursor: pointer; transition: all 0.18s; }
+  .sop-icon-btn:hover { color: var(--text); border-color: rgba(0,212,245,0.24); }
+  .sop-step-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .sop-step-grid .full { grid-column: 1 / -1; }
+  .sop-media-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .sop-media-card { background: rgba(0,212,245,0.04); border: 1px solid rgba(0,212,245,0.12); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 150px; }
+  .sop-media-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sop-media-title { font-family: var(--font-display); font-size: 14px; color: var(--text); }
+  .sop-media-copy { font-size: 11px; line-height: 1.7; color: var(--text2); }
+  .sop-media-meta { font-size: 10px; color: var(--text3); font-family: var(--font-mono); line-height: 1.6; }
+  .sop-branch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sop-export-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sop-export-chip { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); font-size: 11px; font-family: var(--font-mono); }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -430,6 +458,9 @@
     .studio-mini-form { grid-template-columns: 1fr; }
     .studio-selector-head,
     .studio-workspace-head { flex-direction: column; align-items: flex-start; }
+    .sop-step-grid,
+    .sop-media-row,
+    .sop-branch-grid { grid-template-columns: 1fr; }
   }
 
   /* SECTION EDITOR */
@@ -904,25 +935,25 @@
         </div>
             </div>
             <div id="cp-workspace-sop" class="studio-panel-view" style="display:none;">
-              <div class="studio-panel-grid">
-                <div class="studio-panel">
-                  <div class="studio-panel-title">Procedure / SOP Builder</div>
-                  <div class="studio-panel-copy">This lane is optimized for operational walkthroughs with media, decisioning, and role-based execution.</div>
-                  <div class="studio-panel-list">
-                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Step-by-step sequence with role ownership and SLA timing</span></div>
-                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Screenshot, clip, and branching hooks ready for the dedicated builder</span></div>
-                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Word, PPTX, HTML, PDF, and QR workflow path</span></div>
+              <div class="sop-builder-shell">
+                <div class="studio-banner">Procedure / SOP mode is now a real builder workspace. Steps can be added, reordered, assigned, and enriched with screenshots, clips, branching, and SLAs. The AI analysis hooks are staged in the UX, but the current repo does not yet expose a dedicated screenshot/video intelligence endpoint for this lane.</div>
+                <div class="sop-toolbar">
+                  <div class="sop-toolbar-copy">Build step-by-step operating procedures with role ownership, decision branches, timer expectations, and media placeholders that can later flow into Word, PowerPoint, HTML, PDF, and QR-ready outputs.</div>
+                  <div class="sop-toolbar-actions">
+                    <div class="sop-count-pill" id="sop-step-count">0 steps</div>
+                    <button class="run-btn" type="button" onclick="addSopStep()">Add Step +</button>
                   </div>
                 </div>
+                <div class="sop-step-stack" id="sop-step-stack"></div>
                 <div class="studio-panel">
-                  <div class="studio-panel-title">Blueprint</div>
-                  <div class="studio-chip-row">
-                    <span class="studio-chip">Role assignment</span>
-                    <span class="studio-chip">Decision branches</span>
-                    <span class="studio-chip">Step timers</span>
-                    <span class="studio-chip">Media embeds</span>
+                  <div class="studio-panel-title">SOP Export Studio</div>
+                  <div class="studio-panel-copy">These export modes are now visible in the authoring lane so the SOP shape is clear before generation.</div>
+                  <div class="sop-export-row">
+                    <span class="sop-export-chip">Word (.docx) with embedded images</span>
+                    <span class="sop-export-chip">PowerPoint one slide per step</span>
+                    <span class="sop-export-chip">Interactive HTML page</span>
+                    <span class="sop-export-chip">PDF with QR code poster</span>
                   </div>
-                  <div class="studio-empty-note"><strong>Step 2</strong> expands this lane into the full SOP builder with drag-and-drop steps, screenshot intelligence, and video transcription.</div>
                 </div>
               </div>
             </div>
@@ -1751,6 +1782,9 @@ const CREATE_DOC_TYPES = [
 ];
 
 let selectedCreateDocType = null;
+let sopSteps = [];
+let sopStepSeed = 1;
+let draggingSopStepId = null;
 
 function getCreateDocTypeConfig(key) {
   return CREATE_DOC_TYPES.find(type => type.key === key) || CREATE_DOC_TYPES[0];
@@ -1812,6 +1846,206 @@ function selectCreateDocType(key) {
   const typeField = document.getElementById('cp-type');
   if (typeField) typeField.value = type.key;
   renderCreateDocTypeSelector();
+  if (type.key === 'SOP') renderSopBuilder();
+}
+
+function createEmptySopStep() {
+  return {
+    id: `sop-step-${sopStepSeed++}`,
+    role: '',
+    instruction: '',
+    timer: '',
+    branchIf: '',
+    branchThen: '',
+    screenshotName: '',
+    screenshotCaption: '',
+    videoName: '',
+    videoTranscript: '',
+  };
+}
+
+function ensureSopSeedData() {
+  if (sopSteps.length) return;
+  sopSteps = [
+    {
+      ...createEmptySopStep(),
+      role: 'Process Owner',
+      instruction: 'Open the target workspace and confirm the intake request is complete before proceeding.',
+      timer: '5 min',
+      branchIf: 'If the intake packet is missing required approvals',
+      branchThen: 'Route back to the requestor and pause the workflow.',
+    },
+    {
+      ...createEmptySopStep(),
+      role: 'Compliance Analyst',
+      instruction: 'Review source material, capture evidence, and document the exact operating step the team should follow.',
+      timer: '12 min',
+      branchIf: 'If the evidence does not match the control requirement',
+      branchThen: 'Escalate to the control owner and attach a remediation note.',
+    },
+  ];
+}
+
+function updateSopStepCount() {
+  const el = document.getElementById('sop-step-count');
+  if (!el) return;
+  el.textContent = `${sopSteps.length} step${sopSteps.length === 1 ? '' : 's'}`;
+}
+
+function renderSopBuilder() {
+  ensureSopSeedData();
+  const stack = document.getElementById('sop-step-stack');
+  if (!stack) return;
+  updateSopStepCount();
+  stack.innerHTML = sopSteps.map((step, index) => `
+    <div class="sop-step-card" draggable="true" data-step-id="${step.id}" ondragstart="startSopDrag('${step.id}', event)" ondragover="allowSopDrop(event)" ondrop="dropSopStep('${step.id}', event)" ondragend="endSopDrag()">
+      <div class="sop-step-head">
+        <div class="sop-step-title-wrap">
+          <button class="sop-drag-handle" type="button" title="Drag to reorder">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="7" cy="5" r="1.2" fill="currentColor"></circle><circle cx="13" cy="5" r="1.2" fill="currentColor"></circle><circle cx="7" cy="10" r="1.2" fill="currentColor"></circle><circle cx="13" cy="10" r="1.2" fill="currentColor"></circle><circle cx="7" cy="15" r="1.2" fill="currentColor"></circle><circle cx="13" cy="15" r="1.2" fill="currentColor"></circle></svg>
+          </button>
+          <div>
+            <div class="sop-step-number">Step ${index + 1}</div>
+            <div class="sop-step-sub">Procedure execution block</div>
+          </div>
+        </div>
+        <div class="sop-step-actions">
+          <button class="sop-icon-btn" type="button" onclick="moveSopStep(${index}, -1)">Up</button>
+          <button class="sop-icon-btn" type="button" onclick="moveSopStep(${index}, 1)">Down</button>
+          <button class="sop-icon-btn" type="button" onclick="removeSopStep('${step.id}')">Remove</button>
+        </div>
+      </div>
+      <div class="sop-step-grid">
+        <div class="form-group">
+          <label class="form-label">Role Responsible</label>
+          <select class="form-select" onchange="updateSopField('${step.id}', 'role', this.value)">
+            ${['', 'Process Owner', 'Compliance Analyst', 'Security Lead', 'Operations', 'Approver', 'Trainer'].map(role => `<option value="${role}"${step.role === role ? ' selected' : ''}>${role || 'Select role'}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Timer / SLA</label>
+          <input class="form-input" value="${escHtml(step.timer)}" placeholder="e.g. 10 min" oninput="updateSopField('${step.id}', 'timer', this.value)">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Instruction Text</label>
+          <textarea class="form-textarea" placeholder="Describe exactly what happens in this step..." oninput="updateSopField('${step.id}', 'instruction', this.value)">${escHtml(step.instruction)}</textarea>
+        </div>
+      </div>
+      <div class="sop-media-row">
+        <div class="sop-media-card">
+          <div class="sop-media-top">
+            <div class="sop-media-title">Insert Screenshot</div>
+            <button class="sop-icon-btn" type="button" onclick="triggerSopFilePicker('${step.id}', 'image')">Upload PNG / JPG</button>
+          </div>
+          <div class="sop-media-copy">Attach a screenshot for this step. The UI is ready for Claude vision analysis when the media pipeline is added.</div>
+          <div class="sop-media-meta">${step.screenshotName ? `Attached: ${escHtml(step.screenshotName)}` : 'No screenshot attached yet.'}</div>
+          <textarea class="form-textarea" placeholder="AI-generated caption or manual note..." oninput="updateSopField('${step.id}', 'screenshotCaption', this.value)">${escHtml(step.screenshotCaption)}</textarea>
+          <input id="${step.id}-image" type="file" accept="image/png,image/jpeg,image/jpg" style="display:none;" onchange="handleSopFile('${step.id}', 'image', this.files)">
+        </div>
+        <div class="sop-media-card">
+          <div class="sop-media-top">
+            <div class="sop-media-title">Insert Video Clip</div>
+            <button class="sop-icon-btn" type="button" onclick="triggerSopFilePicker('${step.id}', 'video')">Upload MP4 / WebM</button>
+          </div>
+          <div class="sop-media-copy">Attach a clip for the step. The builder is ready for transcript/caption generation once the media backend is connected.</div>
+          <div class="sop-media-meta">${step.videoName ? `Attached: ${escHtml(step.videoName)}` : 'No video clip attached yet.'}</div>
+          <textarea class="form-textarea" placeholder="Transcript or caption notes..." oninput="updateSopField('${step.id}', 'videoTranscript', this.value)">${escHtml(step.videoTranscript)}</textarea>
+          <input id="${step.id}-video" type="file" accept="video/mp4,video/webm" style="display:none;" onchange="handleSopFile('${step.id}', 'video', this.files)">
+        </div>
+      </div>
+      <div class="sop-branch-grid">
+        <div class="form-group">
+          <label class="form-label">Decision Branch — If</label>
+          <textarea class="form-textarea" placeholder="If this condition occurs..." oninput="updateSopField('${step.id}', 'branchIf', this.value)">${escHtml(step.branchIf)}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Decision Branch — Then</label>
+          <textarea class="form-textarea" placeholder="Route to another step or outcome..." oninput="updateSopField('${step.id}', 'branchThen', this.value)">${escHtml(step.branchThen)}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addSopStep() {
+  ensureSopSeedData();
+  sopSteps.push(createEmptySopStep());
+  renderSopBuilder();
+}
+
+function removeSopStep(stepId) {
+  sopSteps = sopSteps.filter(step => step.id !== stepId);
+  if (!sopSteps.length) sopSteps = [createEmptySopStep()];
+  renderSopBuilder();
+}
+
+function moveSopStep(index, delta) {
+  const target = index + delta;
+  if (target < 0 || target >= sopSteps.length) return;
+  const clone = [...sopSteps];
+  const [step] = clone.splice(index, 1);
+  clone.splice(target, 0, step);
+  sopSteps = clone;
+  renderSopBuilder();
+}
+
+function updateSopField(stepId, field, value) {
+  const step = sopSteps.find(item => item.id === stepId);
+  if (!step) return;
+  step[field] = value;
+}
+
+function triggerSopFilePicker(stepId, type) {
+  const input = document.getElementById(`${stepId}-${type}`);
+  if (input) input.click();
+}
+
+function handleSopFile(stepId, type, files) {
+  const file = files && files[0];
+  if (!file) return;
+  const step = sopSteps.find(item => item.id === stepId);
+  if (!step) return;
+  if (type === 'image') {
+    step.screenshotName = file.name;
+    if (!step.screenshotCaption) step.screenshotCaption = `Draft placeholder: screenshot attached for ${file.name}`;
+  } else {
+    step.videoName = file.name;
+    if (!step.videoTranscript) step.videoTranscript = `Draft placeholder: transcript/captions pending for ${file.name}`;
+  }
+  renderSopBuilder();
+}
+
+function startSopDrag(stepId, event) {
+  draggingSopStepId = stepId;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', stepId);
+  const card = event.currentTarget;
+  if (card) card.classList.add('dragging');
+}
+
+function allowSopDrop(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+}
+
+function dropSopStep(targetStepId, event) {
+  event.preventDefault();
+  const sourceStepId = draggingSopStepId || event.dataTransfer.getData('text/plain');
+  if (!sourceStepId || sourceStepId === targetStepId) return;
+  const sourceIndex = sopSteps.findIndex(step => step.id === sourceStepId);
+  const targetIndex = sopSteps.findIndex(step => step.id === targetStepId);
+  if (sourceIndex === -1 || targetIndex === -1) return;
+  const clone = [...sopSteps];
+  const [step] = clone.splice(sourceIndex, 1);
+  clone.splice(targetIndex, 0, step);
+  sopSteps = clone;
+  draggingSopStepId = null;
+  renderSopBuilder();
+}
+
+function endSopDrag() {
+  draggingSopStepId = null;
+  document.querySelectorAll('.sop-step-card.dragging').forEach(card => card.classList.remove('dragging'));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
