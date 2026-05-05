@@ -246,6 +246,52 @@
   .build-title { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
   .build-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
   .form-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+  .studio-shell { display: flex; flex-direction: column; gap: 18px; }
+  .studio-selector-card,
+  .studio-workspace-card,
+  .studio-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; }
+  .studio-selector-card { padding: 24px; }
+  .studio-selector-head,
+  .studio-workspace-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .studio-selector-head { margin-bottom: 18px; }
+  .studio-workspace-head { margin-bottom: 18px; }
+  .studio-selector-kicker,
+  .studio-workspace-kicker { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .studio-selector-title,
+  .studio-workspace-title { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; }
+  .studio-selector-copy,
+  .studio-workspace-copy { max-width: 760px; font-size: 13px; line-height: 1.7; color: var(--text2); }
+  .studio-type-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .studio-type-card { background: linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(0,212,245,0.04) 100%); border: 1px solid rgba(0,212,245,0.12); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 174px; cursor: pointer; transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s; }
+  .studio-type-card:hover { transform: translateY(-2px); border-color: rgba(0,212,245,0.28); box-shadow: 0 12px 28px rgba(0,0,0,0.24); }
+  .studio-type-card.active { border-color: rgba(0,212,245,0.42); box-shadow: 0 0 0 1px rgba(0,212,245,0.22), 0 16px 36px rgba(0,0,0,0.3); background: linear-gradient(160deg, rgba(0,212,245,0.08) 0%, rgba(74,158,255,0.05) 100%); }
+  .studio-type-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .studio-type-icon { width: 38px; height: 38px; border-radius: 12px; background: rgba(0,212,245,0.08); border: 1px solid rgba(0,212,245,0.18); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .studio-type-icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .studio-type-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); }
+  .studio-type-name { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .studio-type-desc { font-size: 12px; line-height: 1.65; color: var(--text2); }
+  .studio-workspace-card { display: none; padding: 22px 24px 24px; }
+  .studio-workspace-card.active { display: block; animation: viewIn 0.2s ease; }
+  .studio-workspace-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .studio-back-btn { background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-family: var(--font-body); }
+  .studio-back-btn:hover { color: var(--text); border-color: rgba(0,212,245,0.24); }
+  .studio-selected-pill { padding: 7px 11px; border-radius: 999px; border: 1px solid rgba(0,212,245,0.2); background: rgba(0,212,245,0.07); color: var(--accent); font-size: 10px; font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
+  .studio-panel-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .studio-panel { padding: 18px; min-height: 180px; display: flex; flex-direction: column; gap: 12px; }
+  .studio-panel-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .studio-panel-copy { font-size: 12px; line-height: 1.7; color: var(--text2); }
+  .studio-panel-list { display: flex; flex-direction: column; gap: 8px; }
+  .studio-panel-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text2); line-height: 1.55; }
+  .studio-panel-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; box-shadow: 0 0 10px rgba(0,212,245,0.45); }
+  .studio-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .studio-chip { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); font-size: 11px; font-family: var(--font-mono); }
+  .studio-mini-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .studio-mini-form .form-group { gap: 5px; }
+  .studio-mini-form .form-group.full { grid-column: 1 / -1; }
+  .studio-banner { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(0,212,245,0.12); background: rgba(0,212,245,0.05); font-size: 12px; line-height: 1.65; color: var(--text2); }
+  .studio-empty-note { padding: 18px; border-radius: 14px; border: 1px dashed rgba(0,212,245,0.22); background: rgba(0,212,245,0.03); color: var(--text2); font-size: 12px; line-height: 1.7; }
+  .studio-empty-note strong { color: var(--text); }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -379,6 +425,11 @@
     .topbar-right { gap: 8px; }
     body.sidebar-mobile-open .sidebar { transform: translateX(0); }
     body.sidebar-mobile-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+    .studio-type-grid,
+    .studio-panel-grid,
+    .studio-mini-form { grid-template-columns: 1fr; }
+    .studio-selector-head,
+    .studio-workspace-head { flex-direction: column; align-items: flex-start; }
   }
 
   /* SECTION EDITOR */
@@ -696,19 +747,42 @@
     <div class="content">
       <div class="build-view">
         <div class="build-header">
-          <div class="build-title">Create Policy</div>
-          <div class="build-sub">Build a new compliance-ready policy, mapped to your selected frameworks and output as a formatted document.</div>
+          <div class="build-title">Document Intelligence Studio</div>
+          <div class="build-sub">Choose what Midnight is creating, then move into a purpose-built authoring workspace tuned for that document type.</div>
         </div>
+        <div class="studio-shell">
+          <div class="studio-selector-card">
+            <div class="studio-selector-head">
+              <div>
+                <div class="studio-selector-kicker">Step 1 · Document Type</div>
+                <div class="studio-selector-title">Choose the authoring lane</div>
+                <div class="studio-selector-copy">Midnight changes the intake, structure, export path, and AI assistance based on what you are building. Start by selecting the document type, then work inside a dedicated workspace built for that outcome.</div>
+              </div>
+              <div class="studio-selected-pill" id="cp-selected-type-pill">No type selected</div>
+            </div>
+            <div class="studio-type-grid" id="cp-type-selector"></div>
+          </div>
+          <div class="studio-workspace-card" id="cp-workspace-shell">
+            <div class="studio-workspace-head">
+              <div>
+                <div class="studio-workspace-kicker" id="cp-workspace-kicker">Workspace</div>
+                <div class="studio-workspace-title" id="cp-workspace-title">Select a document type</div>
+                <div class="studio-workspace-copy" id="cp-workspace-copy">Each document type has its own authoring experience, media handling, and export profile.</div>
+              </div>
+              <div class="studio-workspace-actions">
+                <button class="studio-back-btn" type="button" onclick="resetCreateStudio()">Back to Selector</button>
+                <div class="studio-selected-pill" id="cp-workspace-pill">Studio idle</div>
+              </div>
+            </div>
+            <div id="cp-workspace-policy" class="studio-panel-view">
+              <input id="cp-type" type="hidden" value="POLICY">
+              <div class="studio-banner" style="margin-bottom:16px;">Policy mode keeps the current Midnight policy pipeline intact: framework-aware preview, section editing, and .docx generation.</div>
         <div class="form-card">
           <div class="form-section">
             <div class="form-section-title">Policy Details</div>
             <div class="form-row">
               <div class="form-group"><label class="form-label">Policy Name</label><input class="form-input" id="cp-name" placeholder="e.g. Access Control Policy"></div>
-              <div class="form-group"><label class="form-label">Document Type</label>
-                <select class="form-select" id="cp-type">
-                  <option value="POLICY">Policy</option><option value="SOP">SOP</option><option value="PLAYBOOK">Playbook</option><option value="STANDARD">Standard</option><option value="PLAN">Plan</option>
-                </select>
-              </div>
+              <div class="form-group"><label class="form-label">Selected Type</label><input class="form-input" value="Policy" readonly></div>
             </div>
             <div class="form-row">
               <div class="form-group"><label class="form-label">Industry</label>
@@ -825,6 +899,178 @@
               <button class="output-btn primary" id="cp-editor-download-btn" onclick="downloadFromEditor('cp')">Generate Edited .docx →</button>
               <button class="output-btn" onclick="showView('grc', document.getElementById('nav-grc'), 'GRC Summary')">Open GRC Summary</button>
               <button class="output-btn" onclick="showView('overview', document.getElementById('nav-overview'), 'Overview')">View in Dashboard</button>
+            </div>
+          </div>
+        </div>
+            </div>
+            <div id="cp-workspace-sop" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Procedure / SOP Builder</div>
+                  <div class="studio-panel-copy">This lane is optimized for operational walkthroughs with media, decisioning, and role-based execution.</div>
+                  <div class="studio-panel-list">
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Step-by-step sequence with role ownership and SLA timing</span></div>
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Screenshot, clip, and branching hooks ready for the dedicated builder</span></div>
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Word, PPTX, HTML, PDF, and QR workflow path</span></div>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Blueprint</div>
+                  <div class="studio-chip-row">
+                    <span class="studio-chip">Role assignment</span>
+                    <span class="studio-chip">Decision branches</span>
+                    <span class="studio-chip">Step timers</span>
+                    <span class="studio-chip">Media embeds</span>
+                  </div>
+                  <div class="studio-empty-note"><strong>Step 2</strong> expands this lane into the full SOP builder with drag-and-drop steps, screenshot intelligence, and video transcription.</div>
+                </div>
+              </div>
+            </div>
+            <div id="cp-workspace-standard" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Technical Standard</div>
+                  <div class="studio-panel-copy">Use this for control requirements, architecture rules, and evidence-linked technical expectations.</div>
+                  <div class="studio-panel-list">
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Requirement statements with control mappings</span></div>
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Evidence links, implementation notes, and versioned baselines</span></div>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Authoring Notes</div>
+                  <div class="studio-mini-form">
+                    <div class="form-group"><label class="form-label">Standard Name</label><input class="form-input" placeholder="e.g. Endpoint Hardening Standard"></div>
+                    <div class="form-group"><label class="form-label">Control Family</label><input class="form-input" placeholder="e.g. Configuration Management"></div>
+                    <div class="form-group full"><label class="form-label">Evidence Expectations</label><textarea class="form-textarea" placeholder="List what evidence should prove this standard is being followed..."></textarea></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="cp-workspace-process-flow" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Process Flow Storyboard</div>
+                  <div class="studio-panel-copy">This lane is designed around swimlanes, transitions, checkpoints, and presentation exports.</div>
+                  <div class="studio-chip-row">
+                    <span class="studio-chip">Swimlane diagrams</span>
+                    <span class="studio-chip">PowerPoint export</span>
+                    <span class="studio-chip">Decision nodes</span>
+                    <span class="studio-chip">Executive storyboard</span>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Flow Inputs</div>
+                  <div class="studio-mini-form">
+                    <div class="form-group"><label class="form-label">Process Name</label><input class="form-input" placeholder="e.g. Vendor Intake Workflow"></div>
+                    <div class="form-group"><label class="form-label">Primary Audience</label><input class="form-input" placeholder="e.g. Operations + Security"></div>
+                    <div class="form-group full"><label class="form-label">Narrative</label><textarea class="form-textarea" placeholder="Describe the flow in plain English so Midnight can stage the storyboard..."></textarea></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="cp-workspace-training-module" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Training Module</div>
+                  <div class="studio-panel-copy">Build slide-based enablement with structured learning points, checkpoints, and downstream quiz generation.</div>
+                  <div class="studio-panel-list">
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>One module, multiple slides, knowledge checks</span></div>
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Presentation-first narrative with replayable media</span></div>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Module Shape</div>
+                  <div class="studio-chip-row">
+                    <span class="studio-chip">Slides</span>
+                    <span class="studio-chip">Quiz prompts</span>
+                    <span class="studio-chip">Completion tracking</span>
+                    <span class="studio-chip">Speaker notes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="cp-workspace-incident-runbook" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Incident Runbook</div>
+                  <div class="studio-panel-copy">Trigger-driven response playbooks with timers, escalation lanes, and decision thresholds.</div>
+                  <div class="studio-panel-list">
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Response triggers and activation criteria</span></div>
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Escalation paths, owners, and timing checkpoints</span></div>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Runbook Inputs</div>
+                  <div class="studio-mini-form">
+                    <div class="form-group"><label class="form-label">Runbook Name</label><input class="form-input" placeholder="e.g. Ransomware Response"></div>
+                    <div class="form-group"><label class="form-label">Activation Trigger</label><input class="form-input" placeholder="e.g. Endpoint detection + SIEM correlation"></div>
+                    <div class="form-group full"><label class="form-label">Escalation Notes</label><textarea class="form-textarea" placeholder="Outline the command chain, timers, and decision points..."></textarea></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="cp-workspace-risk-assessment" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Risk Assessment</div>
+                  <div class="studio-panel-copy">This lane centers on a live risk register, likelihood/impact scoring, and control-gap mapping.</div>
+                  <div class="studio-chip-row">
+                    <span class="studio-chip">Risk register</span>
+                    <span class="studio-chip">Impact matrix</span>
+                    <span class="studio-chip">Control gaps</span>
+                    <span class="studio-chip">Mitigation owners</span>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Assessment Context</div>
+                  <div class="studio-mini-form">
+                    <div class="form-group"><label class="form-label">Assessment Name</label><input class="form-input" placeholder="e.g. AI Intake Risk Review"></div>
+                    <div class="form-group"><label class="form-label">Risk Domain</label><input class="form-input" placeholder="e.g. Privacy / Security / Operations"></div>
+                    <div class="form-group full"><label class="form-label">Scope Notes</label><textarea class="form-textarea" placeholder="Describe the system or process being assessed..."></textarea></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="cp-workspace-audit-package" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Audit Package</div>
+                  <div class="studio-panel-copy">Curate evidence requests, findings logs, and framework checklists into one exportable audit bundle.</div>
+                  <div class="studio-panel-list">
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Evidence index and request tracker</span></div>
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Framework checklist and findings narrative</span></div>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Package Contents</div>
+                  <div class="studio-chip-row">
+                    <span class="studio-chip">Evidence checklist</span>
+                    <span class="studio-chip">Findings log</span>
+                    <span class="studio-chip">ZIP export</span>
+                    <span class="studio-chip">Control mapping</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="cp-workspace-ai-governance" class="studio-panel-view" style="display:none;">
+              <div class="studio-panel-grid">
+                <div class="studio-panel">
+                  <div class="studio-panel-title">AI Governance Intake</div>
+                  <div class="studio-panel-copy">Build governance-ready AI documentation with system context, risk posture, and regulatory mapping.</div>
+                  <div class="studio-panel-list">
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Model card, risk assessment, and policy outputs from one intake</span></div>
+                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>NIST AI RMF, EU AI Act, ISO 42001, EO, and HIPAA intersections</span></div>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">System Snapshot</div>
+                  <div class="studio-mini-form">
+                    <div class="form-group"><label class="form-label">AI System Name</label><input class="form-input" placeholder="e.g. Claims Triage Assistant"></div>
+                    <div class="form-group"><label class="form-label">Model Type</label><input class="form-input" placeholder="LLM / CV / Predictive / Other"></div>
+                    <div class="form-group full"><label class="form-label">Use Case Description</label><textarea class="form-textarea" placeholder="Describe what the system does, what data it uses, and what decisions it influences..."></textarea></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1361,7 +1607,7 @@ function showView(viewId, navEl, title) {
   document.getElementById('page-title').textContent = title;
 
   const btnMap = {
-    create: 'Generate Policy',
+    create: null,
     migrate: 'Migrate Document',
     birdtalk: null,
     gaps: null,
@@ -1391,6 +1637,181 @@ function handleTopbarBtn() {
 function setTab(el) {
   el.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+}
+
+const CREATE_DOC_TYPES = [
+  {
+    key: 'POLICY',
+    name: 'Policy',
+    tag: 'Shield',
+    description: 'Compliance policy with framework mapping and approval workflow.',
+    kicker: 'Policy authoring lane',
+    workspaceTitle: 'Policy workspace',
+    workspaceCopy: 'Use the existing Midnight policy engine with preview, editor review, and framework-aware generation.',
+    pill: 'Policy mode',
+    panelId: 'cp-workspace-policy',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 4.5 4.8v4.4c0 3.5 2.2 6.7 5.5 8.3 3.3-1.6 5.5-4.8 5.5-8.3V4.8L10 2.5Z"/></svg>',
+  },
+  {
+    key: 'SOP',
+    name: 'Procedure / SOP',
+    tag: 'List steps',
+    description: 'Step-by-step process with screenshots, video clips, and role assignment.',
+    kicker: 'Operational execution lane',
+    workspaceTitle: 'SOP builder blueprint',
+    workspaceCopy: 'This lane is staged for step logic, media capture, branch handling, and poster-friendly exports.',
+    pill: 'SOP mode',
+    panelId: 'cp-workspace-sop',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5h10M8 10h7M8 15h7"/><circle cx="4.2" cy="5" r="1"/><circle cx="4.2" cy="10" r="1"/><circle cx="4.2" cy="15" r="1"/></svg>',
+  },
+  {
+    key: 'STANDARD',
+    name: 'Standard',
+    tag: 'Ruler',
+    description: 'Technical requirements with control mapping and evidence linking.',
+    kicker: 'Technical baseline lane',
+    workspaceTitle: 'Standard workspace',
+    workspaceCopy: 'Use this lane for enforceable requirements, implementation notes, and linked evidence expectations.',
+    pill: 'Standard mode',
+    panelId: 'cp-workspace-standard',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6.5h12v7H4z"/><path d="M7 6.5v2M10 6.5v1.4M13 6.5v2M7 13.5v-2M10 13.5v-1.4M13 13.5v-2"/></svg>',
+  },
+  {
+    key: 'PROCESS_FLOW',
+    name: 'Process Flow',
+    tag: 'Diagram',
+    description: 'Visual storyboard with swimlane diagrams and PowerPoint export.',
+    kicker: 'Flow narrative lane',
+    workspaceTitle: 'Process flow workspace',
+    workspaceCopy: 'Build flow-driven content with lane thinking, decision nodes, and boardroom-friendly visuals.',
+    pill: 'Flow mode',
+    panelId: 'cp-workspace-process-flow',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3" width="5" height="4" rx="1"/><rect x="12.5" y="3" width="5" height="4" rx="1"/><rect x="7.5" y="13" width="5" height="4" rx="1"/><path d="M7.5 5h5M10 7v6"/></svg>',
+  },
+  {
+    key: 'TRAINING_MODULE',
+    name: 'Training Module',
+    tag: 'Graduation',
+    description: 'Slide deck with quiz generation and completion tracking.',
+    kicker: 'Enablement lane',
+    workspaceTitle: 'Training module workspace',
+    workspaceCopy: 'This lane is shaped for teachable content, slide exports, and downstream knowledge checks.',
+    pill: 'Training mode',
+    panelId: 'cp-workspace-training-module',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m2.5 7.5 7.5-3 7.5 3-7.5 3-7.5-3Z"/><path d="M5.5 9.3V13c0 .9 1.8 2.5 4.5 2.5s4.5-1.6 4.5-2.5V9.3"/><path d="M17.5 8v4"/></svg>',
+  },
+  {
+    key: 'INCIDENT_RUNBOOK',
+    name: 'Incident Runbook',
+    tag: 'Alert',
+    description: 'Response playbook with trigger conditions, escalation paths, and timers.',
+    kicker: 'Response lane',
+    workspaceTitle: 'Incident runbook workspace',
+    workspaceCopy: 'Use this lane for trigger-driven operations where timing, ownership, and escalation matter.',
+    pill: 'Runbook mode',
+    panelId: 'cp-workspace-incident-runbook',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2 17 16.8H3L10 3.2Z"/><path d="M10 7.5v4.5"/><circle cx="10" cy="14.6" r=".8" fill="currentColor" stroke="none"/></svg>',
+  },
+  {
+    key: 'RISK_ASSESSMENT',
+    name: 'Risk Assessment',
+    tag: 'Chart',
+    description: 'Risk register with likelihood, impact matrix, and control gap mapping.',
+    kicker: 'Risk lane',
+    workspaceTitle: 'Risk assessment workspace',
+    workspaceCopy: 'Build a structured risk artifact with scoring, scope, mitigation ownership, and gap context.',
+    pill: 'Risk mode',
+    panelId: 'cp-workspace-risk-assessment',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 16.5h14"/><path d="M6 16.5V10"/><path d="M10 16.5V6.5"/><path d="M14 16.5V12"/></svg>',
+  },
+  {
+    key: 'AUDIT_PACKAGE',
+    name: 'Audit Package',
+    tag: 'Clipboard',
+    description: 'Evidence collection with framework checklist and findings log.',
+    kicker: 'Audit lane',
+    workspaceTitle: 'Audit package workspace',
+    workspaceCopy: 'Assemble evidence, findings, and checklist artifacts into one audit-ready bundle.',
+    pill: 'Audit mode',
+    panelId: 'cp-workspace-audit-package',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="4.5" width="12" height="12" rx="1.5"/><path d="M7 4.5h6v-1.2H7z"/><path d="M7 9h6M7 12h6M7 15h4"/></svg>',
+  },
+  {
+    key: 'AI_GOVERNANCE',
+    name: 'AI Governance',
+    tag: 'Brain / Circuit',
+    description: 'AI system registry, model cards, risk classification, and regulatory mapping.',
+    kicker: 'AI oversight lane',
+    workspaceTitle: 'AI governance workspace',
+    workspaceCopy: 'Use this lane for AI system intake, governance outputs, model cards, and cross-regulatory mapping.',
+    pill: 'AI governance mode',
+    panelId: 'cp-workspace-ai-governance',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 6.5a2.5 2.5 0 1 1 5 0c0 1 .4 1.7 1.1 2.4.8.8 1.4 1.9 1.4 3.3A4.9 4.9 0 0 1 10 17a4.9 4.9 0 0 1-5-4.8c0-1.4.6-2.5 1.4-3.3.7-.7 1.1-1.4 1.1-2.4Z"/><path d="M10 2v2M4.6 5l1.4 1.1M15.4 5 14 6.1M3 10h2M15 10h2M7.3 17.1 6.5 19M12.7 17.1l.8 1.9"/></svg>',
+  },
+];
+
+let selectedCreateDocType = null;
+
+function getCreateDocTypeConfig(key) {
+  return CREATE_DOC_TYPES.find(type => type.key === key) || CREATE_DOC_TYPES[0];
+}
+
+function renderCreateDocTypeSelector() {
+  const selector = document.getElementById('cp-type-selector');
+  if (!selector) return;
+  selector.innerHTML = CREATE_DOC_TYPES.map(type => `
+    <button class="studio-type-card${selectedCreateDocType === type.key ? ' active' : ''}" type="button" onclick="selectCreateDocType('${type.key}')">
+      <div class="studio-type-head">
+        <span class="studio-type-icon">${type.icon}</span>
+        <span class="studio-type-tag">${type.tag}</span>
+      </div>
+      <div class="studio-type-name">${type.name}</div>
+      <div class="studio-type-desc">${type.description}</div>
+    </button>
+  `).join('');
+}
+
+function resetCreateStudio() {
+  selectedCreateDocType = null;
+  const shell = document.getElementById('cp-workspace-shell');
+  if (shell) shell.classList.remove('active');
+  document.querySelectorAll('#view-create .studio-panel-view').forEach(panel => panel.style.display = 'none');
+  const selectedPill = document.getElementById('cp-selected-type-pill');
+  if (selectedPill) selectedPill.textContent = 'No type selected';
+  const workspacePill = document.getElementById('cp-workspace-pill');
+  if (workspacePill) workspacePill.textContent = 'Studio idle';
+  const workspaceTitle = document.getElementById('cp-workspace-title');
+  if (workspaceTitle) workspaceTitle.textContent = 'Select a document type';
+  const workspaceCopy = document.getElementById('cp-workspace-copy');
+  if (workspaceCopy) workspaceCopy.textContent = 'Each document type has its own authoring experience, media handling, and export profile.';
+  const workspaceKicker = document.getElementById('cp-workspace-kicker');
+  if (workspaceKicker) workspaceKicker.textContent = 'Workspace';
+  const typeField = document.getElementById('cp-type');
+  if (typeField) typeField.value = 'POLICY';
+  renderCreateDocTypeSelector();
+}
+
+function selectCreateDocType(key) {
+  const type = getCreateDocTypeConfig(key);
+  selectedCreateDocType = type.key;
+  const shell = document.getElementById('cp-workspace-shell');
+  if (shell) shell.classList.add('active');
+  document.querySelectorAll('#view-create .studio-panel-view').forEach(panel => {
+    panel.style.display = panel.id === type.panelId ? 'block' : 'none';
+  });
+  const selectedPill = document.getElementById('cp-selected-type-pill');
+  if (selectedPill) selectedPill.textContent = type.name;
+  const workspacePill = document.getElementById('cp-workspace-pill');
+  if (workspacePill) workspacePill.textContent = type.pill;
+  const workspaceTitle = document.getElementById('cp-workspace-title');
+  if (workspaceTitle) workspaceTitle.textContent = type.workspaceTitle;
+  const workspaceCopy = document.getElementById('cp-workspace-copy');
+  if (workspaceCopy) workspaceCopy.textContent = type.workspaceCopy;
+  const workspaceKicker = document.getElementById('cp-workspace-kicker');
+  if (workspaceKicker) workspaceKicker.textContent = type.kicker;
+  const typeField = document.getElementById('cp-type');
+  if (typeField) typeField.value = type.key;
+  renderCreateDocTypeSelector();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1923,6 +2344,10 @@ function animateProgress(fillId, labelId, steps, onDone) {
 // CREATE POLICY
 // ─────────────────────────────────────────────────────────────────────────────
 async function createPolicy() {
+  if (selectedCreateDocType !== 'POLICY') {
+    showToast('Select Policy in Document Intelligence Studio to use the live policy generation flow.', true);
+    return;
+  }
   const name = document.getElementById('cp-name').value.trim();
   if (!name) { showToast('Please enter a policy name', true); return; }
   syncCreatePolicyDateDefaults(false);
@@ -2847,6 +3272,8 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeSidebarDrawer();
 });
 wireCreatePolicyDateDefaults();
+renderCreateDocTypeSelector();
+resetCreateStudio();
 ensureAuthenticated().then(() => {
   refreshDashboardData().catch(() => {});
 }).catch(() => {
