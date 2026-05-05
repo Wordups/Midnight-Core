@@ -311,8 +311,11 @@
 
   /* BUILD VIEW */
   .build-view { max-width: min(1540px, calc(100vw - 320px)); }
+  #view-create .content {
+    padding-right: 40px;
+  }
   #view-create .build-view {
-    width: min(1720px, calc(100vw - 285px));
+    width: calc(100vw - 285px);
     max-width: none;
   }
   .build-header { margin-bottom: 28px; }
@@ -515,6 +518,16 @@
     font-size: 30px;
     font-weight: 700;
   }
+  #view-create .build-sub,
+  #view-create .studio-selector-copy,
+  #view-create .studio-workspace-copy,
+  #view-create .studio-panel-copy,
+  #view-create .media-tool-copy,
+  #view-create .export-card-copy,
+  #view-create .ai-gov-risk-copy,
+  #view-create .ai-gov-output-copy {
+    max-width: none;
+  }
   #view-create .studio-selector-title,
   #view-create .studio-workspace-title {
     font-size: 30px;
@@ -529,20 +542,37 @@
   #view-create .ai-gov-risk-title {
     font-size: 20px;
   }
+  #view-create .studio-selector-head,
+  #view-create .studio-workspace-head {
+    max-width: none;
+  }
+  #view-create .studio-shell,
+  #view-create .studio-workspace-card,
+  #view-create .studio-selector-card,
+  #view-create .media-studio-shell,
+  #view-create .export-studio-shell,
+  #view-create .form-card {
+    width: 100%;
+    max-width: none;
+  }
   #view-create .media-studio-grid {
-    grid-template-columns: minmax(0, 2.2fr) minmax(360px, 1fr);
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.15fr);
     align-items: stretch;
   }
   #view-create .media-studio-tools {
-    grid-template-columns: repeat(3, minmax(260px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   #view-create .media-studio-grid > .studio-panel {
     min-height: 100%;
   }
-  #view-create .studio-workspace-card,
-  #view-create .studio-selector-card,
-  #view-create .form-card {
-    width: 100%;
+  #view-create .media-tool-card {
+    min-height: 280px;
+  }
+  #view-create .export-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #view-create .export-card {
+    min-height: 250px;
   }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
@@ -665,6 +695,38 @@
   .profile-note strong { color: var(--text); }
   .profile-module-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .profile-module-pill { padding: 6px 10px; border-radius: 999px; background: rgba(0,212,245,0.08); border: 1px solid rgba(0,212,245,0.18); color: var(--text2); font-size: 11px; font-family: var(--font-mono); }
+  .branding-block { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .branding-title { font-family: var(--font-display); font-size: 18px; color: var(--text); margin-bottom: 6px; }
+  .branding-sub { font-size: 13px; line-height: 1.7; color: var(--text2); margin-bottom: 16px; }
+  .branding-logo-row { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 14px; align-items: start; margin-bottom: 16px; }
+  .branding-logo-preview {
+    width: 108px; height: 108px; border-radius: 18px; border: 1px solid var(--border2); background: var(--bg3);
+    display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+  }
+  .branding-logo-preview img { width: 100%; height: 100%; object-fit: contain; padding: 12px; }
+  .branding-logo-placeholder { font-family: var(--font-display); font-size: 42px; color: var(--text3); }
+  .branding-logo-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .branding-help { font-size: 12px; color: var(--text3); line-height: 1.6; }
+  .interactive-preview-modal {
+    position: fixed; inset: 0; z-index: 220; display: none; background: rgba(2,7,15,0.74);
+    backdrop-filter: blur(8px); padding: 18px;
+  }
+  .interactive-preview-modal.active { display: block; }
+  .interactive-preview-shell {
+    width: min(1500px, calc(100vw - 36px)); height: calc(100vh - 36px); margin: 0 auto; background: var(--bg2);
+    border: 1px solid var(--border2); border-radius: 22px; overflow: hidden; display: grid; grid-template-rows: auto 1fr;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.45);
+  }
+  .interactive-preview-topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px;
+    border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
+  }
+  .interactive-preview-copy { min-width: 0; }
+  .interactive-preview-title { font-family: var(--font-display); font-size: 18px; color: var(--text); }
+  .interactive-preview-sub { font-size: 12px; color: var(--text3); line-height: 1.5; }
+  .interactive-preview-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .interactive-preview-frame { width: 100%; height: 100%; border: 0; background: #f5f7fb; }
+  .export-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
   @media (max-width: 1020px) {
     .profile-grid,
     .module-grid { grid-template-columns: 1fr; }
@@ -1483,7 +1545,11 @@
                   <div class="studio-workspace-title" style="font-size:20px;">Destination-aware output paths</div>
                   <div class="studio-workspace-copy" id="cp-export-copy">Select a document type to see how Midnight can package and deliver the final artifact.</div>
                 </div>
-                <div class="studio-selected-pill" id="cp-export-status-pill">Exports idle</div>
+                <div class="export-head-actions">
+                  <button class="output-btn" type="button" id="cp-preview-interactive-btn" onclick="openInteractivePreview()">Preview Interactive</button>
+                  <button class="output-btn" type="button" id="cp-open-public-btn" onclick="openInteractivePublicLink()" style="display:none;">Open Share Link</button>
+                  <div class="studio-selected-pill" id="cp-export-status-pill">Exports idle</div>
+                </div>
               </div>
               <div class="export-card-grid" id="cp-export-card-grid"></div>
             </div>
@@ -1523,7 +1589,7 @@
               <circle class="radar-ping" cx="163" cy="128" r="3" fill="var(--accent)" style="animation-delay:0.7s"/>
             </svg>
           </div>
-          <div class="bird-eye-label">Bird Eye Scanning</div>
+          <div class="bird-eye-label" id="bird-eye-label">Bird Eye Scanning</div>
           <div class="bird-eye-sub" id="bird-eye-status">Analyzing document structure...</div>
         </div>
 
@@ -1839,6 +1905,44 @@
                 <input class="form-input" id="profile-default-grc-org" placeholder="e.g. Takeoff LLC">
               </div>
             </div>
+            <div class="branding-block">
+              <div class="branding-title">Company Branding</div>
+              <div class="branding-sub">Brand interactive HTML documents with tenant colors, footer text, and a logo that follows public share links and dashboard previews.</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="profile-brand-display-name">Company Display Name</label>
+                  <input class="form-input" id="profile-brand-display-name" placeholder="e.g. Takeoff LLC / Midnight">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="profile-brand-footer">Document Footer Text</label>
+                  <input class="form-input" id="profile-brand-footer" placeholder="© 2026 Takeoff LLC">
+                </div>
+              </div>
+              <div class="branding-logo-row">
+                <div class="branding-logo-preview" id="profile-brand-logo-preview">
+                  <div class="branding-logo-placeholder" id="profile-brand-logo-placeholder">M</div>
+                  <img id="profile-brand-logo-image" alt="Brand logo preview" style="display:none;">
+                </div>
+                <div>
+                  <div class="branding-logo-actions">
+                    <label class="run-btn" for="profile-brand-logo-file" style="cursor:pointer;">Upload Logo</label>
+                    <input id="profile-brand-logo-file" type="file" accept=".png,.jpg,.jpeg,.svg" style="display:none;" onchange="handleBrandLogoSelection(this.files)">
+                    <button class="output-btn" type="button" onclick="clearBrandLogoSelection()">Clear Selection</button>
+                  </div>
+                  <div class="branding-help" id="profile-brand-logo-help">PNG, JPG, and SVG logos are supported. Midnight stores the selected logo in tenant branding storage and uses it in interactive exports.</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="profile-brand-primary">Primary Brand Color</label>
+                  <input class="form-input" id="profile-brand-primary" type="color" value="#1D9E75">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="profile-brand-secondary">Secondary Brand Color</label>
+                  <input class="form-input" id="profile-brand-secondary" type="color" value="#111111">
+                </div>
+              </div>
+            </div>
             <div class="profile-actions">
               <button class="run-btn" onclick="saveProfileSettings()">Save Settings</button>
               <button class="output-btn" onclick="resetProfileSettings()">Reset Defaults</button>
@@ -1874,6 +1978,22 @@
 </div>
 
 <!-- TOAST -->
+<div class="interactive-preview-modal" id="interactive-preview-modal">
+  <div class="interactive-preview-shell">
+    <div class="interactive-preview-topbar">
+      <div class="interactive-preview-copy">
+        <div class="interactive-preview-title" id="interactive-preview-title">Interactive document preview</div>
+        <div class="interactive-preview-sub" id="interactive-preview-sub">This preview matches the branded HTML path Midnight will publish for external viewers.</div>
+      </div>
+      <div class="interactive-preview-actions">
+        <button class="output-btn" type="button" id="interactive-copy-link-btn" onclick="copyInteractivePublicLink()" style="display:none;">Copy Share Link</button>
+        <button class="output-btn" type="button" id="interactive-open-link-btn" onclick="openInteractivePublicLink()" style="display:none;">Open Public View</button>
+        <button class="output-btn primary" type="button" onclick="closeInteractivePreview()">Close</button>
+      </div>
+    </div>
+    <iframe class="interactive-preview-frame" id="interactive-preview-frame" title="Interactive document preview"></iframe>
+  </div>
+</div>
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg">Action triggered</span></div>
 
 <script>
@@ -1896,9 +2016,20 @@ const PROFILE_DEFAULTS = {
   default_grc_org: '',
   theme_mode: 'dark',
 };
+const BRANDING_DEFAULTS = {
+  company_display_name: '',
+  logo_url: '',
+  logo_storage_path: '',
+  primary_brand_color: '#1D9E75',
+  secondary_brand_color: '#111111',
+  document_footer_text: '',
+};
 let sessionProfile = null;
 let profileSettings = { ...PROFILE_DEFAULTS };
 let dashboardConfig = null;
+let tenantBranding = { ...BRANDING_DEFAULTS };
+let pendingBrandLogoFile = null;
+let lastInteractiveDocument = null;
 let sidebarPinned = true;
 const sidebarMobileMedia = window.matchMedia('(max-width: 900px)');
 
@@ -2871,7 +3002,11 @@ function openModuleView(viewId) {
 
 function getSessionDefaults() {
   const displayName = (sessionProfile?.display_name || 'Workspace Owner').trim();
-  const orgName = (sessionProfile?.organization_name || 'Midnight Workspace').trim();
+  const orgName = (
+    dashboardConfig?.branding?.company_display_name ||
+    sessionProfile?.organization_name ||
+    'Midnight Workspace'
+  ).trim();
   return {
     display_name: displayName,
     title: sessionProfile?.role || 'Owner',
@@ -2897,6 +3032,23 @@ function getProfileSettings() {
     default_policy_owner: resolveProfileValue(profileSettings.default_policy_owner, defaults.default_policy_owner),
     default_grc_org: resolveProfileValue(profileSettings.default_grc_org, defaults.default_grc_org),
     theme_mode: profileSettings.theme_mode === 'light' ? 'light' : 'dark',
+  };
+}
+
+function getTenantBranding() {
+  const companyName = (
+    tenantBranding.company_display_name ||
+    dashboardConfig?.branding?.company_display_name ||
+    getProfileSettings().organization_name ||
+    'Midnight'
+  ).trim();
+  return {
+    company_display_name: companyName,
+    logo_url: tenantBranding.logo_url || dashboardConfig?.branding?.logo_url || '',
+    logo_storage_path: tenantBranding.logo_storage_path || dashboardConfig?.branding?.logo_storage_path || '',
+    primary_brand_color: tenantBranding.primary_brand_color || dashboardConfig?.branding?.primary_brand_color || '#1D9E75',
+    secondary_brand_color: tenantBranding.secondary_brand_color || dashboardConfig?.branding?.secondary_brand_color || '#111111',
+    document_footer_text: (tenantBranding.document_footer_text || dashboardConfig?.branding?.document_footer_text || `© 2026 ${companyName}`).trim(),
   };
 }
 
@@ -2928,6 +3080,22 @@ function setSelectValue(id, value, force = false) {
   const el = document.getElementById(id);
   if (!el || !value) return;
   if (force || !el.value) el.value = value;
+}
+
+function renderBrandLogoPreview(src, label) {
+  const image = document.getElementById('profile-brand-logo-image');
+  const placeholder = document.getElementById('profile-brand-logo-placeholder');
+  const help = document.getElementById('profile-brand-logo-help');
+  if (image && src) {
+    image.src = src;
+    image.style.display = 'block';
+  }
+  if (image && !src) {
+    image.removeAttribute('src');
+    image.style.display = 'none';
+  }
+  if (placeholder) placeholder.style.display = src ? 'none' : 'flex';
+  if (help && label) help.textContent = label;
 }
 
 function applyThemeMode(mode) {
@@ -3225,6 +3393,44 @@ function animateProgress(fillId, labelId, steps, onDone) {
   next();
 }
 
+let _birdEyeOverlayTicker = null;
+
+function showBirdEyeOverlay(labelText, steps, initialStatus) {
+  const overlay = document.getElementById('bird-eye-overlay');
+  const label = document.getElementById('bird-eye-label');
+  const status = document.getElementById('bird-eye-status');
+  if (!overlay || !label || !status) return;
+
+  hideBirdEyeOverlay();
+  label.textContent = labelText || 'Bird Eye Scanning';
+
+  const messages = Array.isArray(steps) && steps.length ? steps : [initialStatus || 'Analyzing document structure...'];
+  let index = 0;
+  status.textContent = initialStatus || messages[0];
+  overlay.classList.add('active');
+
+  if (messages.length > 1) {
+    _birdEyeOverlayTicker = setInterval(() => {
+      index = Math.min(index + 1, messages.length - 1);
+      status.textContent = messages[index];
+    }, 1400);
+  }
+}
+
+function updateBirdEyeOverlay(statusText) {
+  const status = document.getElementById('bird-eye-status');
+  if (status && statusText) status.textContent = statusText;
+}
+
+function hideBirdEyeOverlay() {
+  const overlay = document.getElementById('bird-eye-overlay');
+  if (_birdEyeOverlayTicker) {
+    clearInterval(_birdEyeOverlayTicker);
+    _birdEyeOverlayTicker = null;
+  }
+  if (overlay) overlay.classList.remove('active');
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE POLICY
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3246,7 +3452,7 @@ async function createPolicy() {
   document.getElementById('cp-out-title').textContent  = name;
   document.getElementById('cp-out-status').textContent = 'Generating';
   document.getElementById('cp-out-status').className   = 'output-status generating';
-  document.getElementById('cp-progress').style.display = 'block';
+  document.getElementById('cp-progress').style.display = 'none';
   document.getElementById('cp-out-text').textContent   = '';
   document.getElementById('cp-out-actions').style.display = 'none';
   document.getElementById('cp-editor').style.display = 'none';
@@ -3257,84 +3463,86 @@ async function createPolicy() {
   if (outputDownloads.cp?.url) URL.revokeObjectURL(outputDownloads.cp.url);
   outputDownloads.cp = null;
 
-  const steps = [
-    { label: 'Analyzing requirements...', pct: 20, delay: 600 },
-    { label: 'Mapping to frameworks...',   pct: 45, delay: 800 },
-    { label: 'Generating policy language...', pct: 70, delay: 1000 },
-    { label: 'Applying structure...', pct: 90, delay: 700 },
-    { label: 'Finalizing document...', pct: 98, delay: 400 },
-  ];
+  showBirdEyeOverlay(
+    'Bird Eye Drafting',
+    [
+      'Reading authoring inputs...',
+      'Mapping control intent to frameworks...',
+      'Drafting policy sections with Bird Eye...',
+      'Normalizing structure and metadata...',
+      'Preparing editable preview...',
+    ],
+    'Reading authoring inputs...'
+  );
 
-  animateProgress('cp-progress-fill', 'cp-progress-label', steps, async () => {
-    try {
-      const res = await apiRequest('/pipeline/create/preview', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          policy_name: name,
-          doc_type:    document.getElementById('cp-type').value,
-          industry:    document.getElementById('cp-industry').value,
-          frameworks:  getSelectedFrameworks('cp-frameworks'),
-          owner:       document.getElementById('cp-owner').value || 'Compliance Team',
-          description: buildCreatePolicyDescription(),
-          policy_number: getCreateFieldValue('cp-policy-number'),
-          version: getCreateFieldValue('cp-version') || '1.0',
-          grc_id: getCreateFieldValue('cp-grc-id'),
-          effective_date: getCreateFieldValue('cp-effective-date'),
-          last_reviewed: getCreateFieldValue('cp-last-reviewed'),
-          last_revised: getCreateFieldValue('cp-last-revised'),
-          supersedes: getCreateFieldValue('cp-supersedes'),
-          custodians: getCreateFieldValue('cp-custodians'),
-          owner_title: getCreateFieldValue('cp-owner-title'),
-          approver_name: getCreateFieldValue('cp-approver-name'),
-          approver_title: getCreateFieldValue('cp-approver-title'),
-          date_signed: getCreateFieldValue('cp-date-signed'),
-          date_approved: getCreateFieldValue('cp-date-approved'),
-          purpose_scope: getCreateFieldValue('cp-purpose-scope'),
-          definitions_text: getCreateFieldValue('cp-definitions'),
-          policy_statement: getCreateFieldValue('cp-policy-statement'),
-          procedures_text: getCreateFieldValue('cp-procedures'),
-          related_policies: getCreateFieldValue('cp-related-policies'),
-          citations_references: getCreateFieldValue('cp-citations'),
-        }),
-      });
+  try {
+    const res = await apiRequest('/pipeline/create/preview', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        policy_name: name,
+        doc_type:    document.getElementById('cp-type').value,
+        industry:    document.getElementById('cp-industry').value,
+        frameworks:  getSelectedFrameworks('cp-frameworks'),
+        owner:       document.getElementById('cp-owner').value || 'Compliance Team',
+        description: buildCreatePolicyDescription(),
+        policy_number: getCreateFieldValue('cp-policy-number'),
+        version: getCreateFieldValue('cp-version') || '1.0',
+        grc_id: getCreateFieldValue('cp-grc-id'),
+        effective_date: getCreateFieldValue('cp-effective-date'),
+        last_reviewed: getCreateFieldValue('cp-last-reviewed'),
+        last_revised: getCreateFieldValue('cp-last-revised'),
+        supersedes: getCreateFieldValue('cp-supersedes'),
+        custodians: getCreateFieldValue('cp-custodians'),
+        owner_title: getCreateFieldValue('cp-owner-title'),
+        approver_name: getCreateFieldValue('cp-approver-name'),
+        approver_title: getCreateFieldValue('cp-approver-title'),
+        date_signed: getCreateFieldValue('cp-date-signed'),
+        date_approved: getCreateFieldValue('cp-date-approved'),
+        purpose_scope: getCreateFieldValue('cp-purpose-scope'),
+        definitions_text: getCreateFieldValue('cp-definitions'),
+        policy_statement: getCreateFieldValue('cp-policy-statement'),
+        procedures_text: getCreateFieldValue('cp-procedures'),
+        related_policies: getCreateFieldValue('cp-related-policies'),
+        citations_references: getCreateFieldValue('cp-citations'),
+      }),
+    });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Server error ${res.status}`);
-      }
-
-      const data = await res.json();
-      _previewedCreatePolicyData = data.policy_data;
-
-      document.getElementById('cp-progress').style.display  = 'none';
-      document.getElementById('cp-out-text').textContent    = _buildPolicyPreviewText(data.policy_data);
-      document.getElementById('cp-out-status').textContent  = 'Preview Ready';
-      document.getElementById('cp-out-status').className    = 'output-status done';
-      exportStudioReady = true;
-      renderExportStudio();
-      renderEditor('cp', data.policy_data);
-      document.getElementById('cp-out-actions').style.display = 'flex';
-      document.getElementById('cp-out-actions').innerHTML = `
-        <button class="output-btn primary" id="cp-generate-btn" onclick="generateCreateDoc(false)">Generate As-Is</button>
-        <span style="font-size:11px;color:var(--text3);align-self:center;font-family:var(--font-mono);">or edit below ↓</span>
-      `;
-
-      await refreshDashboardData();
-      showToast('Policy preview ready — edit sections or generate as-is');
-
-    } catch (e) {
-      document.getElementById('cp-progress').style.display  = 'none';
-      document.getElementById('cp-out-status').textContent  = 'Error';
-      document.getElementById('cp-out-status').className    = 'output-status error';
-      document.getElementById('cp-out-text').textContent    = e.message || 'Policy generation failed.';
-      exportStudioReady = false;
-      renderExportStudio();
-      showToast(e.message || 'Policy generation failed', true);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
     }
 
+    updateBirdEyeOverlay('Preview assembled. Opening editable draft...');
+    const data = await res.json();
+    _previewedCreatePolicyData = data.policy_data;
+
+    document.getElementById('cp-out-text').textContent    = _buildPolicyPreviewText(data.policy_data);
+    document.getElementById('cp-out-status').textContent  = 'Preview Ready';
+    document.getElementById('cp-out-status').className    = 'output-status done';
+    exportStudioReady = true;
+    renderExportStudio();
+    renderEditor('cp', data.policy_data);
+    document.getElementById('cp-out-actions').style.display = 'flex';
+    document.getElementById('cp-out-actions').innerHTML = `
+      <button class="output-btn primary" id="cp-generate-btn" onclick="generateCreateDoc(false)">Generate As-Is</button>
+      <span style="font-size:11px;color:var(--text3);align-self:center;font-family:var(--font-mono);">or edit below ↓</span>
+    `;
+
+    await refreshDashboardData();
+    showToast('Policy preview ready — edit sections or generate as-is');
+
+  } catch (e) {
+    document.getElementById('cp-out-status').textContent  = 'Error';
+    document.getElementById('cp-out-status').className    = 'output-status error';
+    document.getElementById('cp-out-text').textContent    = e.message || 'Policy generation failed.';
+    exportStudioReady = false;
+    renderExportStudio();
+    showToast(e.message || 'Policy generation failed', true);
+  } finally {
+    hideBirdEyeOverlay();
     btn.disabled = false; btn.textContent = 'Generate Policy →';
-  });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4099,6 +4307,17 @@ async function generateCreateDoc(useEditor = false) {
     ? { ..._previewedCreatePolicyData, ...readEditor('cp') }
     : { ..._previewedCreatePolicyData };
 
+  showBirdEyeOverlay(
+    'Bird Eye Rendering',
+    [
+      'Locking the approved draft shape...',
+      'Rendering branded document output...',
+      'Packaging the export path...',
+      'Preparing download handoff...',
+    ],
+    'Locking the approved draft shape...'
+  );
+
   try {
     const res = await apiRequest('/pipeline/create/generate', {
       method:  'POST',
@@ -4116,6 +4335,7 @@ async function generateCreateDoc(useEditor = false) {
     const fallback = (finalData.policy_name || 'policy').replace(/\s+/g, '_') + `_v${finalData.version || '1.0'}.docx`;
     storeDownload('cp', blob, res.headers.get('Content-Disposition'), fallback, preview);
     _previewedCreatePolicyData = finalData;
+    updateBirdEyeOverlay('Document ready. Handing off download...');
     downloadOutput('cp');
 
     document.getElementById('cp-out-status').textContent = 'Complete';
@@ -4142,6 +4362,8 @@ async function generateCreateDoc(useEditor = false) {
       btn.textContent = useEditor ? 'Generate Edited .docx →' : 'Generate As-Is';
     }
     showToast(e.message || 'Generation failed', true);
+  } finally {
+    hideBirdEyeOverlay();
   }
 }
 
