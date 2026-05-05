@@ -334,6 +334,20 @@
   .ai-gov-risk-kicker { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   .ai-gov-risk-title { font-family: var(--font-display); font-size: 24px; color: var(--text); margin-bottom: 8px; }
   .ai-gov-risk-copy { font-size: 12px; line-height: 1.7; color: var(--text2); }
+  .media-studio-shell { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.04); display: none; }
+  .media-studio-shell.active { display: block; }
+  .media-studio-grid { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 14px; }
+  .media-studio-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .media-tool-card { border-radius: 14px; border: 1px solid rgba(0,212,245,0.12); background: rgba(0,212,245,0.04); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 190px; }
+  .media-tool-title { font-family: var(--font-display); font-size: 15px; color: var(--text); }
+  .media-tool-copy { font-size: 11px; line-height: 1.65; color: var(--text2); }
+  .media-tool-meta { font-size: 10px; color: var(--text3); font-family: var(--font-mono); line-height: 1.6; }
+  .media-asset-stack { display: flex; flex-direction: column; gap: 10px; }
+  .media-asset-card { border-radius: 14px; border: 1px solid var(--border); background: var(--bg3); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .media-asset-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .media-asset-name { font-family: var(--font-display); font-size: 14px; color: var(--text); }
+  .media-asset-tag { padding: 5px 8px; border-radius: 999px; border: 1px solid rgba(0,212,245,0.16); background: rgba(0,212,245,0.07); color: var(--accent); font-size: 10px; font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .media-empty-state { padding: 18px; border-radius: 14px; border: 1px dashed rgba(0,212,245,0.22); background: rgba(0,212,245,0.03); color: var(--text2); font-size: 12px; line-height: 1.7; }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -478,6 +492,8 @@
     .ai-gov-grid,
     .ai-gov-output-grid,
     .ai-gov-mapping-list { grid-template-columns: 1fr; }
+    .media-studio-grid,
+    .media-studio-tools { grid-template-columns: 1fr; }
   }
 
   /* SECTION EDITOR */
@@ -1170,6 +1186,47 @@
                 </div>
               </div>
             </div>
+            <div class="media-studio-shell" id="cp-media-studio">
+              <div class="studio-workspace-head" style="margin-bottom:14px;">
+                <div>
+                  <div class="studio-workspace-kicker">Step 4 · Media Embedding</div>
+                  <div class="studio-workspace-title" style="font-size:20px;">Shared media studio</div>
+                  <div class="studio-workspace-copy">Every document lane can pull in screenshots, clips, and generated diagrams. This shared studio keeps those assets in one place while preserving tenant-aware authoring boundaries.</div>
+                </div>
+                <div class="studio-selected-pill" id="cp-media-context-pill">No document selected</div>
+              </div>
+              <div class="media-studio-grid">
+                <div class="studio-panel">
+                  <div class="media-studio-tools">
+                    <div class="media-tool-card">
+                      <div class="media-tool-title">Insert Screenshot</div>
+                      <div class="media-tool-copy">Upload PNG or JPG assets. The builder captures the file, stages a caption field, and leaves room for AI-generated descriptions once the media service is connected.</div>
+                      <div class="media-tool-meta">Word/PDF outputs can embed the captured image with a draft or edited caption.</div>
+                      <button class="run-btn" type="button" onclick="triggerCreateMediaPicker('image')">Upload Screenshot</button>
+                    </div>
+                    <div class="media-tool-card">
+                      <div class="media-tool-title">Insert Video Clip</div>
+                      <div class="media-tool-copy">Upload MP4 or WebM clips. Midnight stages transcript/caption notes now and can later promote them into HTML playback and document snapshots.</div>
+                      <div class="media-tool-meta">HTML keeps playable clips. Word/PDF can later use a frame extraction path.</div>
+                      <button class="run-btn" type="button" onclick="triggerCreateMediaPicker('video')">Upload Video Clip</button>
+                    </div>
+                    <div class="media-tool-card">
+                      <div class="media-tool-title">Insert Diagram</div>
+                      <div class="media-tool-copy">Describe the process in plain English and stage a swimlane or flowchart asset directly inside the authoring flow.</div>
+                      <textarea class="form-textarea" id="cp-diagram-prompt" placeholder="Describe the process you want visualized..."></textarea>
+                      <button class="run-btn" type="button" onclick="generateCreateDiagramAsset()">Stage Diagram</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="studio-panel">
+                  <div class="studio-panel-title">Embedded Assets</div>
+                  <div class="studio-panel-copy">Assets added here can follow the selected document type into the final export path.</div>
+                  <div class="media-asset-stack" id="cp-media-asset-stack"></div>
+                </div>
+              </div>
+              <input id="cp-media-image" type="file" accept="image/png,image/jpeg,image/jpg" style="display:none;" onchange="handleCreateMediaFiles('image', this.files)">
+              <input id="cp-media-video" type="file" accept="video/mp4,video/webm" style="display:none;" onchange="handleCreateMediaFiles('video', this.files)">
+            </div>
           </div>
         </div>
       </div>
@@ -1852,6 +1909,8 @@ let selectedCreateDocType = null;
 let sopSteps = [];
 let sopStepSeed = 1;
 let draggingSopStepId = null;
+let createMediaAssets = [];
+let createMediaAssetSeed = 1;
 
 function getCreateDocTypeConfig(key) {
   return CREATE_DOC_TYPES.find(type => type.key === key) || CREATE_DOC_TYPES[0];
@@ -1876,6 +1935,8 @@ function resetCreateStudio() {
   selectedCreateDocType = null;
   const shell = document.getElementById('cp-workspace-shell');
   if (shell) shell.classList.remove('active');
+  const mediaShell = document.getElementById('cp-media-studio');
+  if (mediaShell) mediaShell.classList.remove('active');
   document.querySelectorAll('#view-create .studio-panel-view').forEach(panel => panel.style.display = 'none');
   const selectedPill = document.getElementById('cp-selected-type-pill');
   if (selectedPill) selectedPill.textContent = 'No type selected';
@@ -1889,7 +1950,10 @@ function resetCreateStudio() {
   if (workspaceKicker) workspaceKicker.textContent = 'Workspace';
   const typeField = document.getElementById('cp-type');
   if (typeField) typeField.value = 'POLICY';
+  const mediaPill = document.getElementById('cp-media-context-pill');
+  if (mediaPill) mediaPill.textContent = 'No document selected';
   renderCreateDocTypeSelector();
+  renderCreateMediaStudio();
 }
 
 function selectCreateDocType(key) {
@@ -1912,7 +1976,12 @@ function selectCreateDocType(key) {
   if (workspaceKicker) workspaceKicker.textContent = type.kicker;
   const typeField = document.getElementById('cp-type');
   if (typeField) typeField.value = type.key;
+  const mediaShell = document.getElementById('cp-media-studio');
+  if (mediaShell) mediaShell.classList.add('active');
+  const mediaPill = document.getElementById('cp-media-context-pill');
+  if (mediaPill) mediaPill.textContent = `${type.name} media`;
   renderCreateDocTypeSelector();
+  renderCreateMediaStudio();
   if (type.key === 'SOP') renderSopBuilder();
   if (type.key === 'AI_GOVERNANCE') refreshAiGovernanceSummary();
 }
@@ -2166,6 +2235,79 @@ function refreshAiGovernanceSummary() {
       <span style="display:block;">Prohibited uses: ${escHtml(prohibited || 'Not specified yet')}</span>
     `;
   }
+}
+
+function renderCreateMediaStudio() {
+  const stack = document.getElementById('cp-media-asset-stack');
+  if (!stack) return;
+  if (!createMediaAssets.length) {
+    stack.innerHTML = '<div class="media-empty-state">No screenshots, clips, or diagrams are attached yet. Add media here and it will stay associated with the selected document lane.</div>';
+    return;
+  }
+  stack.innerHTML = createMediaAssets.map(asset => `
+    <div class="media-asset-card">
+      <div class="media-asset-head">
+        <div class="media-asset-name">${escHtml(asset.name)}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="media-asset-tag">${escHtml(asset.kind)}</span>
+          <button class="sop-icon-btn" type="button" onclick="removeCreateMediaAsset('${asset.id}')">Remove</button>
+        </div>
+      </div>
+      <div class="media-tool-meta">Bound to: ${escHtml(asset.docType)} · Status: ${escHtml(asset.status)}</div>
+      <textarea class="form-textarea" placeholder="Caption, transcript note, or diagram description..." oninput="updateCreateMediaAsset('${asset.id}', this.value)">${escHtml(asset.description)}</textarea>
+    </div>
+  `).join('');
+}
+
+function triggerCreateMediaPicker(type) {
+  const input = document.getElementById(type === 'video' ? 'cp-media-video' : 'cp-media-image');
+  if (input) input.click();
+}
+
+function handleCreateMediaFiles(kind, files) {
+  const file = files && files[0];
+  if (!file) return;
+  const docType = getCreateDocTypeConfig(selectedCreateDocType || 'POLICY').name;
+  createMediaAssets.unshift({
+    id: `media-${createMediaAssetSeed++}`,
+    kind: kind === 'video' ? 'video' : 'screenshot',
+    name: file.name,
+    description: `Draft placeholder: ${kind === 'video' ? 'transcript / caption' : 'caption'} pending for ${file.name}`,
+    status: 'staged',
+    docType,
+  });
+  renderCreateMediaStudio();
+}
+
+function generateCreateDiagramAsset() {
+  const promptEl = document.getElementById('cp-diagram-prompt');
+  const prompt = promptEl?.value.trim();
+  if (!prompt) {
+    showToast('Add a plain-English process description first.', true);
+    return;
+  }
+  const docType = getCreateDocTypeConfig(selectedCreateDocType || 'POLICY').name;
+  createMediaAssets.unshift({
+    id: `media-${createMediaAssetSeed++}`,
+    kind: 'diagram',
+    name: 'Generated diagram',
+    description: `Draft placeholder: diagram staged from prompt — ${prompt}`,
+    status: 'drafted',
+    docType,
+  });
+  if (promptEl) promptEl.value = '';
+  renderCreateMediaStudio();
+}
+
+function updateCreateMediaAsset(assetId, value) {
+  const asset = createMediaAssets.find(item => item.id === assetId);
+  if (!asset) return;
+  asset.description = value;
+}
+
+function removeCreateMediaAsset(assetId) {
+  createMediaAssets = createMediaAssets.filter(asset => asset.id !== assetId);
+  renderCreateMediaStudio();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
