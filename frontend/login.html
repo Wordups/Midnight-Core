@@ -454,6 +454,7 @@ body::before {
 
 <script>
 const API = window.location.origin;
+const POST_AUTH_REDIRECT = '/midnight_dashboard.html';
 let authMode = 'signin';
 
 function showError(message) {
@@ -532,7 +533,7 @@ async function exchangeAuthTokenFromUrl() {
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(payload.detail || 'Authentication exchange failed.');
-    window.location.replace(payload.redirect_to || '/midnight_dashboard.html');
+    window.location.replace(payload.redirect_to || POST_AUTH_REDIRECT);
     return true;
   } catch (err) {
     showError(err.message || 'Authentication exchange failed.');
@@ -549,7 +550,7 @@ async function checkExistingSession() {
     if (!res.ok) return false;
     const data = await res.json();
     if (data.authenticated) {
-      window.location.replace('/midnight_dashboard.html');
+      window.location.replace(data.redirect_to || POST_AUTH_REDIRECT);
       return true;
     }
   } catch (_) {}
@@ -596,7 +597,7 @@ async function handleLogin() {
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(payload.detail || 'Invalid credentials.');
-    window.location.replace(payload.redirect_to || '/midnight_dashboard.html');
+    window.location.replace(payload.redirect_to || POST_AUTH_REDIRECT);
   } catch (err) {
     passwordEl?.classList.add('error');
     if (passwordEl) passwordEl.value = '';

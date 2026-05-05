@@ -81,6 +81,9 @@ class TokenExchangeRequest(BaseModel):
     access_token: str
 
 
+POST_AUTH_REDIRECT = "/midnight_dashboard.html"
+
+
 def _is_secure_cookie() -> bool:
     return settings.ENVIRONMENT == "prod"
 
@@ -273,7 +276,7 @@ def _build_session_payload(
     )
     plan_type = (organization or {}).get("plan_type") or "trial"
 
-    return {
+    payload = {
         "authenticated": authenticated,
         "workspace_id": tenant_id,
         "user_id": (user_record or {}).get("id") or getattr(auth_user, "id", None),
@@ -287,6 +290,9 @@ def _build_session_payload(
         "plan_type": plan_type,
         "environment": settings.ENVIRONMENT,
     }
+    if authenticated:
+        payload["redirect_to"] = POST_AUTH_REDIRECT
+    return payload
 
 
 def _authenticate_token(access_token: str) -> tuple[dict[str, Any], dict[str, Any], Any]:
@@ -376,7 +382,7 @@ async def login(payload: LoginRequest, response: Response):
             auth_user=auth_user,
         ),
         "access_token": session.access_token,
-        "redirect_to": "/",
+        "redirect_to": POST_AUTH_REDIRECT,
     }
 
 
@@ -557,7 +563,7 @@ async def exchange_token(payload: TokenExchangeRequest, response: Response):
             auth_user=auth_user,
         ),
         "access_token": access_token,
-        "redirect_to": "/midnight_dashboard.html",
+        "redirect_to": POST_AUTH_REDIRECT,
     }
 
 
