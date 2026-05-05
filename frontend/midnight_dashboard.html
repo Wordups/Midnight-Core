@@ -320,6 +320,20 @@
   .sop-branch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .sop-export-row { display: flex; flex-wrap: wrap; gap: 10px; }
   .sop-export-chip { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); font-size: 11px; font-family: var(--font-mono); }
+  .ai-gov-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; }
+  .ai-gov-stack { display: flex; flex-direction: column; gap: 14px; }
+  .ai-gov-output-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .ai-gov-output-card { background: rgba(0,212,245,0.04); border: 1px solid rgba(0,212,245,0.12); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .ai-gov-output-title { font-family: var(--font-display); font-size: 14px; color: var(--text); }
+  .ai-gov-output-copy { font-size: 11px; line-height: 1.65; color: var(--text2); }
+  .ai-gov-mapping-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ai-gov-mapping-item { padding: 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg3); }
+  .ai-gov-mapping-item strong { display: block; font-size: 12px; color: var(--text); margin-bottom: 5px; }
+  .ai-gov-mapping-item span { font-size: 11px; line-height: 1.6; color: var(--text2); display: block; }
+  .ai-gov-risk-card { padding: 16px; border-radius: 16px; border: 1px solid rgba(0,212,245,0.16); background: linear-gradient(155deg, rgba(0,212,245,0.08) 0%, rgba(74,158,255,0.05) 100%); }
+  .ai-gov-risk-kicker { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .ai-gov-risk-title { font-family: var(--font-display); font-size: 24px; color: var(--text); margin-bottom: 8px; }
+  .ai-gov-risk-copy { font-size: 12px; line-height: 1.7; color: var(--text2); }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -461,6 +475,9 @@
     .sop-step-grid,
     .sop-media-row,
     .sop-branch-grid { grid-template-columns: 1fr; }
+    .ai-gov-grid,
+    .ai-gov-output-grid,
+    .ai-gov-mapping-list { grid-template-columns: 1fr; }
   }
 
   /* SECTION EDITOR */
@@ -1084,21 +1101,71 @@
               </div>
             </div>
             <div id="cp-workspace-ai-governance" class="studio-panel-view" style="display:none;">
-              <div class="studio-panel-grid">
-                <div class="studio-panel">
-                  <div class="studio-panel-title">AI Governance Intake</div>
-                  <div class="studio-panel-copy">Build governance-ready AI documentation with system context, risk posture, and regulatory mapping.</div>
-                  <div class="studio-panel-list">
-                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>Model card, risk assessment, and policy outputs from one intake</span></div>
-                    <div class="studio-panel-item"><span class="studio-panel-dot"></span><span>NIST AI RMF, EU AI Act, ISO 42001, EO, and HIPAA intersections</span></div>
+              <div class="ai-gov-grid">
+                <div class="ai-gov-stack">
+                  <div class="studio-panel">
+                    <div class="studio-panel-title">AI Governance Intake</div>
+                    <div class="studio-panel-copy">Capture the AI system context once, then let Midnight stage the right governance artifacts, risk posture, and regulatory mapping around it.</div>
+                    <div class="studio-mini-form">
+                      <div class="form-group"><label class="form-label">AI System Name</label><input class="form-input" id="ai-system-name" placeholder="e.g. Claims Triage Assistant" oninput="refreshAiGovernanceSummary()"></div>
+                      <div class="form-group"><label class="form-label">Vendor</label><input class="form-input" id="ai-vendor" placeholder="e.g. OpenAI / Internal / Microsoft" oninput="refreshAiGovernanceSummary()"></div>
+                      <div class="form-group"><label class="form-label">Model Type</label>
+                        <select class="form-select" id="ai-model-type" onchange="refreshAiGovernanceSummary()">
+                          <option value="">Select model type</option>
+                          <option>LLM</option><option>CV</option><option>Predictive</option><option>Other</option>
+                        </select>
+                      </div>
+                      <div class="form-group"><label class="form-label">Output Type</label>
+                        <select class="form-select" id="ai-output-type" onchange="refreshAiGovernanceSummary()">
+                          <option value="">Select output type</option>
+                          <option>Text</option><option>Decision</option><option>Image</option><option>Other</option>
+                        </select>
+                      </div>
+                      <div class="form-group full"><label class="form-label">Use Case Description</label><textarea class="form-textarea" id="ai-use-case" placeholder="Describe what the system does, who uses it, and what decisions it influences..." oninput="refreshAiGovernanceSummary()"></textarea></div>
+                      <div class="form-group full"><label class="form-label">Data Inputs</label><textarea class="form-textarea" id="ai-data-inputs" placeholder="What data does it process? PHI, PII, financial records, images, free text..." oninput="refreshAiGovernanceSummary()"></textarea></div>
+                      <div class="form-group full"><label class="form-label">Human Oversight Mechanism</label><textarea class="form-textarea" id="ai-oversight" placeholder="Describe approval, review, escalation, and override checkpoints..." oninput="refreshAiGovernanceSummary()"></textarea></div>
+                      <div class="form-group"><label class="form-label">Approved Use Cases</label><textarea class="form-textarea" id="ai-approved-use" placeholder="One per line" oninput="refreshAiGovernanceSummary()"></textarea></div>
+                      <div class="form-group"><label class="form-label">Prohibited Use Cases</label><textarea class="form-textarea" id="ai-prohibited-use" placeholder="One per line" oninput="refreshAiGovernanceSummary()"></textarea></div>
+                    </div>
+                  </div>
+                  <div class="studio-panel">
+                    <div class="studio-panel-title">Governance Outputs</div>
+                    <div class="studio-panel-copy">This lane produces three linked artifacts from the same intake instead of a single flat policy.</div>
+                    <div class="ai-gov-output-grid">
+                      <div class="ai-gov-output-card">
+                        <div class="ai-gov-output-title">AI Governance Policy</div>
+                        <div class="ai-gov-output-copy">Internal policy covering permitted use, ownership, oversight, and accountability for the AI system.</div>
+                      </div>
+                      <div class="ai-gov-output-card">
+                        <div class="ai-gov-output-title">Model Risk Assessment</div>
+                        <div class="ai-gov-output-copy">Risk-focused view with control gaps, impact framing, and recommended mitigation structure.</div>
+                      </div>
+                      <div class="ai-gov-output-card">
+                        <div class="ai-gov-output-title">Regulatory Mapping Summary</div>
+                        <div class="ai-gov-output-copy">Crosswalk into current AI frameworks and healthcare/privacy intersections where relevant.</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div class="studio-panel">
-                  <div class="studio-panel-title">System Snapshot</div>
-                  <div class="studio-mini-form">
-                    <div class="form-group"><label class="form-label">AI System Name</label><input class="form-input" placeholder="e.g. Claims Triage Assistant"></div>
-                    <div class="form-group"><label class="form-label">Model Type</label><input class="form-input" placeholder="LLM / CV / Predictive / Other"></div>
-                    <div class="form-group full"><label class="form-label">Use Case Description</label><textarea class="form-textarea" placeholder="Describe what the system does, what data it uses, and what decisions it influences..."></textarea></div>
+                <div class="ai-gov-stack">
+                  <div class="ai-gov-risk-card">
+                    <div class="ai-gov-risk-kicker">Auto-suggested posture</div>
+                    <div class="ai-gov-risk-title" id="ai-risk-classification">Moderate</div>
+                    <div class="ai-gov-risk-copy" id="ai-risk-rationale">Midnight will refine this classification based on the system type, output sensitivity, healthcare overlap, and whether the model influences decisions or generates customer-facing content.</div>
+                  </div>
+                  <div class="studio-panel">
+                    <div class="studio-panel-title">Regulatory Mapping Targets</div>
+                    <div class="ai-gov-mapping-list">
+                      <div class="ai-gov-mapping-item"><strong>NIST AI RMF</strong><span>Profiles the govern, map, measure, and manage controls that should anchor this AI system.</span></div>
+                      <div class="ai-gov-mapping-item"><strong>EU AI Act</strong><span>Stages a likely risk category based on whether the system assists, influences, or directly drives decisions.</span></div>
+                      <div class="ai-gov-mapping-item"><strong>ISO 42001</strong><span>Frames the management-system controls, ownership, and evidence expectations around the AI program.</span></div>
+                      <div class="ai-gov-mapping-item"><strong>Executive Order on AI</strong><span>Highlights governance areas relevant to trustworthy deployment, documentation, and accountability.</span></div>
+                      <div class="ai-gov-mapping-item"><strong>HIPAA + AI</strong><span id="ai-healthcare-intersection">Healthcare-sensitive workflows trigger additional PHI handling and human-review expectations.</span></div>
+                    </div>
+                  </div>
+                  <div class="studio-panel">
+                    <div class="studio-panel-title">Snapshot</div>
+                    <div class="studio-panel-copy" id="ai-summary-preview">Select AI Governance and complete the intake to see a live summary of the system profile, risk posture, and likely governance outputs.</div>
                   </div>
                 </div>
               </div>
@@ -1847,6 +1914,7 @@ function selectCreateDocType(key) {
   if (typeField) typeField.value = type.key;
   renderCreateDocTypeSelector();
   if (type.key === 'SOP') renderSopBuilder();
+  if (type.key === 'AI_GOVERNANCE') refreshAiGovernanceSummary();
 }
 
 function createEmptySopStep() {
@@ -2046,6 +2114,58 @@ function dropSopStep(targetStepId, event) {
 function endSopDrag() {
   draggingSopStepId = null;
   document.querySelectorAll('.sop-step-card.dragging').forEach(card => card.classList.remove('dragging'));
+}
+
+function refreshAiGovernanceSummary() {
+  const name = document.getElementById('ai-system-name')?.value.trim() || 'Unnamed AI system';
+  const vendor = document.getElementById('ai-vendor')?.value.trim() || 'Unspecified vendor';
+  const modelType = document.getElementById('ai-model-type')?.value || 'Unknown model';
+  const outputType = document.getElementById('ai-output-type')?.value || 'Unknown output';
+  const useCase = document.getElementById('ai-use-case')?.value.trim() || 'No use case description provided yet.';
+  const dataInputs = (document.getElementById('ai-data-inputs')?.value || '').toLowerCase();
+  const oversight = document.getElementById('ai-oversight')?.value.trim() || 'No human oversight mechanism documented yet.';
+  const approved = document.getElementById('ai-approved-use')?.value.trim();
+  const prohibited = document.getElementById('ai-prohibited-use')?.value.trim();
+
+  let classification = 'Moderate';
+  let rationale = 'This looks like a meaningful AI workflow, but the current intake does not yet indicate high-consequence autonomous use.';
+
+  const hasHealthcareData = /(phi|patient|clinical|health|hipaa)/.test(dataInputs + ' ' + useCase.toLowerCase());
+  const hasSensitiveData = /(pii|phi|financial|biometric|medical|claims)/.test(dataInputs);
+  const decisioning = outputType === 'Decision' || /(approve|deny|triage|eligibility|risk score|priority)/.test(useCase.toLowerCase());
+  const generative = modelType === 'LLM';
+
+  if (decisioning && hasSensitiveData) {
+    classification = 'High';
+    rationale = 'Sensitive data plus decision-influencing behavior creates a high-governance AI posture and needs explicit controls, review, and escalation paths.';
+  } else if (hasHealthcareData || (generative && hasSensitiveData)) {
+    classification = 'Elevated';
+    rationale = 'Healthcare or regulated data involvement raises the governance burden even if the model is still human-supervised.';
+  }
+
+  const riskEl = document.getElementById('ai-risk-classification');
+  if (riskEl) riskEl.textContent = classification;
+  const rationaleEl = document.getElementById('ai-risk-rationale');
+  if (rationaleEl) rationaleEl.textContent = rationale;
+
+  const healthcareEl = document.getElementById('ai-healthcare-intersection');
+  if (healthcareEl) {
+    healthcareEl.textContent = hasHealthcareData
+      ? 'Healthcare-sensitive workflows are in scope here, so PHI handling, minimum necessary use, and human review need explicit coverage.'
+      : 'If this system later touches PHI or patient workflows, add HIPAA-specific governance controls and review checkpoints.';
+  }
+
+  const summaryEl = document.getElementById('ai-summary-preview');
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <strong style="color:var(--text);display:block;margin-bottom:8px;">${escHtml(name)}</strong>
+      <span style="display:block;margin-bottom:8px;">Vendor: ${escHtml(vendor)} · Model: ${escHtml(modelType)} · Output: ${escHtml(outputType)}</span>
+      <span style="display:block;margin-bottom:8px;">Use case: ${escHtml(useCase)}</span>
+      <span style="display:block;margin-bottom:8px;">Oversight: ${escHtml(oversight)}</span>
+      <span style="display:block;margin-bottom:8px;">Approved uses: ${escHtml(approved || 'Not specified yet')}</span>
+      <span style="display:block;">Prohibited uses: ${escHtml(prohibited || 'Not specified yet')}</span>
+    `;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
