@@ -377,7 +377,7 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
   </div>
   <div style="display:flex;gap:8px;align-items:center">
     <a href="/login.html" style="font-family:var(--body);font-size:13px;font-weight:500;color:var(--t2);padding:7px 16px;border-radius:6px;text-decoration:none;transition:color .15s,background .15s;" onmouseover="this.style.color='var(--t0)';this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.color='var(--t2)';this.style.background='none'">Sign In</a>
-    <button class="nav-cta" onclick="goTo('enterprise')">Request Access →</button>
+    <button class="nav-cta" onclick="startOnboarding()">Start Now →</button>
   </div>
 </nav>
 
@@ -391,7 +391,7 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
       <div class="hero-tagline">Policy Intelligence Engine</div>
       <p class="hero-sub"><strong>Handshake, not takeover.</strong><br>Midnight meets you where you are, helps you understand what you have, and builds a system that's audit-ready. Human-led, intelligence-backed.</p>
       <div class="hero-btns">
-        <button class="btn-primary" onclick="goTo('enterprise')">Request Enterprise Access →</button>
+        <button class="btn-primary" onclick="startOnboarding()">Request Enterprise Access →</button>
         <button class="btn-outline" onclick="goTo('platform')">See the Platform</button>
       </div>
       <div class="hero-badges">
@@ -470,7 +470,7 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
   </div>
   <footer>
     <div class="footer-brand">MIDNIGHT · TAKEOFF</div>
-    <button class="btn-primary" onclick="goTo('enterprise')" style="padding:10px 24px;font-size:13px">Request Enterprise Access →</button>
+    <button class="btn-primary" onclick="startOnboarding()" style="padding:10px 24px;font-size:13px">Request Enterprise Access →</button>
     <div class="footer-copy">Enterprise Policy Intelligence · v2.0</div>
   </footer>
 </div>
@@ -504,7 +504,7 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
   </div>
   <footer>
     <div class="footer-brand">MIDNIGHT · TAKEOFF</div>
-    <button class="btn-primary" onclick="goTo('enterprise')" style="padding:10px 24px;font-size:13px">Request Enterprise Access →</button>
+    <button class="btn-primary" onclick="startOnboarding()" style="padding:10px 24px;font-size:13px">Request Enterprise Access →</button>
     <div class="footer-copy">Enterprise Policy Intelligence · v2.0</div>
   </footer>
 </div>
@@ -641,6 +641,10 @@ async function handleSubmit(e) {
     document.getElementById('form-error').style.display='block';
     btn.disabled=false; btn.textContent='Submit Request →';
   }
+}
+
+function startOnboarding() {
+  window.location.assign('/onboarding/plan');
 }
 </script>
 <!-- ── BIRD TALK WIDGET ─────────────────────────────────────────────────── -->
