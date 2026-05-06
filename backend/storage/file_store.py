@@ -11,18 +11,22 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
 import json
+import logging
 import mimetypes
 import os
 import re
 
 import requests
 
+from backend.agents import AgentValidationError, SignalManagerAgent
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 STORAGE_BUCKET = "midnight-documents"
 SIGNED_URL_TTL_SECONDS = 60 * 60
 _bucket_initialized = False
+logger = logging.getLogger("midnight.signal_activity")
+SIGNAL_MANAGER = SignalManagerAgent()
 
 
 class SupabaseStoreError(RuntimeError):
@@ -509,6 +513,69 @@ def count_activity_for_tenant(tenant_id: str, *, action: str | None = None) -> i
 
 def create_activity_event(*, tenant_id: str, action: str, policy_id: str | None = None) -> None:
     _insert_activity_log(tenant_id=tenant_id, action=action, policy_id=policy_id)
+
+
+def create_signal_activity_event(
+    *,
+    tenant_id: str | None,
+    event_type: str,
+    source: str,
+    summary: str,
+    user_id: str | None = None,
+    policy_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    if not str(tenant_id or "").strip():
+        logger.warning(
+            "signal_activity_skipped_missing_tenant",
+            extra={
+                "event_type": event_type,
+                "source": source,
+                "user_id": user_id,
+                "policy_id": policy_id,
+            },
+        )
+        return None
+
+    try:
+        signal = SIGNAL_MANAGER.run(
+            {
+                "event_type": event_type,
+                "tenant_id": str(tenant_id),
+                "user_id": user_id,
+                "source": source,
+                "summary": summary,
+                "metadata": metadata or {},
+            }
+        )
+    except AgentValidationError as exc:
+        logger.warning(
+            "signal_activity_validation_failed",
+            extra={
+                "tenant_id": tenant_id,
+                "event_type": event_type,
+                "source": source,
+                "user_id": user_id,
+                "policy_id": policy_id,
+                "error": str(exc),
+            },
+        )
+        return None
+
+    _insert_activity_log(
+        tenant_id=signal.tenant_id,
+        action=signal.signal_type.value,
+        policy_id=policy_id,
+    )
+    logger.info(
+        "signal_activity_emitted",
+        extra={
+            **signal.model_dump(),
+            "policy_id": policy_id,
+            "metadata": metadata or {},
+        },
+    )
+    return signal.model_dump()
 
 
 def get_tenant(tenant_id: str) -> dict[str, Any] | None:

@@ -42,6 +42,7 @@ from backend.storage.file_store import (
     SupabaseStoreError,
     count_activity_for_tenant,
     create_activity_event,
+    create_signal_activity_event,
     create_onboarding_session,
     create_tenant,
     get_onboarding_session,
@@ -254,6 +255,27 @@ def _go_framework_coverage(document: str, frameworks: list[str], title: str = ""
         return resp.json().get("frameworks", [])
     except Exception:
         return None
+
+
+def _emit_signal(
+    request: Request,
+    *,
+    tenant_id: str | None,
+    event_type: str,
+    source: str,
+    summary: str,
+    policy_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    create_signal_activity_event(
+        tenant_id=tenant_id,
+        user_id=getattr(request.state, "user_id", None),
+        event_type=event_type,
+        source=source,
+        summary=summary,
+        policy_id=policy_id,
+        metadata=metadata,
+    )
 
 
 @pipeline_router.get("/smoke-docx")
@@ -2074,6 +2096,7 @@ async def migrate_preview(
     industry: str = Form(default="Healthcare"),
     frameworks: str = Form(default="HIPAA,HITRUST"),
 ):
+    tenant = None
     _require_supported_file(source_file, "source_file")
     file_bytes = await source_file.read()
     if not file_bytes:
@@ -2106,11 +2129,36 @@ async def migrate_preview(
             organization_hint=str(tenant.get("name") or ""),
         )
     except HTTPException:
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="migration_failed",
+            source="pipeline.migrate.preview",
+            summary=f"Migration preview failed for {source_file.filename or 'uploaded document'}.",
+            metadata={"template_name": template_name, "frameworks": framework_list},
+        )
         raise
     except Exception as exc:  # pragma: no cover
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="migration_failed",
+            source="pipeline.migrate.preview",
+            summary=f"Migration preview failed for {source_file.filename or 'uploaded document'}.",
+            metadata={"template_name": template_name, "frameworks": framework_list, "error": str(exc)},
+        )
         raise HTTPException(status_code=500, detail=f"Extraction error: {exc}") from exc
 
     create_activity_event(tenant_id=tenant["id"], action="migrate_upload")
+    _emit_signal(
+        request,
+        tenant_id=tenant["id"],
+        event_type="migration_preview_completed",
+        source="pipeline.migrate.preview",
+        summary=f"Migration preview completed for {source_file.filename or 'uploaded document'}.",
+        policy_id=policy_data.get("_draft", {}).get("policy_id"),
+        metadata={"template_name": template_name, "frameworks": framework_list},
+    )
 
     policy_data["_session"] = {
         "source_filename": source_file.filename or "document",
@@ -2156,6 +2204,15 @@ async def migrate_generate(request: Request, payload: MigrateGenerateRequest):
         organization_hint=str(tenant.get("name") or ""),
         required_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
     )
+    _emit_signal(
+        request,
+        tenant_id=tenant["id"],
+        event_type="migration_completed",
+        source="pipeline.migrate.generate",
+        summary=f"Migration completed for {source_name}.",
+        policy_id=session.get("policy_id"),
+        metadata={"template_name": template_name, "frameworks": session.get("frameworks", [])},
+    )
 
     return _file_docx_response(
         tenant_id=tenant["id"],
@@ -2179,6 +2236,7 @@ async def migrate_document(
     industry: str = Form(default="Healthcare"),
     frameworks: str = Form(default="HIPAA,HITRUST"),
 ):
+    tenant = None
     upload = file or source_file
     if upload is None:
         raise HTTPException(status_code=400, detail="No document was uploaded.")
@@ -2213,11 +2271,36 @@ async def migrate_document(
             organization_hint=str(tenant.get("name") or ""),
         )
     except HTTPException:
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="migration_failed",
+            source="pipeline.migrate",
+            summary=f"Migration failed for {upload.filename or 'uploaded document'}.",
+            metadata={"template_name": template_name, "frameworks": framework_list},
+        )
         raise
     except Exception as exc:  # pragma: no cover
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="migration_failed",
+            source="pipeline.migrate",
+            summary=f"Migration failed for {upload.filename or 'uploaded document'}.",
+            metadata={"template_name": template_name, "frameworks": framework_list, "error": str(exc)},
+        )
         raise HTTPException(status_code=500, detail=f"Migration error: {exc}") from exc
 
     create_activity_event(tenant_id=tenant["id"], action="migrate_upload")
+    _emit_signal(
+        request,
+        tenant_id=tenant["id"],
+        event_type="migration_completed",
+        source="pipeline.migrate",
+        summary=f"Migration completed for {upload.filename or 'uploaded document'}.",
+        policy_id=policy_data.get("_draft", {}).get("policy_id"),
+        metadata={"template_name": template_name, "frameworks": framework_list},
+    )
 
     base_name = (upload.filename or "document").rsplit(".", 1)[0]
     return _file_docx_response(
@@ -2234,6 +2317,7 @@ async def migrate_document(
 
 @pipeline_router.post("/create/preview")
 async def create_preview(request: Request, payload: CreatePolicyRequest):
+    tenant = None
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
@@ -2243,8 +2327,24 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
             organization_hint=str(tenant.get("name") or ""),
         )
     except HTTPException:
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="policy_generation_failed",
+            source="pipeline.create.preview",
+            summary=f"Policy preview failed for {payload.policy_name}.",
+            metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks},
+        )
         raise
     except Exception as exc:  # pragma: no cover
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="policy_generation_failed",
+            source="pipeline.create.preview",
+            summary=f"Policy preview failed for {payload.policy_name}.",
+            metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks, "error": str(exc)},
+        )
         raise HTTPException(status_code=500, detail=f"Creation error: {exc}") from exc
 
     policy_data["_session"] = {
@@ -2306,7 +2406,26 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
             policy_id=session.get("policy_id"),
         )
     except SupabaseStoreError as exc:
+        _emit_signal(
+            request,
+            tenant_id=tenant["id"],
+            event_type="policy_generation_failed",
+            source="pipeline.create.generate",
+            summary=f"Policy generation failed for {policy_name}.",
+            policy_id=session.get("policy_id"),
+            metadata={"doc_type": doc_type, "frameworks": session.get("frameworks", []), "error": str(exc)},
+        )
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    _emit_signal(
+        request,
+        tenant_id=tenant["id"],
+        event_type="policy_generation_completed",
+        source="pipeline.create.generate",
+        summary=f"Policy generation completed for {policy_name}.",
+        policy_id=session.get("policy_id"),
+        metadata={"doc_type": doc_type, "frameworks": session.get("frameworks", [])},
+    )
 
     return _file_docx_response(
         tenant_id=tenant["id"],
@@ -2323,6 +2442,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
 
 @pipeline_router.post("/create")
 async def create_document(request: Request, payload: CreatePolicyRequest):
+    tenant = None
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
@@ -2333,9 +2453,35 @@ async def create_document(request: Request, payload: CreatePolicyRequest):
         )
         policy_data = _ensure_required_slots_or_400(policy_data)
     except HTTPException:
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="policy_generation_failed",
+            source="pipeline.create",
+            summary=f"Policy generation failed for {payload.policy_name}.",
+            metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks},
+        )
         raise
     except Exception as exc:  # pragma: no cover
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="policy_generation_failed",
+            source="pipeline.create",
+            summary=f"Policy generation failed for {payload.policy_name}.",
+            metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks, "error": str(exc)},
+        )
         raise HTTPException(status_code=500, detail=f"Creation error: {exc}") from exc
+
+    _emit_signal(
+        request,
+        tenant_id=tenant["id"],
+        event_type="policy_generation_completed",
+        source="pipeline.create",
+        summary=f"Policy generation completed for {payload.policy_name}.",
+        policy_id=policy_id,
+        metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks},
+    )
 
     output_name = f"{payload.policy_name.replace(' ', '_')}_v1.0.docx"
     return _file_docx_response(
@@ -2441,13 +2587,15 @@ async def analyze_document(
     frameworks: str = Form(default="HIPAA,PCI DSS,NIST CSF"),
 ):
     _require_supported_file(file)
+    tenant_id = None
 
     file_bytes = await file.read()
     if not file_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
-    _enforce_trial_limits(request, frameworks=framework_list, upload_action="analysis_upload")
+    tenant = _enforce_trial_limits(request, frameworks=framework_list, upload_action="analysis_upload")
+    tenant_id = tenant["id"]
     raw_text = _extract_text_from_upload(file_bytes, file.filename or "document")[:10000]
 
     normalized_frameworks, fw_context = build_framework_prompt_context(framework_list)
@@ -2479,10 +2627,34 @@ async def analyze_document(
         go_coverage = _go_framework_coverage(raw_text, normalized_frameworks, file.filename or "")
         if go_coverage:
             result["framework_coverage"] = go_coverage
+        _emit_signal(
+            request,
+            tenant_id=tenant_id,
+            event_type="framework_mapping_completed",
+            source="pipeline.analyze",
+            summary=f"Framework analysis completed for {file.filename or 'document'}.",
+            metadata={"frameworks": normalized_frameworks, "has_framework_coverage": bool(go_coverage)},
+        )
         return JSONResponse(content=result)
     except HTTPException:
+        _emit_signal(
+            request,
+            tenant_id=tenant_id,
+            event_type="framework_mapping_failed",
+            source="pipeline.analyze",
+            summary=f"Framework analysis failed for {file.filename or 'document'}.",
+            metadata={"frameworks": framework_list},
+        )
         raise
     except Exception as exc:  # pragma: no cover
+        _emit_signal(
+            request,
+            tenant_id=tenant_id,
+            event_type="framework_mapping_failed",
+            source="pipeline.analyze",
+            summary=f"Framework analysis failed for {file.filename or 'document'}.",
+            metadata={"frameworks": framework_list, "error": str(exc)},
+        )
         raise HTTPException(status_code=500, detail=f"Analysis error: {exc}") from exc
 
 
