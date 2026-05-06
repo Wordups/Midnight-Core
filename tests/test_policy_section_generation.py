@@ -4,9 +4,11 @@ from backend.api.routes import (
     POLICY_REQUIRED_SLOTS,
     _build_policy_payload_from_sections,
     _ensure_required_slots,
+    _normalize_policy_payload_or_400,
     _validate_generated_section,
 )
 from backend.core.json_parser import PolicySchemaError
+from fastapi import HTTPException
 
 
 class PolicySectionGenerationTests(unittest.TestCase):
@@ -89,6 +91,47 @@ class PolicySectionGenerationTests(unittest.TestCase):
             ],
         )
         self.assertEqual(_ensure_required_slots(payload), [])
+
+    def test_cleaner_backed_normalizer_preserves_metadata_fields(self):
+        normalized = _normalize_policy_payload_or_400(
+            {
+                "title": "IT Asset Disposal Policy",
+                "policy_name": "IT Asset Disposal Policy",
+                "organization": "Takeoff LLC / Midnight",
+                "status": "Draft",
+                "version": "1.0",
+                "policy_number": "OPS-001",
+                "sections": [
+                    {
+                        "slot_id": "purpose",
+                        "heading": "Purpose",
+                        "content": "Define why secure asset disposal is required.",
+                        "source_origin": "ai_generated",
+                    }
+                ],
+                "framework_mappings": {"HIPAA": []},
+            },
+            organization_hint="Takeoff LLC / Midnight",
+            required_frameworks=["HIPAA"],
+        )
+        self.assertEqual(normalized["policy_number"], "OPS-001")
+        self.assertEqual(normalized["version"], "1.0")
+        self.assertEqual(normalized["sections"][0]["source_origin"], "ai_generated")
+
+    def test_cleaner_backed_normalizer_returns_400_for_invalid_policy_payload(self):
+        with self.assertRaises(HTTPException) as ctx:
+            _normalize_policy_payload_or_400(
+                {
+                    "title": "Broken Policy",
+                    "organization": "Takeoff LLC / Midnight",
+                    "status": "Draft",
+                    "sections": [],
+                },
+                organization_hint="Takeoff LLC / Midnight",
+                required_frameworks=[],
+            )
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("Policy data is invalid", str(ctx.exception.detail))
 
 
 if __name__ == "__main__":

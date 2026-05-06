@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def utc_now() -> datetime:
@@ -52,13 +52,17 @@ class SignalOutput(BaseModel):
 
 
 class AgentPolicySection(BaseModel):
+    model_config = ConfigDict(extra="allow")
     slot_id: str = Field(..., min_length=1)
     heading: str = Field(..., min_length=1)
     content: str = Field(..., min_length=1)
     sort_order: Optional[int] = None
+    source_origin: Optional[str] = None
+    confidence_score: Optional[float] = None
 
 
 class AgentPolicyPayload(BaseModel):
+    model_config = ConfigDict(extra="allow")
     title: str = Field(..., min_length=1)
     organization: str = Field(..., min_length=1)
     status: str = Field(..., min_length=1)

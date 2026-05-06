@@ -27,6 +27,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
+from backend.agents import AgentValidationError, CleanerAgent
 from backend.core.framework_layer import (
     build_framework_mapping_rules,
     build_framework_prompt_context,
@@ -34,7 +35,6 @@ from backend.core.framework_layer import (
 from backend.core.json_parser import (
     ParsedModelOutputError,
     PolicySchemaError,
-    normalize_policy_payload,
     parse_model_json,
 )
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
@@ -68,6 +68,7 @@ except ImportError:  # pragma: no cover
 load_dotenv()
 
 logger = logging.getLogger("midnight.policy_json")
+CLEANER_AGENT = CleanerAgent()
 
 router = APIRouter()
 pipeline_router = APIRouter(prefix="/pipeline", tags=["pipeline"])
@@ -1133,20 +1134,19 @@ def _parse_policy_model_output(
     context: dict[str, object] | None = None,
 ) -> dict:
     try:
-        parsed = parse_model_json(raw_text)
-    except ParsedModelOutputError as exc:
+        cleaned = CLEANER_AGENT.run(
+            {
+                "raw_output": raw_text,
+                "required_frameworks": required_frameworks,
+            }
+        )
+        normalized = cleaned.model_dump()
+        if organization_hint and not str(normalized.get("organization") or "").strip():
+            normalized["organization"] = organization_hint
+        return normalized
+    except AgentValidationError as exc:
         _log_model_output_failure(flow=flow, raw_text=raw_text, error=exc, context=context)
         raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {exc}") from exc
-
-    try:
-        return normalize_policy_payload(
-            parsed,
-            organization_hint=organization_hint,
-            required_frameworks=required_frameworks,
-        )
-    except PolicySchemaError as exc:
-        _log_model_output_failure(flow=flow, raw_text=raw_text, error=exc, context=context)
-        raise HTTPException(status_code=502, detail=f"AI returned invalid policy schema: {exc}") from exc
 
 
 def _parse_generic_model_object(
@@ -1174,12 +1174,19 @@ def _normalize_policy_payload_or_400(
     required_frameworks: list[str] | None = None,
 ) -> dict:
     try:
-        return normalize_policy_payload(
-            policy_data,
-            organization_hint=organization_hint,
-            required_frameworks=required_frameworks,
+        raw_text = json.dumps(policy_data, ensure_ascii=False)
+        cleaned = CLEANER_AGENT.run(
+            {
+                "raw_output": raw_text,
+                "required_frameworks": required_frameworks,
+            }
         )
-    except PolicySchemaError as exc:
+        normalized = cleaned.model_dump()
+        normalized = _restore_section_metadata(policy_data, normalized)
+        if organization_hint and not str(normalized.get("organization") or "").strip():
+            normalized["organization"] = organization_hint
+        return normalized
+    except (AgentValidationError, TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=f"Policy data is invalid: {exc}") from exc
 
 
@@ -1197,6 +1204,39 @@ def _build_preview_text(policy_data: dict) -> str:
         if isinstance(candidate, str) and candidate.strip():
             return candidate.strip().replace("\n", " ")[:280]
     return "Document generated successfully."
+
+
+def _restore_section_metadata(
+    original_policy: dict[str, Any],
+    normalized_policy: dict[str, Any],
+) -> dict[str, Any]:
+    original_sections = original_policy.get("sections") if isinstance(original_policy.get("sections"), list) else []
+    normalized_sections = normalized_policy.get("sections") if isinstance(normalized_policy.get("sections"), list) else []
+    if not original_sections or not normalized_sections:
+        return normalized_policy
+
+    original_map: dict[str, dict[str, Any]] = {}
+    for section in original_sections:
+        if isinstance(section, dict):
+            slot_id = str(section.get("slot_id") or "").strip()
+            if slot_id:
+                original_map[slot_id] = section
+
+    restored_sections: list[dict[str, Any]] = []
+    for section in normalized_sections:
+        if not isinstance(section, dict):
+            restored_sections.append(section)
+            continue
+        slot_id = str(section.get("slot_id") or "").strip()
+        merged = dict(original_map.get(slot_id, {}))
+        for key, value in section.items():
+            if value is None and key in merged:
+                continue
+            merged[key] = value
+        restored_sections.append(merged)
+
+    normalized_policy["sections"] = restored_sections
+    return normalized_policy
 
 
 def _safe_text(value) -> str:
@@ -1866,6 +1906,11 @@ async def _generate_policy_data(
         metadata=metadata,
         sections=sections,
         section_errors=section_errors,
+    )
+    policy_payload = _normalize_policy_payload_or_400(
+        policy_payload,
+        organization_hint=metadata["organization"],
+        required_frameworks=metadata.get("selected_frameworks", []),
     )
     policy_payload["_draft"] = {"policy_id": policy_id}
     return policy_payload, policy_id
