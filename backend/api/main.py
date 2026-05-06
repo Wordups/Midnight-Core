@@ -23,9 +23,16 @@ import base64
 import json
 import os
 import re
+import requests
 from urllib.parse import urlencode
 
+from backend.core.beta_access import (
+    is_invite_delivery_failure,
+    manual_join_blocker,
+    normalize_email,
+)
 from backend.storage.supabase_client import supabase, supabase_admin
+from backend.storage.file_store import create_signal_activity_event, update_profile_membership
 from errors import register_exception_handlers
 from health import router as health_router
 from middleware.request_id import RequestIdMiddleware
@@ -81,6 +88,14 @@ class TokenExchangeRequest(BaseModel):
     access_token: str
 
 
+class BetaInviteRequest(BaseModel):
+    email: str
+
+
+class ManualTesterJoinRequest(BaseModel):
+    email: str
+
+
 POST_AUTH_REDIRECT = "/midnight_dashboard.html"
 
 
@@ -98,6 +113,10 @@ def _normalize_display_name(name: str | None, email: str | None) -> str:
 def _slugify_company_name(company_name: str) -> str:
     base = re.sub(r"[^a-z0-9]+", "-", company_name.strip().lower()).strip("-")
     return base or "organization"
+
+
+def _normalize_email(email: str) -> str:
+    return normalize_email(email)
 
 
 def _cookie_max_age(expires_in: int | None) -> int:
@@ -203,6 +222,110 @@ def _count_profiles_for_tenant(tenant_id: str) -> int:
     except Exception as exc:
         raise _database_setup_error(exc) from exc
     return len(response.data or [])
+
+
+def _tenant_has_rows(table_name: str, tenant_id: str) -> bool:
+    try:
+        response = (
+            supabase_admin.table(table_name)
+            .select("id")
+            .eq("tenant_id", tenant_id)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        raise _database_setup_error(exc) from exc
+    return bool(response.data)
+
+
+def _load_profile_by_email(email: str) -> dict[str, Any] | None:
+    try:
+        response = (
+            supabase_admin.table("profiles")
+            .select("id, tenant_id, email, name, organization_name, role, created_at")
+            .eq("email", email)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        raise _database_setup_error(exc) from exc
+    return _first_row(response.data)
+
+
+def _require_admin_role(request: Request) -> dict[str, Any]:
+    auth_context = getattr(request.state, "auth_context", None) or {}
+    role = str(auth_context.get("role") or "").strip().lower()
+    if role not in {"owner", "admin"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only workspace owners can manage beta tester access.",
+        )
+    return auth_context
+
+
+def _ensure_seat_available_for_join(tenant_id: str, plan_type: str | None) -> None:
+    if str(plan_type or "").lower() != "trial":
+        return
+    if _count_profiles_for_tenant(tenant_id) >= TRIAL_MAX_USERS:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Trial plans support only {TRIAL_MAX_USERS} user. Upgrade to add more seats.",
+        )
+
+
+def _manual_join_blocker(*, target_profile: dict[str, Any], destination_tenant_id: str) -> str | None:
+    source_tenant_id = str(target_profile.get("tenant_id") or "").strip()
+    return manual_join_blocker(
+        source_tenant_id=source_tenant_id,
+        destination_tenant_id=destination_tenant_id,
+        profile_count=_count_profiles_for_tenant(source_tenant_id) if source_tenant_id else 0,
+        has_policies=_tenant_has_rows("policies", source_tenant_id) if source_tenant_id else False,
+        has_documents=_tenant_has_rows("documents", source_tenant_id) if source_tenant_id else False,
+    )
+
+
+def _extract_supabase_error_detail(response: requests.Response) -> str:
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = {}
+    return (
+        str(payload.get("msg") or payload.get("message") or payload.get("error_description") or payload.get("error") or "").strip()
+        or (response.text or "Supabase request failed.").strip()
+    )
+
+
+def _is_invite_delivery_failure(detail: str) -> bool:
+    return is_invite_delivery_failure(detail)
+
+
+def _emit_beta_access_signal(
+    *,
+    tenant_id: str | None,
+    user_id: str | None,
+    source: str,
+    event_type: str,
+    summary: str,
+) -> None:
+    if not tenant_id:
+        logger.warning(
+            "Skipping beta access signal without tenant scope",
+            extra={"source": source, "event_type": event_type},
+        )
+        return
+    try:
+        create_signal_activity_event(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            source=source,
+            event_type=event_type,
+            summary=summary,
+        )
+    except Exception:
+        logger.exception(
+            "Failed to persist beta access signal",
+            extra={"tenant_id": tenant_id, "source": source, "event_type": event_type},
+        )
 
 
 def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
@@ -402,7 +525,7 @@ async def login(payload: LoginRequest, response: Response):
 
 @app.post("/auth/signup")
 async def signup(payload: SignupRequest, response: Response):
-    normalized_email = payload.email.strip().lower()
+    normalized_email = _normalize_email(payload.email)
     try:
         auth_response = supabase.auth.sign_up(
             {
@@ -537,7 +660,7 @@ async def magic_link(request: Request, payload: MagicLinkRequest):
     try:
         supabase.auth.sign_in_with_otp(
             {
-                "email": payload.email.strip().lower(),
+                "email": _normalize_email(payload.email),
                 "create_user": True,
                 "options": {
                     "email_redirect_to": redirect_to,
@@ -596,6 +719,119 @@ async def logout(request: Request, response: Response):
         path="/",
     )
     return {"authenticated": False}
+
+
+@app.post("/auth/beta/invite", dependencies=[Depends(verify_access)])
+async def invite_beta_tester(request: Request, payload: BetaInviteRequest):
+    auth_context = _require_admin_role(request)
+    tenant_id = str(auth_context.get("tenant_id") or "")
+    plan_type = str(auth_context.get("plan_type") or "")
+    user_id = str(auth_context.get("user_id") or "")
+    _ensure_seat_available_for_join(tenant_id, plan_type)
+
+    normalized_email = _normalize_email(payload.email)
+    redirect_to = _public_app_url(request, "/login.html?mode=signup")
+    response = requests.post(
+        f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/invite",
+        headers={
+            "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "email": normalized_email,
+            "data": {
+                "organization_name": auth_context.get("organization_name"),
+                "invited_by_user_id": user_id,
+            },
+            "redirect_to": redirect_to,
+        },
+        timeout=30,
+    )
+    if response.status_code >= 400:
+        detail = _extract_supabase_error_detail(response)
+        _emit_beta_access_signal(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            source="auth.beta.invite",
+            event_type="invite_failed",
+            summary=f"Invite email failed for {normalized_email}: {detail}",
+        )
+        if _is_invite_delivery_failure(detail):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Invite email could not be sent. Use manual signup path while SMTP is being verified.",
+            )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+    return {
+        "invited": True,
+        "email": normalized_email,
+        "redirect_to": redirect_to,
+        "message": "Invite created. If email delivery is delayed, ask the tester to self-sign up and use the manual join path.",
+    }
+
+
+@app.post("/auth/beta/manual-join", dependencies=[Depends(verify_access)])
+async def manual_join_beta_tester(request: Request, payload: ManualTesterJoinRequest):
+    auth_context = _require_admin_role(request)
+    destination_tenant_id = str(auth_context.get("tenant_id") or "")
+    user_id = str(auth_context.get("user_id") or "")
+    plan_type = str(auth_context.get("plan_type") or "")
+    organization_name = str(auth_context.get("organization_name") or "Midnight Workspace")
+    _ensure_seat_available_for_join(destination_tenant_id, plan_type)
+
+    normalized_email = _normalize_email(payload.email)
+    target_profile = _load_profile_by_email(normalized_email)
+    if target_profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tester account not found. Ask them to complete normal signup first, then retry manual join.",
+        )
+    if str(target_profile.get("id") or "") == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use normal onboarding for your own account. Manual join is for additional testers.",
+        )
+
+    current_tenant_id = str(target_profile.get("tenant_id") or "")
+    if current_tenant_id == destination_tenant_id:
+        return {
+            "joined": False,
+            "already_member": True,
+            "tenant_id": destination_tenant_id,
+            "email": normalized_email,
+            "message": "Tester already belongs to this tenant.",
+        }
+
+    blocker = _manual_join_blocker(target_profile=target_profile, destination_tenant_id=destination_tenant_id)
+    if blocker:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=blocker)
+
+    try:
+        updated_profile = update_profile_membership(
+            user_id=str(target_profile["id"]),
+            tenant_id=destination_tenant_id,
+            organization_name=organization_name,
+        )
+    except Exception as exc:
+        raise _database_setup_error(exc) from exc
+
+    _emit_beta_access_signal(
+        tenant_id=destination_tenant_id,
+        user_id=user_id,
+        source="auth.beta.manual_join",
+        event_type="user_onboarding_manual_join",
+        summary=f"Added beta tester {normalized_email} to tenant {destination_tenant_id}.",
+    )
+
+    return {
+        "joined": True,
+        "tenant_id": destination_tenant_id,
+        "email": normalized_email,
+        "user_id": updated_profile.get("id"),
+        "message": "Tester linked to this tenant. Ask them to sign in again to refresh workspace access.",
+    }
 
 
 @app.get("/onboarding/plan")
