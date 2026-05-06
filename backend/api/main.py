@@ -259,6 +259,10 @@ def _build_session_payload(
     user_record: dict[str, Any] | None = None,
     organization: dict[str, Any] | None = None,
     auth_user: Any | None = None,
+    profile_exists: bool | None = None,
+    tenant_assigned: bool | None = None,
+    access_state: str | None = None,
+    access_detail: str | None = None,
 ) -> dict[str, Any]:
     email = (user_record or {}).get("email") or getattr(auth_user, "email", None)
     user_name = (user_record or {}).get("name")
@@ -275,6 +279,11 @@ def _build_session_payload(
         or "Midnight Workspace"
     )
     plan_type = (organization or {}).get("plan_type") or "trial"
+    has_profile = profile_exists if profile_exists is not None else bool(user_record)
+    has_tenant = tenant_assigned if tenant_assigned is not None else bool(tenant_id)
+    resolved_access_state = access_state or (
+        "authorized" if authenticated and has_profile and has_tenant else "logged_out"
+    )
 
     payload = {
         "authenticated": authenticated,
@@ -289,7 +298,12 @@ def _build_session_payload(
         "role": role,
         "plan_type": plan_type,
         "environment": settings.ENVIRONMENT,
+        "profile_exists": has_profile,
+        "tenant_assigned": has_tenant,
+        "access_state": resolved_access_state,
     }
+    if access_detail:
+        payload["access_detail"] = access_detail
     if authenticated:
         payload["redirect_to"] = POST_AUTH_REDIRECT
     return payload
@@ -593,13 +607,39 @@ async def onboarding_plan_entry():
 async def session_status(request: Request):
     access_token = request.cookies.get(session_cookie_name, "").strip()
     if not access_token:
-        return _build_session_payload(authenticated=False)
+        return _build_session_payload(
+            authenticated=False,
+            profile_exists=False,
+            tenant_assigned=False,
+            access_state="logged_out",
+        )
 
     try:
         user_record, organization, auth_user = _authenticate_token(access_token)
     except HTTPException as exc:
         if exc.status_code == status.HTTP_401_UNAUTHORIZED:
-            return _build_session_payload(authenticated=False)
+            return _build_session_payload(
+                authenticated=False,
+                profile_exists=False,
+                tenant_assigned=False,
+                access_state="logged_out",
+            )
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            try:
+                auth_user_response = supabase.auth.get_user(access_token)
+                auth_user = getattr(auth_user_response, "user", None)
+            except AuthApiError:
+                auth_user = None
+            detail = str(exc.detail or "")
+            access_state = "upgrade_required" if "upgrade" in detail.lower() or "trial plans" in detail.lower() else "needs_onboarding"
+            return _build_session_payload(
+                authenticated=auth_user is not None,
+                auth_user=auth_user,
+                profile_exists=False,
+                tenant_assigned=False,
+                access_state=access_state,
+                access_detail=detail,
+            )
         raise
 
     return _build_session_payload(
@@ -607,6 +647,9 @@ async def session_status(request: Request):
         user_record=user_record,
         organization=organization,
         auth_user=auth_user,
+        profile_exists=True,
+        tenant_assigned=bool((user_record or {}).get("tenant_id")),
+        access_state="authorized",
     )
 
 

@@ -2210,6 +2210,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'POLICY',
     name: 'Policy',
+    route: '/create_policy.html',
     tag: 'Shield',
     description: 'Compliance policy with framework mapping and approval workflow.',
     kicker: 'Policy authoring lane',
@@ -2222,6 +2223,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'SOP',
     name: 'Procedure / SOP',
+    route: '/create_procedure.html',
     tag: 'List steps',
     description: 'Step-by-step process with screenshots, video clips, and role assignment.',
     kicker: 'Operational execution lane',
@@ -2234,6 +2236,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'STANDARD',
     name: 'Standard',
+    route: '/create_standard.html',
     tag: 'Ruler',
     description: 'Technical requirements with control mapping and evidence linking.',
     kicker: 'Technical baseline lane',
@@ -2246,6 +2249,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'PROCESS_FLOW',
     name: 'Process Flow',
+    route: '/create_process_flow.html',
     tag: 'Diagram',
     description: 'Visual storyboard with swimlane diagrams and PowerPoint export.',
     kicker: 'Flow narrative lane',
@@ -2258,6 +2262,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'TRAINING_MODULE',
     name: 'Training Module',
+    route: '/create_training.html',
     tag: 'Graduation',
     description: 'Slide deck with quiz generation and completion tracking.',
     kicker: 'Enablement lane',
@@ -2270,6 +2275,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'INCIDENT_RUNBOOK',
     name: 'Incident Runbook',
+    route: '/create_incident_runbook.html',
     tag: 'Alert',
     description: 'Response playbook with trigger conditions, escalation paths, and timers.',
     kicker: 'Response lane',
@@ -2282,6 +2288,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'RISK_ASSESSMENT',
     name: 'Risk Assessment',
+    route: '/create_risk_assessment.html',
     tag: 'Chart',
     description: 'Risk register with likelihood, impact matrix, and control gap mapping.',
     kicker: 'Risk lane',
@@ -2294,6 +2301,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'AUDIT_PACKAGE',
     name: 'Audit Package',
+    route: '/create_audit_package.html',
     tag: 'Clipboard',
     description: 'Evidence collection with framework checklist and findings log.',
     kicker: 'Audit lane',
@@ -2306,6 +2314,7 @@ const CREATE_DOC_TYPES = [
   {
     key: 'AI_GOVERNANCE',
     name: 'AI Governance',
+    route: '/create_ai_governance.html',
     tag: 'Brain / Circuit',
     description: 'AI system registry, model cards, risk classification, and regulatory mapping.',
     kicker: 'AI oversight lane',
@@ -2324,6 +2333,7 @@ let draggingSopStepId = null;
 let createMediaAssets = [];
 let createMediaAssetSeed = 1;
 let exportStudioReady = false;
+let createWorkflowFocusMode = false;
 
 const EXPORT_STUDIO_CONFIG = {
   POLICY: [
@@ -2375,11 +2385,31 @@ function getCreateDocTypeConfig(key) {
   return CREATE_DOC_TYPES.find(type => type.key === key) || CREATE_DOC_TYPES[0];
 }
 
+function getCreateLaneQueryKey() {
+  const params = new URLSearchParams(window.location.search);
+  return (params.get('create_lane') || '').toUpperCase();
+}
+
+function isCreateWorkflowFocused() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('create_focus') === '1' && CREATE_DOC_TYPES.some(type => type.key === getCreateLaneQueryKey());
+}
+
+function getCreateWorkflowPageTitle(type) {
+  return type.key === 'POLICY' ? 'Create Policy' : `Create ${type.name}`;
+}
+
+function openCreateWorkflowRoute(key) {
+  const type = getCreateDocTypeConfig(key);
+  if (!type?.route) return;
+  window.location.href = type.route;
+}
+
 function renderCreateDocTypeSelector() {
   const selector = document.getElementById('cp-type-selector');
   if (!selector) return;
   selector.innerHTML = CREATE_DOC_TYPES.map(type => `
-    <button class="studio-type-card${selectedCreateDocType === type.key ? ' active' : ''}" type="button" onclick="selectCreateDocType('${type.key}')">
+    <button class="studio-type-card${selectedCreateDocType === type.key ? ' active' : ''}" type="button" onclick="openCreateWorkflowRoute('${type.key}')">
       <div class="studio-type-head">
         <span class="studio-type-icon">${type.icon}</span>
         <span class="studio-type-tag">${type.tag}</span>
@@ -2391,6 +2421,11 @@ function renderCreateDocTypeSelector() {
 }
 
 function resetCreateStudio() {
+  if (createWorkflowFocusMode) {
+    const targetWindow = window.top && window.top !== window.self ? window.top : window;
+    targetWindow.location.href = '/midnight_dashboard.html';
+    return;
+  }
   selectedCreateDocType = null;
   exportStudioReady = false;
   const shell = document.getElementById('cp-workspace-shell');
@@ -2450,6 +2485,26 @@ function selectCreateDocType(key) {
   renderExportStudio();
   if (type.key === 'SOP') renderSopBuilder();
   if (type.key === 'AI_GOVERNANCE') refreshAiGovernanceSummary();
+}
+
+function applyCreateWorkflowRoute() {
+  const selectorCard = document.querySelector('#view-create .studio-selector-card');
+  const backBtn = document.querySelector('#view-create .studio-back-btn');
+  createWorkflowFocusMode = isCreateWorkflowFocused();
+
+  if (!createWorkflowFocusMode) {
+    if (selectorCard) selectorCard.style.display = '';
+    if (backBtn) backBtn.textContent = 'Back to Selector';
+    return;
+  }
+
+  const key = getCreateLaneQueryKey();
+  const type = getCreateDocTypeConfig(key);
+  if (selectorCard) selectorCard.style.display = 'none';
+  if (backBtn) backBtn.textContent = 'Back to Create Home';
+  showView('create', document.getElementById('nav-create'), getCreateWorkflowPageTitle(type));
+  selectCreateDocType(type.key);
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function createEmptySopStep() {
@@ -4399,6 +4454,7 @@ wireCreatePolicyDateDefaults();
 renderCreateDocTypeSelector();
 resetCreateStudio();
 ensureAuthenticated().then(() => {
+  applyCreateWorkflowRoute();
   refreshDashboardData().catch(() => {});
 }).catch(() => {
   // ensureAuthenticated already redirected to /login.html
