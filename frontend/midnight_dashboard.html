@@ -313,11 +313,12 @@
   .build-view { max-width: min(1540px, calc(100vw - 320px)); }
   #view-create .content {
     padding: 24px 34px 34px;
+    width: 100%;
   }
   #view-create .build-view {
     width: 100%;
-    max-width: min(1760px, calc(100vw - 120px));
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
   }
   .build-header { margin-bottom: 28px; }
   .build-title { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
@@ -553,6 +554,9 @@
     gap: 28px;
     align-items: start;
     padding: 36px;
+    width: min(1720px, 100%);
+    max-width: min(1720px, 100%);
+    margin-inline: auto;
   }
   #view-create .studio-shell {
     display: flex;
@@ -560,7 +564,10 @@
     gap: 28px;
   }
   #view-create .studio-shell.selector-home {
-    display: block;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    max-width: none;
   }
   #view-create .studio-shell,
   #view-create .studio-workspace-card,
