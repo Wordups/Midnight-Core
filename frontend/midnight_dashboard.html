@@ -312,11 +312,12 @@
   /* BUILD VIEW */
   .build-view { max-width: min(1540px, calc(100vw - 320px)); }
   #view-create .content {
-    padding-right: 28px;
+    padding: 24px 34px 34px;
   }
   #view-create .build-view {
     width: 100%;
-    max-width: none;
+    max-width: min(1760px, calc(100vw - 120px));
+    margin: 0 auto;
   }
   .build-header { margin-bottom: 28px; }
   .build-title { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
@@ -547,15 +548,19 @@
     max-width: none;
   }
   #view-create .studio-selector-card.selector-launch-mode {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
     padding: 36px;
   }
   #view-create .studio-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.72fr);
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
   }
   #view-create .studio-shell.selector-home {
-    display: grid;
+    display: block;
   }
   #view-create .studio-shell,
   #view-create .studio-workspace-card,
@@ -600,12 +605,19 @@
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 18px;
   }
+  #view-create .studio-selector-card.selector-launch-mode .studio-selector-head {
+    margin-bottom: 0;
+    align-self: start;
+  }
+  #view-create .studio-selector-card.selector-launch-mode .studio-type-grid {
+    align-self: start;
+  }
   #view-create .studio-type-card {
     min-height: 210px;
     text-decoration: none;
   }
   #view-create .studio-launch-aside {
-    display: block;
+    display: none !important;
   }
   #view-create .studio-launch-list {
     display: grid;
@@ -634,6 +646,15 @@
   #view-create .media-studio-shell,
   #view-create .export-studio-shell {
     grid-column: 1 / -1;
+  }
+  @media (max-width: 1380px) {
+    #view-create .build-view {
+      max-width: none;
+      margin: 0;
+    }
+    #view-create .studio-selector-card.selector-launch-mode {
+      grid-template-columns: 1fr;
+    }
   }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
@@ -2472,11 +2493,13 @@ function getCreateWorkflowPageTitle(type) {
 function setCreateSelectorLaunchState() {
   const selectorCard = document.querySelector('#view-create .studio-selector-card');
   const launchAside = document.querySelector('#view-create .studio-launch-aside');
+  const shellRoot = document.querySelector('#view-create .studio-shell');
   const shell = document.getElementById('cp-workspace-shell');
   const mediaShell = document.getElementById('cp-media-studio');
   const exportShell = document.getElementById('cp-export-studio');
   if (selectorCard) selectorCard.classList.add('selector-launch-mode');
-  if (launchAside) launchAside.style.display = '';
+  if (shellRoot) shellRoot.classList.add('selector-home');
+  if (launchAside) launchAside.style.display = 'none';
   if (shell) {
     shell.classList.remove('active');
     shell.style.display = 'none';
@@ -2495,10 +2518,12 @@ function setCreateSelectorLaunchState() {
 function clearCreateSelectorLaunchState() {
   const selectorCard = document.querySelector('#view-create .studio-selector-card');
   const launchAside = document.querySelector('#view-create .studio-launch-aside');
+  const shellRoot = document.querySelector('#view-create .studio-shell');
   const shell = document.getElementById('cp-workspace-shell');
   const mediaShell = document.getElementById('cp-media-studio');
   const exportShell = document.getElementById('cp-export-studio');
   if (selectorCard) selectorCard.classList.remove('selector-launch-mode');
+  if (shellRoot) shellRoot.classList.remove('selector-home');
   if (launchAside) launchAside.style.display = 'none';
   if (shell) shell.style.display = '';
   if (mediaShell) mediaShell.style.display = '';
@@ -2606,6 +2631,10 @@ function applyCreateWorkflowRoute() {
   if (!createWorkflowFocusMode) {
     if (selectorCard) selectorCard.style.display = '';
     if (backBtn) backBtn.textContent = 'Back to Selector';
+    selectedCreateDocType = null;
+    const selectedPill = document.getElementById('cp-selected-type-pill');
+    if (selectedPill) selectedPill.textContent = 'Choose a lane';
+    renderCreateDocTypeSelector();
     setCreateSelectorLaunchState();
     return;
   }
