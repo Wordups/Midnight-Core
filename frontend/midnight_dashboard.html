@@ -549,6 +549,14 @@
   #view-create .studio-selector-card.selector-launch-mode {
     padding: 36px;
   }
+  #view-create .studio-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.72fr);
+    align-items: start;
+  }
+  #view-create .studio-shell.selector-home {
+    display: grid;
+  }
   #view-create .studio-shell,
   #view-create .studio-workspace-card,
   #view-create .studio-selector-card,
@@ -595,6 +603,37 @@
   #view-create .studio-type-card {
     min-height: 210px;
     text-decoration: none;
+  }
+  #view-create .studio-launch-aside {
+    display: block;
+  }
+  #view-create .studio-launch-list {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  #view-create .studio-launch-item {
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+  }
+  #view-create .studio-launch-item-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    font-family: var(--font-body);
+  }
+  #view-create .studio-launch-item-copy {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text2);
+  }
+  #view-create .studio-workspace-card,
+  #view-create .media-studio-shell,
+  #view-create .export-studio-shell {
+    grid-column: 1 / -1;
   }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
@@ -1158,6 +1197,26 @@
               <div class="studio-selected-pill" id="cp-selected-type-pill">No type selected</div>
             </div>
             <div class="studio-type-grid" id="cp-type-selector"></div>
+          </div>
+          <div class="studio-launch-aside">
+            <div class="studio-panel">
+              <div class="studio-panel-title">What Happens Next</div>
+              <div class="studio-panel-copy">Selecting a lane now routes you into a dedicated workspace instead of stacking the whole build flow under these cards.</div>
+              <div class="studio-launch-list">
+                <div class="studio-launch-item">
+                  <div class="studio-launch-item-title">Standalone authoring workspace</div>
+                  <div class="studio-launch-item-copy">Each document type opens in its own focused module with cleaner spacing and step-by-step navigation.</div>
+                </div>
+                <div class="studio-launch-item">
+                  <div class="studio-launch-item-title">Shared tenant guardrails</div>
+                  <div class="studio-launch-item-copy">Auth, tenant checks, and existing backend generation routes stay the same across every lane.</div>
+                </div>
+                <div class="studio-launch-item">
+                  <div class="studio-launch-item-title">Policy lane stays live</div>
+                  <div class="studio-launch-item-copy">Policy preview and export still submit to the current backend pipeline without changing your working policy engine.</div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="studio-workspace-card" id="cp-workspace-shell">
             <div class="studio-workspace-head">
@@ -2412,10 +2471,12 @@ function getCreateWorkflowPageTitle(type) {
 
 function setCreateSelectorLaunchState() {
   const selectorCard = document.querySelector('#view-create .studio-selector-card');
+  const launchAside = document.querySelector('#view-create .studio-launch-aside');
   const shell = document.getElementById('cp-workspace-shell');
   const mediaShell = document.getElementById('cp-media-studio');
   const exportShell = document.getElementById('cp-export-studio');
   if (selectorCard) selectorCard.classList.add('selector-launch-mode');
+  if (launchAside) launchAside.style.display = '';
   if (shell) {
     shell.classList.remove('active');
     shell.style.display = 'none';
@@ -2433,10 +2494,12 @@ function setCreateSelectorLaunchState() {
 
 function clearCreateSelectorLaunchState() {
   const selectorCard = document.querySelector('#view-create .studio-selector-card');
+  const launchAside = document.querySelector('#view-create .studio-launch-aside');
   const shell = document.getElementById('cp-workspace-shell');
   const mediaShell = document.getElementById('cp-media-studio');
   const exportShell = document.getElementById('cp-export-studio');
   if (selectorCard) selectorCard.classList.remove('selector-launch-mode');
+  if (launchAside) launchAside.style.display = 'none';
   if (shell) shell.style.display = '';
   if (mediaShell) mediaShell.style.display = '';
   if (exportShell) exportShell.style.display = '';
