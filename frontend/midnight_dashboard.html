@@ -582,9 +582,12 @@
     padding: 28px;
   }
   #view-create .media-studio-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
     gap: 20px;
     align-items: stretch;
+  }
+  #view-create .media-studio-grid.assets-empty {
+    grid-template-columns: minmax(0, 1fr);
   }
   #view-create .media-studio-tools {
     grid-template-columns: repeat(3, minmax(280px, 1fr));
@@ -593,6 +596,14 @@
   #view-create .media-studio-grid > .studio-panel {
     min-height: 100%;
     width: 100%;
+  }
+  #view-create .media-studio-grid > .studio-panel:last-child {
+    max-width: 400px;
+    justify-self: end;
+  }
+  #view-create .media-studio-grid.assets-empty > .studio-panel:last-child {
+    max-width: none;
+    justify-self: stretch;
   }
   #view-create .media-tool-card {
     min-height: 320px;
@@ -2909,7 +2920,9 @@ function refreshAiGovernanceSummary() {
 
 function renderCreateMediaStudio() {
   const stack = document.getElementById('cp-media-asset-stack');
+  const grid = document.querySelector('#cp-media-studio .media-studio-grid');
   if (!stack) return;
+  if (grid) grid.classList.toggle('assets-empty', !createMediaAssets.length);
   if (!createMediaAssets.length) {
     stack.innerHTML = '<div class="media-empty-state">No screenshots, clips, or diagrams are attached yet. Add media here and it will stay associated with the selected document lane.</div>';
     return;
