@@ -141,9 +141,9 @@ body {
 .wf-shell {
   flex: 1;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) 320px;
-  gap: 28px;
-  padding: 28px;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  gap: 24px;
+  padding: 24px 28px 32px;
 }
 
 .wf-sidebar,
@@ -239,7 +239,7 @@ body {
 }
 
 .wf-main-card {
-  padding: 28px;
+  padding: 32px;
   min-height: calc(100vh - 140px);
 }
 
@@ -281,14 +281,14 @@ body {
 }
 
 .wf-grid.three {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
 }
 
 .wf-card {
   background: var(--wf-surface-alt);
   border: 1px solid var(--wf-border);
   border-radius: 18px;
-  padding: 22px;
+  padding: 26px;
 }
 
 .wf-card h3,
@@ -307,7 +307,7 @@ body {
 
 .wf-field-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
   gap: 18px;
 }
 
@@ -536,6 +536,19 @@ body {
   background: rgba(255,255,255,0.015);
   color: var(--wf-text-soft);
   line-height: 1.7;
+}
+
+@media (min-width: 1600px) {
+  .wf-shell {
+    grid-template-columns: 220px minmax(0, 1fr) 300px;
+    padding-inline: 34px;
+  }
+  .wf-main-card {
+    padding: 38px 40px;
+  }
+  .wf-grid.three {
+    grid-template-columns: repeat(3, minmax(280px, 1fr));
+  }
 }
 
 @media (max-width: 1360px) {

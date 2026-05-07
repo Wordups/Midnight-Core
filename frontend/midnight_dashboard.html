@@ -546,6 +546,9 @@
   #view-create .studio-workspace-head {
     max-width: none;
   }
+  #view-create .studio-selector-card.selector-launch-mode {
+    padding: 36px;
+  }
   #view-create .studio-shell,
   #view-create .studio-workspace-card,
   #view-create .studio-selector-card,
@@ -584,6 +587,14 @@
   }
   #view-create .export-card {
     min-height: 260px;
+  }
+  #view-create .studio-type-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+  }
+  #view-create .studio-type-card {
+    min-height: 210px;
+    text-decoration: none;
   }
   .form-section { margin-bottom: 24px; }
   .form-section-title { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
@@ -2399,24 +2410,61 @@ function getCreateWorkflowPageTitle(type) {
   return type.key === 'POLICY' ? 'Create Policy' : `Create ${type.name}`;
 }
 
+function setCreateSelectorLaunchState() {
+  const selectorCard = document.querySelector('#view-create .studio-selector-card');
+  const shell = document.getElementById('cp-workspace-shell');
+  const mediaShell = document.getElementById('cp-media-studio');
+  const exportShell = document.getElementById('cp-export-studio');
+  if (selectorCard) selectorCard.classList.add('selector-launch-mode');
+  if (shell) {
+    shell.classList.remove('active');
+    shell.style.display = 'none';
+  }
+  if (mediaShell) {
+    mediaShell.classList.remove('active');
+    mediaShell.style.display = 'none';
+  }
+  if (exportShell) {
+    exportShell.classList.remove('active');
+    exportShell.style.display = 'none';
+  }
+  document.querySelectorAll('#view-create .studio-panel-view').forEach(panel => panel.style.display = 'none');
+}
+
+function clearCreateSelectorLaunchState() {
+  const selectorCard = document.querySelector('#view-create .studio-selector-card');
+  const shell = document.getElementById('cp-workspace-shell');
+  const mediaShell = document.getElementById('cp-media-studio');
+  const exportShell = document.getElementById('cp-export-studio');
+  if (selectorCard) selectorCard.classList.remove('selector-launch-mode');
+  if (shell) shell.style.display = '';
+  if (mediaShell) mediaShell.style.display = '';
+  if (exportShell) exportShell.style.display = '';
+}
+
 function openCreateWorkflowRoute(key) {
   const type = getCreateDocTypeConfig(key);
   if (!type?.route) return;
-  window.location.href = type.route;
+  window.location.assign(type.route);
+}
+
+function handleCreateLaneNavigation(event, key) {
+  if (event) event.preventDefault();
+  openCreateWorkflowRoute(key);
 }
 
 function renderCreateDocTypeSelector() {
   const selector = document.getElementById('cp-type-selector');
   if (!selector) return;
   selector.innerHTML = CREATE_DOC_TYPES.map(type => `
-    <button class="studio-type-card${selectedCreateDocType === type.key ? ' active' : ''}" type="button" onclick="openCreateWorkflowRoute('${type.key}')">
+    <a class="studio-type-card${selectedCreateDocType === type.key ? ' active' : ''}" href="${type.route}" onclick="handleCreateLaneNavigation(event, '${type.key}')">
       <div class="studio-type-head">
         <span class="studio-type-icon">${type.icon}</span>
         <span class="studio-type-tag">${type.tag}</span>
       </div>
       <div class="studio-type-name">${type.name}</div>
       <div class="studio-type-desc">${type.description}</div>
-    </button>
+    </a>
   `).join('');
 }
 
@@ -2495,11 +2543,13 @@ function applyCreateWorkflowRoute() {
   if (!createWorkflowFocusMode) {
     if (selectorCard) selectorCard.style.display = '';
     if (backBtn) backBtn.textContent = 'Back to Selector';
+    setCreateSelectorLaunchState();
     return;
   }
 
   const key = getCreateLaneQueryKey();
   const type = getCreateDocTypeConfig(key);
+  clearCreateSelectorLaunchState();
   if (selectorCard) selectorCard.style.display = 'none';
   if (backBtn) backBtn.textContent = 'Back to Create Home';
   showView('create', document.getElementById('nav-create'), getCreateWorkflowPageTitle(type));
