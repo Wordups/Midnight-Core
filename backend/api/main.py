@@ -893,11 +893,13 @@ from backend.api.routes import router as pipeline_router
 from backend.api.dashboard import router as dashboard_router
 from backend.api.smart_scan import router as smart_scan_router
 from backend.bird_eye.api import router as bird_eye_router
+from backend.api.agent_ops import agent_ops_router
 
 app.include_router(pipeline_router, dependencies=[Depends(verify_access)])
 app.include_router(dashboard_router, dependencies=[Depends(verify_access)])
 app.include_router(smart_scan_router, dependencies=[Depends(verify_access)])
 app.include_router(bird_eye_router, dependencies=[Depends(verify_access)])
+app.include_router(agent_ops_router, dependencies=[Depends(verify_access)])
 
 
 @app.get("/")

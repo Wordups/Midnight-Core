@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Midnight — Agent Ops Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06101b;
+    --bg2: #0c1726;
+    --bg3: #122033;
+    --bg4: #16283f;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #ffffff;
+    --text2: rgba(255,255,255,0.88);
+    --text3: rgba(188,209,234,0.62);
+    --green: #00e89a;
+    --green-bg: rgba(0,232,154,0.08);
+    --amber: #faaa28;
+    --amber-bg: rgba(250,170,40,0.1);
+    --red: #ff6b35;
+    --red-bg: rgba(255,107,53,0.08);
+    --blue: #00d4f5;
+    --blue-bg: rgba(0,212,245,0.07);
+    --accent: #00d4f5;
+    --shadow-card: 0 18px 48px rgba(0,0,0,0.24);
+    --font-display: 'Bebas Neue', display;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(0,212,245,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,232,154,0.04) 0%, transparent 60%);
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 36px 28px 72px; }
+  header.page {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    flex-wrap: wrap; gap: 18px; margin-bottom: 28px;
+    border-bottom: 1px solid var(--border); padding-bottom: 22px;
+  }
+  .title-block .eyebrow {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+    color: var(--text3); text-transform: uppercase;
+  }
+  .title-block h1 {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 42px; letter-spacing: 0.04em; margin-top: 6px;
+  }
+  .title-block p { color: var(--text3); font-size: 14px; margin-top: 6px; max-width: 60ch; }
+  .meta {
+    display: flex; gap: 22px; flex-wrap: wrap; align-items: center;
+    font-family: var(--font-mono); font-size: 12px; color: var(--text3);
+  }
+  .meta span strong { color: var(--text2); font-weight: 500; }
+  .pulse {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; background: var(--green-bg); border: 1px solid var(--green);
+    color: var(--green); border-radius: 999px; font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .pulse .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 0 0 var(--green); animation: pulse 1.6s ease-out infinite;
+  }
+  .pulse[data-state="error"] { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .pulse[data-state="error"] .dot { background: var(--red); animation: none; }
+  .pulse[data-state="loading"] { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+  .pulse[data-state="loading"] .dot { background: var(--blue); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0,232,154,0.6); }
+    70% { box-shadow: 0 0 0 10px rgba(0,232,154,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,232,154,0); }
+  }
+
+  section.panel {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-card);
+  }
+  section.panel h2 {
+    font-family: var(--font-display); font-weight: 400; font-size: 22px;
+    letter-spacing: 0.04em; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  section.panel h2 .count {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text3);
+    letter-spacing: 0.06em;
+  }
+
+  .grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .card {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px; display: flex; flex-direction: column; gap: 10px;
+    transition: border-color 120ms ease;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .card-name { font-weight: 600; font-size: 15px; color: var(--text); }
+  .card-role { color: var(--text3); font-size: 12.5px; line-height: 1.45; }
+  .badge {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 4px 9px; border-radius: 6px;
+    border: 1px solid transparent;
+  }
+  .badge[data-status="active"] { background: var(--green-bg); color: var(--green); border-color: rgba(0,232,154,0.35); }
+  .badge[data-status="idle"]   { background: var(--amber-bg); color: var(--amber); border-color: rgba(250,170,40,0.35); }
+  .badge[data-status="no_data"]{ background: var(--bg4); color: var(--text3); border-color: var(--border); }
+  .card-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px;
+    border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;
+  }
+  .stat-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    color: var(--text3); text-transform: uppercase;
+  }
+  .stat-value { font-family: var(--font-mono); font-size: 13px; color: var(--text2); margin-top: 2px; word-break: break-word; }
+  .stat-value.muted { color: var(--text3); }
+
+  .events { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .event {
+    display: grid; grid-template-columns: 110px 1fr auto;
+    gap: 14px; align-items: center; padding: 12px 14px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  }
+  .event-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--text3); }
+  .event-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .event-action { font-weight: 600; font-size: 13.5px; color: var(--text); }
+  .event-meta { font-size: 12px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .event-agent {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .empty {
+    padding: 28px; text-align: center; color: var(--text3); font-size: 14px;
+    border: 1px dashed var(--border2); border-radius: 12px;
+  }
+  .empty strong { display: block; color: var(--text2); margin-bottom: 6px; font-weight: 600; }
+  .err {
+    padding: 14px 18px; border-radius: 10px; background: var(--red-bg);
+    border: 1px solid var(--red); color: var(--red); font-family: var(--font-mono);
+    font-size: 12.5px; margin-bottom: 18px; display: none;
+  }
+  .err.show { display: block; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="page">
+      <div class="title-block">
+        <div class="eyebrow">Midnight Core · Operations</div>
+        <h1>Agent Ops Center</h1>
+        <p>Live telemetry derived from the activity_log signal stream. Status reflects real events written by the running agent fleet.</p>
+      </div>
+      <div class="meta">
+        <span>Tenant <strong id="meta-tenant">—</strong></span>
+        <span>Window <strong id="meta-window">24h</strong></span>
+        <span>Updated <strong id="meta-updated">—</strong></span>
+        <span class="pulse" id="pulse" data-state="loading"><span class="dot"></span><span id="pulse-text">connecting</span></span>
+      </div>
+    </header>
+
+    <div class="err" id="err"></div>
+
+    <section class="panel">
+      <h2>Agents <span class="count" id="agent-count">—</span></h2>
+      <div class="grid" id="agents-grid"></div>
+      <div class="empty" id="agents-empty" style="display:none;">
+        <strong>No activity recorded yet</strong>
+        Once agents emit events for this tenant, they will appear here.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Recent events <span class="count" id="events-count">—</span></h2>
+      <ul class="events" id="events-list"></ul>
+      <div class="empty" id="events-empty" style="display:none;">
+        <strong>No activity recorded yet</strong>
+        The activity feed will populate as policies, migrations, and framework analyses run.
+      </div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  const POLL_MS = 10_000;
+  const STATUS_URL = "/api/agents/status";
+  const EVENTS_URL = "/api/agents/events?limit=25";
+
+  const els = {
+    tenant: document.getElementById("meta-tenant"),
+    window: document.getElementById("meta-window"),
+    updated: document.getElementById("meta-updated"),
+    pulse: document.getElementById("pulse"),
+    pulseText: document.getElementById("pulse-text"),
+    err: document.getElementById("err"),
+    agentCount: document.getElementById("agent-count"),
+    agentsGrid: document.getElementById("agents-grid"),
+    agentsEmpty: document.getElementById("agents-empty"),
+    eventsCount: document.getElementById("events-count"),
+    eventsList: document.getElementById("events-list"),
+    eventsEmpty: document.getElementById("events-empty"),
+  };
+
+  function setPulse(state, text) {
+    els.pulse.setAttribute("data-state", state);
+    els.pulseText.textContent = text;
+  }
+
+  function showError(msg) {
+    if (!msg) {
+      els.err.classList.remove("show");
+      els.err.textContent = "";
+      return;
+    }
+    els.err.textContent = msg;
+    els.err.classList.add("show");
+  }
+
+  function fmtClock(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }
+
+  function fmtRelative(iso) {
+    if (!iso) return "—";
+    const then = new Date(iso).getTime();
+    if (!Number.isFinite(then)) return "—";
+    const diff = Math.floor((Date.now() - then) / 1000);
+    if (diff < 0) return "just now";
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
+  function renderAgents(payload) {
+    const agents = Array.isArray(payload?.agents) ? payload.agents : [];
+    els.agentCount.textContent = agents.length ? `${agents.length} tracked` : "";
+    const totalEvents = Number(payload?.total_events || 0);
+    if (totalEvents === 0) {
+      els.agentsGrid.innerHTML = "";
+      els.agentsEmpty.style.display = "block";
+      return;
+    }
+    els.agentsEmpty.style.display = "none";
+    els.agentsGrid.innerHTML = agents.map(agent => {
+      const status = agent.status || "no_data";
+      const statusLabel = status === "active" ? "Active"
+        : status === "idle" ? "Idle"
+        : "No data";
+      const lastSeen = agent.last_event_at ? fmtRelative(agent.last_event_at) : "—";
+      const lastAction = agent.last_action_label || "—";
+      return `
+        <div class="card">
+          <div class="card-head">
+            <div class="card-name">${escapeHtml(agent.name)}</div>
+            <span class="badge" data-status="${escapeHtml(status)}">${statusLabel}</span>
+          </div>
+          <div class="card-role">${escapeHtml(agent.role || "")}</div>
+          <div class="card-stats">
+            <div>
+              <div class="stat-label">Events 24h</div>
+              <div class="stat-value">${Number(agent.event_count_24h || 0)}</div>
+            </div>
+            <div>
+              <div class="stat-label">Total seen</div>
+              <div class="stat-value">${Number(agent.event_count_total || 0)}</div>
+            </div>
+            <div>
+              <div class="stat-label">Last seen</div>
+              <div class="stat-value ${agent.last_event_at ? "" : "muted"}">${escapeHtml(lastSeen)}</div>
+            </div>
+            <div>
+              <div class="stat-label">Last action</div>
+              <div class="stat-value ${agent.last_action ? "" : "muted"}">${escapeHtml(lastAction)}</div>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  function renderEvents(payload) {
+    const events = Array.isArray(payload?.events) ? payload.events : [];
+    els.eventsCount.textContent = events.length ? `${events.length} shown` : "";
+    if (!events.length) {
+      els.eventsList.innerHTML = "";
+      els.eventsEmpty.style.display = "block";
+      return;
+    }
+    els.eventsEmpty.style.display = "none";
+    els.eventsList.innerHTML = events.map(ev => {
+      const meta = [];
+      if (ev.policy_name) meta.push(`Policy: ${ev.policy_name}`);
+      if (ev.policy_status) meta.push(`Status: ${ev.policy_status}`);
+      const metaText = meta.join(" · ") || (ev.policy_id ? `Policy ID: ${ev.policy_id}` : "");
+      return `
+        <li class="event">
+          <div class="event-time" title="${escapeHtml(ev.timestamp || "")}">${escapeHtml(fmtClock(ev.timestamp))}</div>
+          <div class="event-body">
+            <div class="event-action">${escapeHtml(ev.action_label || ev.action || "Activity")}</div>
+            <div class="event-meta">${escapeHtml(metaText)}</div>
+          </div>
+          <div class="event-agent">${escapeHtml(ev.agent_name || "")}</div>
+        </li>`;
+    }).join("");
+  }
+
+  async function fetchJson(url) {
+    const resp = await fetch(url, { credentials: "same-origin", headers: { "Accept": "application/json" } });
+    if (resp.status === 401) {
+      window.location.href = "/login.html";
+      throw new Error("Unauthenticated");
+    }
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(`HTTP ${resp.status}${text ? ": " + text.slice(0, 200) : ""}`);
+    }
+    return resp.json();
+  }
+
+  let inFlight = false;
+
+  async function refresh() {
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      setPulse("loading", "polling");
+      const [statusPayload, eventsPayload] = await Promise.all([
+        fetchJson(STATUS_URL),
+        fetchJson(EVENTS_URL),
+      ]);
+      els.tenant.textContent = statusPayload.tenant_id || "—";
+      els.window.textContent = `${Number(statusPayload.active_window_hours || 24)}h`;
+      els.updated.textContent = fmtClock(statusPayload.fetched_at);
+      renderAgents(statusPayload);
+      renderEvents(eventsPayload);
+      showError(null);
+      setPulse("active", "live");
+    } catch (err) {
+      console.error("agent_ops refresh failed", err);
+      setPulse("error", "stalled");
+      showError(`Telemetry refresh failed: ${err.message || err}`);
+    } finally {
+      inFlight = false;
+    }
+  }
+
+  refresh();
+  setInterval(refresh, POLL_MS);
+})();
+</script>
+</body>
+</html>
