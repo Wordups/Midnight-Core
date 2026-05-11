@@ -92,6 +92,11 @@ TRIAL_MAX_UPLOADS = 3
 TRIAL_MAX_FRAMEWORKS = 1
 TRIAL_WATERMARK_TEXT = "TRIAL - Midnight Preview"
 POLICY_SCHEMA_VERSION = "midnight-policy-v2"
+# Default model for creative drafting; fast model for short structural sections.
+# Bird Talk and the Opus-routed policy slots use the default; the other slots
+# and the metadata pre-call use the fast model. See POLICY_SLOT_SPECS below.
+ANTHROPIC_MODEL = "claude-opus-4-5"
+ANTHROPIC_FAST_MODEL = "claude-haiku-4-5-20251001"
 POLICY_REQUIRED_SLOTS = [
     "purpose",
     "scope",
@@ -104,56 +109,70 @@ POLICY_REQUIRED_SLOTS = [
     "review_cycle",
     "approval",
 ]
+# Per-slot model routing: short structural sections go to Haiku 4.5,
+# creative drafting sections stay on Opus 4.5. End-to-end preview latency is
+# bounded by the slowest Opus call in parallel — moving 5 of 10 slots to
+# Haiku cuts the Opus tail-latency exposure roughly in half.
 POLICY_SLOT_SPECS = [
     {
         "slot_id": "purpose",
         "heading": "Purpose",
         "instruction": "State why the policy exists, the business objective, and the risk or compliance need it addresses.",
+        "model": ANTHROPIC_FAST_MODEL,
     },
     {
         "slot_id": "scope",
         "heading": "Scope",
         "instruction": "Define which people, systems, data, locations, and business processes the policy applies to.",
+        "model": ANTHROPIC_FAST_MODEL,
     },
     {
         "slot_id": "definitions",
         "heading": "Definitions",
         "instruction": "List and explain the specific terms, acronyms, or concepts needed to understand the policy.",
+        "model": ANTHROPIC_FAST_MODEL,
     },
     {
         "slot_id": "roles_responsibilities",
         "heading": "Roles and Responsibilities",
         "instruction": "Identify the accountable roles and what each role is responsible for under this policy.",
+        "model": ANTHROPIC_MODEL,
     },
     {
         "slot_id": "policy_statement",
         "heading": "Policy Statement",
         "instruction": "Write the core mandatory policy requirements in direct compliance-ready language.",
+        "model": ANTHROPIC_MODEL,
     },
     {
         "slot_id": "procedures",
         "heading": "Procedures",
         "instruction": "Describe the operational steps, required actions, or workflow expectations needed to carry out the policy.",
+        "model": ANTHROPIC_MODEL,
     },
     {
         "slot_id": "compliance_requirements",
         "heading": "Compliance Requirements",
         "instruction": "State the control obligations, evidence expectations, and framework-related requirements that support compliance.",
+        "model": ANTHROPIC_MODEL,
     },
     {
         "slot_id": "exceptions",
         "heading": "Exceptions",
         "instruction": "Explain how exceptions are requested, approved, documented, and reviewed.",
+        "model": ANTHROPIC_MODEL,
     },
     {
         "slot_id": "review_cycle",
         "heading": "Review Cycle",
         "instruction": "Describe how often this policy must be reviewed, updated, and re-approved.",
+        "model": ANTHROPIC_FAST_MODEL,
     },
     {
         "slot_id": "approval",
         "heading": "Approval",
         "instruction": "Describe the approval authority, approval workflow, and what constitutes policy approval.",
+        "model": ANTHROPIC_FAST_MODEL,
     },
 ]
 SECTION_CONTENT_LIMIT = 12000
@@ -294,7 +313,6 @@ async def smoke_docx():
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = "claude-opus-4-5"
 
 # Pipeline reliability budget. The brief mandates 20s end-to-end on
 # /pipeline/birdsong and /pipeline/create/preview. Per-call timeout is shorter
@@ -1724,17 +1742,20 @@ def _call_model_json_object(
     context: dict[str, object] | None = None,
     max_tokens: int = 1200,
     timeout: float | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     client = _get_anthropic_client(timeout=timeout)
+    effective_model = model or ANTHROPIC_MODEL
     last_error: Exception | None = None
     last_raw_text = ""
     prompt = user_prompt
+    call_started = time.perf_counter()
 
     for attempt in range(2):
         current_prompt = prompt
         message = _call_anthropic_with_retry(
             lambda current=current_prompt: client.messages.create(
-                model=ANTHROPIC_MODEL,
+                model=effective_model,
                 max_tokens=max_tokens,
                 system=system_prompt,
                 messages=[{"role": "user", "content": current}],
@@ -1750,6 +1771,18 @@ def _call_model_json_object(
             parsed = parse_model_json(raw_text)
             if not isinstance(parsed, dict):
                 raise PolicySchemaError("Model output must be a JSON object.")
+            # Per-call success log — lets ops verify slot-level model routing
+            # in CloudWatch by filter-pattern on "llm_call".
+            pipeline_logger.info(
+                "llm_call",
+                extra={
+                    "flow": flow,
+                    "model": effective_model,
+                    "status": "ok",
+                    "duration_ms": int((time.perf_counter() - call_started) * 1000),
+                    "attempt": attempt + 1,
+                },
+            )
             return parsed
         except (ParsedModelOutputError, PolicySchemaError) as exc:
             last_error = exc
@@ -1760,6 +1793,16 @@ def _call_model_json_object(
                     "Return one compact JSON object only. Use double-quoted keys, escape internal quotes, and do not include markdown fences or prose."
                 )
                 continue
+            pipeline_logger.warning(
+                "llm_call",
+                extra={
+                    "flow": flow,
+                    "model": effective_model,
+                    "status": "invalid_json",
+                    "duration_ms": int((time.perf_counter() - call_started) * 1000),
+                    "attempt": attempt + 1,
+                },
+            )
             _log_model_output_failure(flow=flow, raw_text=last_raw_text, error=exc, context=context)
             raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {exc}") from exc
 
@@ -2013,6 +2056,7 @@ async def _generate_policy_data(
         flow="create_policy_metadata",
         context={"policy_name": request.policy_name, "doc_type": request.doc_type},
         max_tokens=700,
+        model=ANTHROPIC_FAST_MODEL,
     )
     metadata = _validate_policy_metadata(
         metadata_raw,
@@ -2053,6 +2097,7 @@ async def _generate_policy_data(
                 flow=f"create_policy_section_{slot_spec['slot_id']}",
                 context={"policy_name": request.policy_name, "slot_id": slot_spec["slot_id"]},
                 max_tokens=1100,
+                model=slot_spec.get("model") or ANTHROPIC_MODEL,
             )
             section = _validate_generated_section(raw_section, slot_spec=slot_spec)
             return slot_spec, section, None
@@ -2559,11 +2604,16 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
         "policy_id": policy_id,
     }
 
+    model_breakdown: dict[str, int] = {}
+    for spec in POLICY_SLOT_SPECS:
+        m = spec.get("model") or ANTHROPIC_MODEL
+        model_breakdown[m] = model_breakdown.get(m, 0) + 1
     _log(
         "ok",
         {
             "section_count": len(policy_data.get("sections", [])),
             "section_error_count": len(policy_data.get("section_errors", [])),
+            "model_breakdown": model_breakdown,
         },
     )
     return JSONResponse(
