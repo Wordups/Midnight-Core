@@ -3,6 +3,7 @@ Midnight Core - Pipeline Routes
 Takeoff LLC
 """
 
+import asyncio
 import json
 import os
 import base64
@@ -11,11 +12,12 @@ import logging
 import mimetypes
 import re
 import tempfile
+import time
 import uuid
 import zipfile
 import xml.etree.ElementTree as ET
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from docx import Document
 from docx.table import Table
@@ -293,6 +295,17 @@ async def smoke_docx():
     )
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = "claude-opus-4-5"
+
+# Pipeline reliability budget. The brief mandates 20s end-to-end on
+# /pipeline/birdsong and /pipeline/create/preview. Per-call timeout is shorter
+# so a single slow upstream cannot consume the entire budget.
+PIPELINE_REQUEST_TIMEOUT_SECONDS = float(os.getenv("PIPELINE_REQUEST_TIMEOUT_SECONDS", "20"))
+LLM_CALL_TIMEOUT_SECONDS = float(os.getenv("LLM_CALL_TIMEOUT_SECONDS", "18"))
+PIPELINE_TIMEOUT_MESSAGE = (
+    "Midnight is taking longer than usual. Try again, or open Bird Talk to refine your input."
+)
+
+pipeline_logger = logging.getLogger("midnight.pipeline")
 SUPPORTED_EXTENSIONS = {".docx", ".txt", ".md"}
 SUPPORTED_TEMPLATE_EXTENSIONS = {
     ".png",
@@ -358,7 +371,7 @@ def _get_workspace_id(request: Request) -> str:
     return _tenant_id_from_request(request)
 
 
-def _get_anthropic_client():
+def _get_anthropic_client(*, timeout: float | None = None):
     if anthropic is None:
         raise HTTPException(
             status_code=503,
@@ -366,7 +379,58 @@ def _get_anthropic_client():
         )
     if not ANTHROPIC_API_KEY:
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured.")
-    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    effective_timeout = timeout if timeout is not None else LLM_CALL_TIMEOUT_SECONDS
+    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=effective_timeout)
+
+
+def _is_transient_anthropic_error(exc: BaseException) -> bool:
+    if anthropic is None:
+        return False
+    transient_types: list[type] = []
+    for name in ("APITimeoutError", "APIConnectionError", "RateLimitError", "InternalServerError"):
+        candidate = getattr(anthropic, name, None)
+        if isinstance(candidate, type):
+            transient_types.append(candidate)
+    return isinstance(exc, tuple(transient_types)) if transient_types else False
+
+
+def _call_anthropic_with_retry(
+    invoke: Callable[[], Any],
+    *,
+    flow: str,
+    request_id: str | None = None,
+    tenant_id: str | None = None,
+) -> Any:
+    """Call the Anthropic SDK once, retry once with backoff on transient errors.
+
+    Backoff: 1s then 2s. Non-transient errors propagate immediately.
+    """
+    backoff_seconds = [1.0, 2.0]
+    last_exc: BaseException | None = None
+    for attempt in range(2):
+        try:
+            return invoke()
+        except Exception as exc:  # noqa: BLE001 - SDK raises a wide tree
+            last_exc = exc
+            transient = _is_transient_anthropic_error(exc)
+            pipeline_logger.warning(
+                "llm_call_failed",
+                extra={
+                    "flow": flow,
+                    "attempt": attempt + 1,
+                    "transient": transient,
+                    "error_type": type(exc).__name__,
+                    "request_id": request_id,
+                    "tenant_id": tenant_id,
+                },
+            )
+            if attempt == 0 and transient:
+                time.sleep(backoff_seconds[attempt])
+                continue
+            raise
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("Anthropic invocation produced no result and no exception.")
 
 
 def _require_supported_file(upload: UploadFile, field_name: str = "file") -> None:
@@ -1331,6 +1395,41 @@ def _file_docx_response(
     )
 
 
+def _log_pipeline_event(
+    *,
+    route: str,
+    request: Request | None,
+    status: str,
+    duration_ms: int,
+    prompt_chars: int | None,
+    tenant_id: str | None,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    payload: dict[str, Any] = {
+        "route": route,
+        "status": status,
+        "duration_ms": duration_ms,
+        "prompt_chars": prompt_chars,
+        "tenant_id": tenant_id,
+        "request_id": getattr(getattr(request, "state", None), "request_id", None) if request else None,
+        "model": ANTHROPIC_MODEL,
+    }
+    if extra:
+        payload.update(extra)
+    pipeline_logger.info("pipeline_call", extra=payload)
+
+
+def _pipeline_timeout_response() -> JSONResponse:
+    return JSONResponse(
+        status_code=504,
+        content={
+            "error": "pipeline_timeout",
+            "detail": PIPELINE_TIMEOUT_MESSAGE,
+            "retry_hint": "open_bird_talk",
+        },
+    )
+
+
 class BirdsongRequest(BaseModel):
     messages: list[dict]
     system: Optional[str] = None
@@ -1354,30 +1453,82 @@ async def smoke_docx():
 
 
 @pipeline_router.post("/birdsong")
-async def birdsong(request: BirdsongRequest):
-    try:
-        client = _get_anthropic_client()
-        system = request.system or (
-            "You are Midnight, the AI compliance assistant for the Midnight compliance platform "
-            "by Takeoff LLC. You are also known as Bird Talk, a chicken mascot who is the Chief "
-            "Compliance Officer. Help users understand their compliance program, identify gaps, "
-            "and guide them toward building the right policies and controls. "
-            "Midnight covers HIPAA, HITRUST-aligned domains, PCI DSS, NIST CSF, and SOC 2. "
-            "Philosophy: Handshake, not takeover - human-led, AI-accelerated. "
-            "Keep responses short (3-5 sentences max). Warm, direct, expert tone."
-        )
+async def birdsong(request: Request, payload: BirdsongRequest):
+    start = time.perf_counter()
+    tenant_id = getattr(getattr(request, "state", None), "tenant_id", None)
+    prompt_chars = sum(len(str(m.get("content", ""))) for m in (payload.messages or []) if isinstance(m, dict))
 
-        message = client.messages.create(
-            model=ANTHROPIC_MODEL,
-            max_tokens=8096,
-            system=system,
-            messages=request.messages,
+    system = payload.system or (
+        "You are Midnight, the AI compliance assistant for the Midnight compliance platform "
+        "by Takeoff LLC. You are also known as Bird Talk, a chicken mascot who is the Chief "
+        "Compliance Officer. Help users understand their compliance program, identify gaps, "
+        "and guide them toward building the right policies and controls. "
+        "Midnight covers HIPAA, HITRUST-aligned domains, PCI DSS, NIST CSF, and SOC 2. "
+        "Philosophy: Handshake, not takeover - human-led, AI-accelerated. "
+        "Keep responses short (3-5 sentences max). Warm, direct, expert tone."
+    )
+
+    def _invoke() -> str:
+        client = _get_anthropic_client()
+        message = _call_anthropic_with_retry(
+            lambda: client.messages.create(
+                model=ANTHROPIC_MODEL,
+                max_tokens=1024,
+                system=system,
+                messages=payload.messages,
+            ),
+            flow="birdsong",
+            tenant_id=tenant_id,
         )
-        return {"reply": message.content[0].text}
-    except HTTPException:
+        return message.content[0].text
+
+    try:
+        reply = await asyncio.wait_for(
+            asyncio.to_thread(_invoke),
+            timeout=PIPELINE_REQUEST_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        _log_pipeline_event(
+            route="/pipeline/birdsong",
+            request=request,
+            status="timeout",
+            duration_ms=int((time.perf_counter() - start) * 1000),
+            prompt_chars=prompt_chars,
+            tenant_id=tenant_id,
+        )
+        return _pipeline_timeout_response()
+    except HTTPException as exc:
+        _log_pipeline_event(
+            route="/pipeline/birdsong",
+            request=request,
+            status="http_error",
+            duration_ms=int((time.perf_counter() - start) * 1000),
+            prompt_chars=prompt_chars,
+            tenant_id=tenant_id,
+            extra={"http_status": exc.status_code},
+        )
         raise
     except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail=f"Bird Talk error: {exc}") from exc
+        _log_pipeline_event(
+            route="/pipeline/birdsong",
+            request=request,
+            status="error",
+            duration_ms=int((time.perf_counter() - start) * 1000),
+            prompt_chars=prompt_chars,
+            tenant_id=tenant_id,
+            extra={"error_type": type(exc).__name__},
+        )
+        raise HTTPException(status_code=502, detail=f"Bird Talk error: {exc}") from exc
+
+    _log_pipeline_event(
+        route="/pipeline/birdsong",
+        request=request,
+        status="ok",
+        duration_ms=int((time.perf_counter() - start) * 1000),
+        prompt_chars=prompt_chars,
+        tenant_id=tenant_id,
+    )
+    return {"reply": reply}
 
 
 MIGRATION_SYSTEM_PROMPT = """You are a policy reconstruction engine for Midnight, Takeoff LLC's enterprise compliance platform.
@@ -1572,18 +1723,23 @@ def _call_model_json_object(
     flow: str,
     context: dict[str, object] | None = None,
     max_tokens: int = 1200,
+    timeout: float | None = None,
 ) -> dict[str, Any]:
-    client = _get_anthropic_client()
+    client = _get_anthropic_client(timeout=timeout)
     last_error: Exception | None = None
     last_raw_text = ""
     prompt = user_prompt
 
     for attempt in range(2):
-        message = client.messages.create(
-            model=ANTHROPIC_MODEL,
-            max_tokens=max_tokens,
-            system=system_prompt,
-            messages=[{"role": "user", "content": prompt}],
+        current_prompt = prompt
+        message = _call_anthropic_with_retry(
+            lambda current=current_prompt: client.messages.create(
+                model=ANTHROPIC_MODEL,
+                max_tokens=max_tokens,
+                system=system_prompt,
+                messages=[{"role": "user", "content": current}],
+            ),
+            flow=flow,
         )
         raw_text, stop_reason = _anthropic_text_response(message)
         last_raw_text = raw_text
@@ -1850,7 +2006,8 @@ async def _generate_policy_data(
     normalized_frameworks, fw_context = build_framework_prompt_context(request.frameworks)
     mapping_rules = build_framework_mapping_rules(request.frameworks)
 
-    metadata_raw = _call_model_json_object(
+    metadata_raw = await asyncio.to_thread(
+        _call_model_json_object,
         system_prompt="You are Midnight's policy metadata generator. Return JSON only.",
         user_prompt=_build_metadata_prompt(request, organization_hint=organization_hint, normalized_frameworks=normalized_frameworks),
         flow="create_policy_metadata",
@@ -1880,12 +2037,10 @@ async def _generate_policy_data(
     )
     policy_id = draft_record["policy"]["id"]
 
-    sections: list[dict[str, Any]] = []
-    section_errors: list[dict[str, str]] = []
-
-    for slot_spec in POLICY_SLOT_SPECS:
+    async def _generate_section(slot_spec: dict[str, str]) -> tuple[dict[str, str], dict[str, Any] | None, dict[str, str] | None]:
         try:
-            raw_section = _call_model_json_object(
+            raw_section = await asyncio.to_thread(
+                _call_model_json_object,
                 system_prompt="You are Midnight's policy section generator. Return JSON only for one section.",
                 user_prompt=_build_section_prompt(
                     request,
@@ -1900,29 +2055,43 @@ async def _generate_policy_data(
                 max_tokens=1100,
             )
             section = _validate_generated_section(raw_section, slot_spec=slot_spec)
+            return slot_spec, section, None
+        except (HTTPException, PolicySchemaError) as exc:
+            detail = getattr(exc, "detail", None) or str(exc)
+            return slot_spec, None, {
+                "slot_id": slot_spec["slot_id"],
+                "heading": slot_spec["heading"],
+                "error": str(detail),
+            }
+
+    section_results = await asyncio.gather(
+        *[_generate_section(spec) for spec in POLICY_SLOT_SPECS]
+    )
+
+    sections: list[dict[str, Any]] = []
+    section_errors: list[dict[str, str]] = []
+    for _spec, section, error in section_results:
+        if section is not None:
             sections.append(section)
-            save_policy_draft(
-                tenant_id=tenant_id,
-                title=metadata["title"],
-                document_type=metadata["document_type"],
-                organization=metadata["organization"],
-                owner=metadata["owner"],
-                status=metadata["status"],
-                schema_version=metadata["schema_version"],
-                selected_frameworks=metadata["selected_frameworks"],
-                sections=sections,
-                policy_number=metadata.get("policy_number") or None,
-                version=metadata.get("version") or None,
-                policy_id=policy_id,
-            )
-        except HTTPException as exc:
-            section_errors.append(
-                {
-                    "slot_id": slot_spec["slot_id"],
-                    "heading": slot_spec["heading"],
-                    "error": str(exc.detail),
-                }
-            )
+        if error is not None:
+            section_errors.append(error)
+
+    # Single draft persistence at the end — avoids 10x serialized round-trips
+    # to Supabase while preview is still hot.
+    save_policy_draft(
+        tenant_id=tenant_id,
+        title=metadata["title"],
+        document_type=metadata["document_type"],
+        organization=metadata["organization"],
+        owner=metadata["owner"],
+        status=metadata["status"],
+        schema_version=metadata["schema_version"],
+        selected_frameworks=metadata["selected_frameworks"],
+        sections=sections,
+        policy_number=metadata.get("policy_number") or None,
+        version=metadata.get("version") or None,
+        policy_id=policy_id,
+    )
 
     policy_payload = _build_policy_payload_from_sections(
         metadata=metadata,
@@ -2317,16 +2486,46 @@ async def migrate_document(
 
 @pipeline_router.post("/create/preview")
 async def create_preview(request: Request, payload: CreatePolicyRequest):
+    start = time.perf_counter()
     tenant = None
+    tenant_id_for_log: str | None = None
+    prompt_chars = len((payload.description or "")) + len(payload.policy_name or "")
+
+    def _log(status: str, extra: dict[str, Any] | None = None) -> None:
+        _log_pipeline_event(
+            route="/pipeline/create/preview",
+            request=request,
+            status=status,
+            duration_ms=int((time.perf_counter() - start) * 1000),
+            prompt_chars=prompt_chars,
+            tenant_id=tenant_id_for_log,
+            extra=extra,
+        )
+
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
-        policy_data, policy_id = await _generate_policy_data(
-            payload,
-            tenant_id=tenant["id"],
-            organization_hint=str(tenant.get("name") or ""),
+        tenant_id_for_log = tenant["id"]
+        policy_data, policy_id = await asyncio.wait_for(
+            _generate_policy_data(
+                payload,
+                tenant_id=tenant["id"],
+                organization_hint=str(tenant.get("name") or ""),
+            ),
+            timeout=PIPELINE_REQUEST_TIMEOUT_SECONDS,
         )
-    except HTTPException:
+    except asyncio.TimeoutError:
+        _emit_signal(
+            request,
+            tenant_id=(tenant or {}).get("id"),
+            event_type="policy_generation_failed",
+            source="pipeline.create.preview",
+            summary=f"Policy preview timed out for {payload.policy_name}.",
+            metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks, "error": "timeout"},
+        )
+        _log("timeout")
+        return _pipeline_timeout_response()
+    except HTTPException as exc:
         _emit_signal(
             request,
             tenant_id=(tenant or {}).get("id"),
@@ -2335,6 +2534,7 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
             summary=f"Policy preview failed for {payload.policy_name}.",
             metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks},
         )
+        _log("http_error", {"http_status": exc.status_code})
         raise
     except Exception as exc:  # pragma: no cover
         _emit_signal(
@@ -2345,6 +2545,7 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
             summary=f"Policy preview failed for {payload.policy_name}.",
             metadata={"doc_type": payload.doc_type, "frameworks": payload.frameworks, "error": str(exc)},
         )
+        _log("error", {"error_type": type(exc).__name__})
         raise HTTPException(status_code=500, detail=f"Creation error: {exc}") from exc
 
     policy_data["_session"] = {
@@ -2358,6 +2559,13 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
         "policy_id": policy_id,
     }
 
+    _log(
+        "ok",
+        {
+            "section_count": len(policy_data.get("sections", [])),
+            "section_error_count": len(policy_data.get("section_errors", [])),
+        },
+    )
     return JSONResponse(
         content={
             "policy_data": policy_data,
@@ -2370,6 +2578,153 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
 
 class CreateGenerateRequest(BaseModel):
     policy_data: dict
+
+
+class ManualExportRequest(BaseModel):
+    policy_name: str
+    doc_type: Optional[str] = "POLICY"
+    industry: Optional[str] = None
+    frameworks: list[str] = []
+    owner: Optional[str] = None
+    version: Optional[str] = "1.0"
+    policy_number: Optional[str] = None
+    effective_date: Optional[str] = None
+    # Authored content fields from the Content step
+    purpose_scope: Optional[str] = None
+    definitions_text: Optional[str] = None
+    policy_statement: Optional[str] = None
+    procedures_text: Optional[str] = None
+    roles_responsibilities: Optional[str] = None
+    compliance_requirements: Optional[str] = None
+    exceptions: Optional[str] = None
+    review_cycle: Optional[str] = None
+    approval: Optional[str] = None
+
+
+MANUAL_EXPORT_PLACEHOLDER = "[Manual draft — section not yet authored. AI-generated content skipped.]"
+
+
+@pipeline_router.post("/create/manual-export")
+async def create_manual_export(request: Request, payload: ManualExportRequest):
+    """Render a DOCX from manually-authored content only.
+
+    Bandage path: keeps Export working when /create/preview is unavailable
+    (e.g. upstream LLM timeout). Sections the user has not filled in are
+    rendered with a clearly-labeled placeholder so the export is honest about
+    what is and is not AI-generated.
+    """
+    start = time.perf_counter()
+    tenant = _tenant_context_from_request(request)
+    tenant_id = tenant["id"]
+    frameworks = [item.strip() for item in (payload.frameworks or []) if item.strip()]
+
+    manual_section_map: dict[str, str] = {
+        "purpose": payload.purpose_scope or "",
+        "scope": payload.purpose_scope or "",
+        "definitions": payload.definitions_text or "",
+        "roles_responsibilities": payload.roles_responsibilities or "",
+        "policy_statement": payload.policy_statement or "",
+        "procedures": payload.procedures_text or "",
+        "compliance_requirements": payload.compliance_requirements or "",
+        "exceptions": payload.exceptions or "",
+        "review_cycle": payload.review_cycle or "",
+        "approval": payload.approval or "",
+    }
+
+    sections: list[dict[str, Any]] = []
+    for index, spec in enumerate(POLICY_SLOT_SPECS, start=1):
+        raw = (manual_section_map.get(spec["slot_id"]) or "").strip()
+        content = raw if raw else MANUAL_EXPORT_PLACEHOLDER
+        sections.append(
+            {
+                "slot_id": spec["slot_id"],
+                "heading": spec["heading"],
+                "content": content,
+                "sort_order": index,
+                "source_origin": "manual_authored" if raw else "manual_placeholder",
+            }
+        )
+
+    policy_data: dict[str, Any] = {
+        "title": payload.policy_name,
+        "policy_name": payload.policy_name,
+        "organization": str(tenant.get("name") or ""),
+        "owner": payload.owner or "Unknown",
+        "doc_type": payload.doc_type or "POLICY",
+        "status": "Manual Draft",
+        "version": payload.version or "1.0",
+        "policy_number": payload.policy_number or "",
+        "effective_date": payload.effective_date or "",
+        "metadata": {
+            "owner": payload.owner or "Unknown",
+            "document_type": payload.doc_type or "POLICY",
+            "schema_version": POLICY_SCHEMA_VERSION,
+            "selected_frameworks": frameworks,
+            "export_mode": "manual",
+        },
+        "sections": sections,
+        "framework_mappings": {fw: [] for fw in frameworks},
+        "framework_map": {
+            "overall_coverage": "Manual draft",
+            "total_controls_mapped": 0,
+            "total_gaps": 0,
+            "frameworks_covered": frameworks,
+            "audit_summary": "Manual draft export — framework mapping was not generated.",
+            "mapped_citations": [],
+            "gaps": [],
+        },
+        "section_errors": [],
+    }
+
+    output_name = f"{(payload.policy_name or 'policy').replace(' ', '_')}_manual_v{policy_data['version']}.docx"
+
+    try:
+        response = _file_docx_response(
+            tenant_id=tenant_id,
+            policy_data=policy_data,
+            template_name=str(payload.doc_type or "policy").lower(),
+            output_name=output_name,
+            document_name=payload.policy_name,
+            doc_type=payload.doc_type or "POLICY",
+            source_name=payload.policy_name,
+            policy_id=None,
+            watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        )
+    except HTTPException as exc:
+        _log_pipeline_event(
+            route="/pipeline/create/manual-export",
+            request=request,
+            status="http_error",
+            duration_ms=int((time.perf_counter() - start) * 1000),
+            prompt_chars=None,
+            tenant_id=tenant_id,
+            extra={"http_status": exc.status_code},
+        )
+        raise
+
+    _emit_signal(
+        request,
+        tenant_id=tenant_id,
+        event_type="policy_generation_completed",
+        source="pipeline.create.manual_export",
+        summary=f"Manual export rendered for {payload.policy_name}.",
+        metadata={
+            "doc_type": payload.doc_type,
+            "frameworks": frameworks,
+            "export_mode": "manual",
+        },
+    )
+
+    _log_pipeline_event(
+        route="/pipeline/create/manual-export",
+        request=request,
+        status="ok",
+        duration_ms=int((time.perf_counter() - start) * 1000),
+        prompt_chars=None,
+        tenant_id=tenant_id,
+        extra={"section_count": len(sections)},
+    )
+    return response
 
 
 @pipeline_router.post("/create/generate")

@@ -355,6 +355,16 @@ function renderReviewStep() {
 
 function renderExportStep() {
   const config = WORKFLOW_CONFIG[workflowState.lane];
+  const manualCard = workflowState.lane === 'POLICY' ? `
+    <div class="wf-card wf-export-card">
+      <div>
+        <div class="wf-export-badge">Manual fallback</div>
+        <h4 style="margin-top:16px;">Export draft (manual content only)</h4>
+        <p>Render whatever you've authored in the Content step into a DOCX without waiting on AI preview. AI-generated sections will be skipped and labeled in the export.</p>
+      </div>
+      <button type="button" class="wf-btn" onclick="runPolicyManualExport()">Export Manual Draft</button>
+    </div>
+  ` : '';
   return `
     <section class="${panelClass('export')}">
       <div class="wf-grid">
@@ -372,6 +382,7 @@ function renderExportStep() {
                 <button type="button" class="wf-btn${workflowState.lane === 'POLICY' ? ' wf-btn-primary' : ''}" ${workflowState.lane === 'POLICY' ? 'onclick="runPolicyGenerate()"' : 'onclick="workflowToast(\'Export flow for this lane is staged in the standalone workspace.\')"'} ${workflowState.lane === 'POLICY' && !workflowState.previewData ? 'disabled' : ''}>${workflowState.lane === 'POLICY' ? 'Generate Export' : 'Export Path'}</button>
               </div>
             `).join('')}
+            ${manualCard}
           </div>
         </div>
       </div>
@@ -442,6 +453,8 @@ async function runPolicyPreview() {
   }
 
   workflowSetLoading(true, 'Bird Eye Drafting', 'Midnight is assembling a structured policy preview for review.');
+  const controller = new AbortController();
+  const abortTimer = setTimeout(() => controller.abort(), 22000);
   try {
     const response = await workflowApi('/pipeline/create/preview', {
       method: 'POST',
@@ -461,7 +474,14 @@ async function runPolicyPreview() {
         policy_statement: getFieldValue('policy_statement'),
         procedures_text: getFieldValue('procedures_text'),
       }),
+      signal: controller.signal,
     });
+
+    if (response.status === 504) {
+      const body = await response.json().catch(() => ({}));
+      workflowToast(body.detail || 'Midnight is taking longer than usual. Try again, or open Bird Talk to refine your input.', true);
+      return;
+    }
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -476,7 +496,66 @@ async function runPolicyPreview() {
     setWorkflowStep('review');
     workflowToast('Policy preview ready.');
   } catch (error) {
-    workflowToast(error.message || 'Policy preview failed.', true);
+    if (error && error.name === 'AbortError') {
+      workflowToast('Midnight is taking longer than usual. Try again, or open Bird Talk to refine your input.', true);
+    } else {
+      workflowToast(error.message || 'Policy preview failed.', true);
+    }
+  } finally {
+    clearTimeout(abortTimer);
+    workflowSetLoading(false);
+  }
+}
+
+async function runPolicyManualExport() {
+  if (workflowState.lane !== 'POLICY') {
+    workflowToast('Manual export is currently available for the Policy lane only.', true);
+    return;
+  }
+  const name = getFieldValue('policy_name');
+  if (!name) {
+    setWorkflowStep('metadata');
+    workflowToast('Please enter a policy name before exporting.', true);
+    return;
+  }
+
+  const manualPayload = {
+    policy_name: name,
+    doc_type: 'POLICY',
+    industry: getFieldValue('industry') || 'Healthcare',
+    frameworks: getSelectedFrameworks(),
+    owner: getFieldValue('owner') || workflowSession.display_name || 'Compliance Team',
+    version: getFieldValue('version') || '1.0',
+    policy_number: getFieldValue('policy_number') || null,
+    purpose_scope: getFieldValue('purpose_scope') || null,
+    definitions_text: getFieldValue('definitions_text') || null,
+    policy_statement: getFieldValue('policy_statement') || null,
+    procedures_text: getFieldValue('procedures_text') || null,
+  };
+
+  workflowSetLoading(true, 'Manual Export', 'Rendering manually-authored content into a DOCX. AI-generated sections will be skipped.');
+  try {
+    const response = await workflowApi('/pipeline/create/manual-export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(manualPayload),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${name.replace(/\s+/g, '_')}_manual.docx`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    workflowToast('Manual export ready — unfilled sections were skipped with a placeholder note.');
+  } catch (error) {
+    workflowToast(error.message || 'Manual export failed.', true);
   } finally {
     workflowSetLoading(false);
   }
