@@ -583,11 +583,19 @@ async function runPolicyGenerate() {
       const err = await response.json().catch(() => ({}));
       throw new Error(err.detail || `Server error ${response.status}`);
     }
-    const data = await response.json();
-    if (data?.download?.url) {
-      window.open(data.download.url, '_blank', 'noopener');
-    }
-    workflowToast(`Policy generated — ${data?.policy_data?.policy_name || getFieldValue('policy_name') || 'policy'}`);
+    // The backend returns a binary DOCX (FileResponse). Treat as blob, not JSON.
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    const name = getFieldValue('policy_name') || workflowState.previewData?.policy_name || 'policy';
+    const version = getFieldValue('version') || workflowState.previewData?.version || '1.0';
+    anchor.download = `${name.replace(/\s+/g, '_')}_v${version}.docx`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    workflowToast(`Policy generated — ${name}`);
   } catch (error) {
     workflowToast(error.message || 'Document generation failed.', true);
   } finally {
