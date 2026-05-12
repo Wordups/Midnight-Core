@@ -217,14 +217,13 @@ nav{
 
 .stats{
   display:grid;grid-template-columns:repeat(4,1fr);
-  border:1px solid var(--b0);border-radius:12px;overflow:hidden;
   margin:48px auto;max-width:1280px;
 }
-.stat{padding:36px 32px;border-right:1px solid var(--b0);transition:background .2s}
+.stat{padding:36px 32px;border-right:1px solid rgba(255,255,255,0.08);transition:background .2s}
 .stat:last-child{border-right:none}
 .stat:hover{background:rgba(255,255,255,0.015)}
 .stat-num{
-  font-family:var(--display);font-size:58px;letter-spacing:0.04em;
+  font-family:var(--mono);font-size:58px;letter-spacing:0.04em;
   color:var(--t0);line-height:1;margin-bottom:10px;
 }
 .stat-num .accent{color:var(--cyan)}
@@ -321,7 +320,9 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
   .feat-grid{grid-template-columns:1fr!important}
   .strip{grid-template-columns:repeat(2,1fr)!important}
   .stats{grid-template-columns:repeat(2,1fr)!important}
-  .stat{padding:24px 16px!important}
+  .stat{padding:24px 16px!important;border-right:1px solid rgba(255,255,255,0.08)!important}
+  .stat:nth-child(2n){border-right:none!important}
+  .stat:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,0.08)}
   .stat-num{font-size:42px!important}
   .section,.section-wide{padding:48px 1.25rem!important}
   nav{padding:0 1.25rem}
@@ -417,13 +418,11 @@ footer{border-top:1px solid var(--b0);padding:28px 3rem;display:flex;align-items
     <div class="strip-item" onclick="goTo('platform')"><div class="strip-num">04</div><div class="strip-title">Bird Talk</div><div class="strip-sub">AI policy assistant</div></div>
   </div>
 
-  <div style="padding:0 4rem;background:var(--s1);border-bottom:1px solid var(--b0)">
-    <div class="stats animate-in">
-      <div class="stat"><div class="stat-num"><span class="count-up" data-target="100" data-suffix="+" style="font-family:var(--display)">0+</span></div><div class="stat-label">Policies migrated across compliance backlogs</div></div>
-      <div class="stat"><div class="stat-num"><span class="count-up" data-target="80" data-suffix="h" style="font-family:var(--display)">0h</span></div><div class="stat-label">Hours of manual effort eliminated per migration cycle</div></div>
-      <div class="stat"><div class="stat-num"><span class="count-up" data-target="7" data-suffix="+" style="font-family:var(--display)">0+</span></div><div class="stat-label">Compliance frameworks scanned and mapped on every run</div></div>
-      <div class="stat"><div class="stat-num"><span class="count-up" data-target="2" data-suffix="x" style="font-family:var(--display)">0x</span></div><div class="stat-label">Documents generated per run — policy and GRC summary</div></div>
-    </div>
+  <div class="stats animate-in">
+    <div class="stat"><div class="stat-num"><span class="count-up" data-target="100" data-suffix="+" style="font-family:var(--mono)">0+</span></div><div class="stat-label">Policy types supported per engagement</div></div>
+    <div class="stat"><div class="stat-num"><span class="count-up" data-target="80" data-suffix="H" style="font-family:var(--mono)">0H</span></div><div class="stat-label">Hours of manual effort eliminated per migration cycle</div></div>
+    <div class="stat"><div class="stat-num"><span class="count-up" data-target="7" data-suffix="" style="font-family:var(--mono)">0</span></div><div class="stat-label">Compliance frameworks scanned and mapped on every run</div></div>
+    <div class="stat"><div class="stat-num"><span class="count-up" data-target="2" data-suffix="" style="font-family:var(--mono)">0</span></div><div class="stat-label">Documents generated per run — policy and GRC summary</div></div>
   </div>
 
 
