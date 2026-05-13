@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.parse import quote
 import json
 import logging
 import mimetypes
@@ -145,6 +146,18 @@ def _download_storage_object(signed_url: str) -> bytes:
     response = requests.get(signed_url, timeout=60)
     if response.status_code >= 400:
         raise SupabaseStoreError(f"Supabase storage download failed ({response.status_code}).")
+    return response.content
+
+
+def _download_storage_object_by_path(storage_path: str) -> bytes:
+    response = _request(
+        "GET",
+        f"/storage/v1/object/{STORAGE_BUCKET}/{quote(storage_path, safe='/._-')}",
+        headers={
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        },
+    )
     return response.content
 
 
@@ -347,6 +360,9 @@ def _normalize_document_record(document_row: dict[str, Any], policy_row: dict[st
         "storage_url": _build_signed_storage_url(storage_path) if storage_path else document_row.get("storage_url"),
         "policy_id": document_row.get("policy_id"),
         "tenant_id": document_row.get("tenant_id"),
+        "public_url": document_row.get("public_url"),
+        "public_access": bool(document_row.get("public_access")),
+        "qr_code_url": document_row.get("qr_code_url"),
     }
 
 
@@ -364,6 +380,8 @@ def save_generated_document(
     policy_number: str | None = None,
     version: str | None = None,
     policy_id: str | None = None,
+    interactive_html: str | None = None,
+    public_access: bool = False,
 ) -> dict:
     tenant_id = workspace_id
     policy = None
@@ -385,15 +403,29 @@ def save_generated_document(
     storage_path = f"{tenant_id}/{policy_id}/{stored_name}"
     _upload_storage_object(storage_path=storage_path, file_bytes=file_bytes, content_type=content_type)
     signed_url = _build_signed_storage_url(storage_path)
+    public_url = f"/view/{document_id}" if interactive_html else None
+    qr_code_url = f"https://quickchart.io/qr?size=220&text={quote(public_url or '', safe='')}" if public_url else None
+
+    if interactive_html:
+        interactive_path = f"{tenant_id}/{policy_id}/interactive/{document_id}.html"
+        _upload_storage_object(
+            storage_path=interactive_path,
+            file_bytes=interactive_html.encode("utf-8"),
+            content_type="text/html; charset=utf-8",
+        )
 
     document_row = _insert_document_row(
         {
+            "id": document_id,
             "tenant_id": tenant_id,
             "policy_id": policy_id,
             "file_path": storage_path,
             "file_type": doc_type.upper(),
             "file_name": filename,
             "storage_url": signed_url,
+            "public_url": public_url,
+            "public_access": public_access if interactive_html else False,
+            "qr_code_url": qr_code_url,
         }
     )
     _insert_activity_log(tenant_id=tenant_id, action="generated", policy_id=policy_id)
@@ -411,7 +443,7 @@ def list_generated_documents(workspace_id: str) -> list[dict]:
         "GET",
         "documents",
         params={
-            "select": "id,tenant_id,policy_id,file_path,file_type,file_name,storage_url,created_at",
+            "select": "id,tenant_id,policy_id,file_path,file_type,file_name,storage_url,created_at,public_url,public_access,qr_code_url",
             "tenant_id": f"eq.{tenant_id}",
             "order": "created_at.desc",
         },
@@ -430,7 +462,7 @@ def get_generated_document(workspace_id: str, document_id: str) -> dict | None:
         "GET",
         "documents",
         params={
-            "select": "id,tenant_id,policy_id,file_path,file_type,file_name,storage_url,created_at",
+            "select": "id,tenant_id,policy_id,file_path,file_type,file_name,storage_url,created_at,public_url,public_access,qr_code_url",
             "tenant_id": f"eq.{tenant_id}",
             "id": f"eq.{document_id}",
             "limit": "1",
@@ -457,6 +489,44 @@ def download_generated_document(workspace_id: str, document_id: str) -> tuple[di
     if not record.get("storage_url"):
         raise SupabaseStoreError("Document is missing a signed storage URL.")
     return record, _download_storage_object(record["storage_url"])
+
+
+def get_document_record_by_id(document_id: str) -> dict[str, Any] | None:
+    rows = _postgrest(
+        "GET",
+        "documents",
+        params={
+            "select": "id,tenant_id,policy_id,file_path,file_type,file_name,storage_url,created_at,public_url,public_access,qr_code_url",
+            "id": f"eq.{document_id}",
+            "limit": "1",
+        },
+    ) or []
+    document_row = _first_row(rows)
+    if not document_row:
+        return None
+
+    policy = None
+    if document_row.get("policy_id"):
+        policy = _select_by_ids(
+            "policies",
+            [document_row["policy_id"]],
+            "id, tenant_id, policy_name, policy_number, version, status",
+        ).get(document_row["policy_id"])
+    return _normalize_document_record(document_row, policy)
+
+
+def download_interactive_document_html(document_record: dict[str, Any]) -> str:
+    tenant_id = str(document_record.get("tenant_id") or "")
+    policy_id = str(document_record.get("policy_id") or "")
+    document_id = str(document_record.get("id") or "")
+    if not tenant_id or not policy_id or not document_id:
+        raise SupabaseStoreError("Interactive document metadata is incomplete.")
+    interactive_path = f"{tenant_id}/{policy_id}/interactive/{document_id}.html"
+    return _download_storage_object_by_path(interactive_path).decode("utf-8")
+
+
+def download_storage_path(storage_path: str) -> bytes:
+    return _download_storage_object_by_path(storage_path)
 
 
 def list_recent_activity(workspace_id: str, limit: int = 10) -> list[dict]:
@@ -583,7 +653,7 @@ def get_tenant(tenant_id: str) -> dict[str, Any] | None:
         "GET",
         "tenants",
         params={
-            "select": "id,slug,name,industry,plan_type,region,employee_count,created_at",
+            "select": "id,slug,name,industry,plan_type,region,employee_count,brand_logo_url,brand_primary_color,brand_secondary_color,brand_footer_text,created_at",
             "id": f"eq.{tenant_id}",
             "limit": "1",
         },
@@ -596,7 +666,7 @@ def get_tenant_by_slug(slug: str) -> dict[str, Any] | None:
         "GET",
         "tenants",
         params={
-            "select": "id,slug,name,industry,plan_type,region,employee_count,created_at",
+            "select": "id,slug,name,industry,plan_type,region,employee_count,brand_logo_url,brand_primary_color,brand_secondary_color,brand_footer_text,created_at",
             "slug": f"eq.{slug}",
             "limit": "1",
         },
@@ -615,6 +685,9 @@ def create_tenant(*, name: str, slug: str, industry: str | None, region: str | N
             "region": region,
             "employee_count": employee_count,
             "plan_type": plan_type,
+            "brand_primary_color": "#1D9E75",
+            "brand_secondary_color": "#111111",
+            "brand_footer_text": f"© 2026 {name}",
         },
         prefer="return=representation",
     )
@@ -705,3 +778,52 @@ def replace_enabled_modules(tenant_id: str, module_keys: list[str]) -> list[dict
         prefer="return=representation",
     )
     return created or []
+
+
+def update_tenant_branding(
+    tenant_id: str,
+    *,
+    name: str | None = None,
+    primary_color: str | None = None,
+    secondary_color: str | None = None,
+    footer_text: str | None = None,
+    logo_storage_path: str | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    if name is not None:
+        payload["name"] = name
+    if primary_color is not None:
+        payload["brand_primary_color"] = primary_color
+    if secondary_color is not None:
+        payload["brand_secondary_color"] = secondary_color
+    if footer_text is not None:
+        payload["brand_footer_text"] = footer_text
+    if logo_storage_path is not None:
+        payload["brand_logo_url"] = logo_storage_path
+    if not payload:
+        tenant = get_tenant(tenant_id)
+        if tenant is None:
+            raise SupabaseStoreError("Tenant record not found.")
+        return tenant
+
+    updated = _postgrest(
+        "PATCH",
+        "tenants",
+        params={"id": f"eq.{tenant_id}"},
+        payload=payload,
+        prefer="return=representation",
+    )
+    record = _first_row(updated)
+    if not record:
+        raise SupabaseStoreError("Tenant branding update did not return a row.")
+    return record
+
+
+def upload_tenant_brand_logo(*, tenant_id: str, filename: str, file_bytes: bytes, content_type: str) -> dict[str, str]:
+    ext = Path(filename or "logo.png").suffix.lower() or ".png"
+    storage_path = f"{tenant_id}/branding/logo{ext}"
+    _upload_storage_object(storage_path=storage_path, file_bytes=file_bytes, content_type=content_type)
+    return {
+        "storage_path": storage_path,
+        "content_type": content_type,
+    }

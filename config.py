@@ -10,6 +10,9 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
+        # Treat empty env vars as "unset" so .env values win when the shell pre-sets
+        # an empty ANTHROPIC_API_KEY (which Claude Code does).
+        env_ignore_empty=True,
     )
 
     ANTHROPIC_API_KEY: str = Field(..., min_length=1)

@@ -2092,6 +2092,52 @@
           <div class="table-row"><div class="doc-name-cell" style="color:var(--text3);font-size:12px;">No generated outputs yet — run Migrate or Create to get started</div><div></div><div></div><div></div></div>
         </div>
       </div>
+
+      <!-- ── BIRD EYE REVIEW PANEL ─────────────────────────────────────────── -->
+      <div class="panel" id="bird-eye-panel" style="margin-top:24px;">
+        <div class="panel-header">
+          <div class="panel-title">Bird Eye Review</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <span id="be-last-run" style="font-family:var(--font-mono);font-size:11px;color:var(--text3);"></span>
+            <button class="run-btn" style="padding:6px 14px;font-size:11px;" onclick="runBirdEye()" id="be-run-btn">Run Bird Eye Review</button>
+          </div>
+        </div>
+
+        <!-- Executive summary card -->
+        <div id="be-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:18px;background:rgba(0,212,245,0.04);border:1px solid rgba(0,212,245,0.12);border-radius:10px;margin-bottom:18px;">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Documents Reviewed</div>
+            <div style="font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--text);" id="be-stat-docs">—</div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Open Findings</div>
+            <div style="font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--accent);" id="be-stat-issues">—</div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Merge Opportunities</div>
+            <div style="font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--text);" id="be-stat-merge">—</div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Severity Mix</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.6;" id="be-stat-severity">—</div>
+          </div>
+        </div>
+
+        <!-- Findings list -->
+        <div style="margin-bottom:8px;display:flex;gap:14px;align-items:center;">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Findings</div>
+          <div id="be-type-counts" style="font-size:11px;color:var(--text3);"></div>
+        </div>
+        <div id="be-findings-list" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="color:var(--text3);font-size:12px;padding:24px;text-align:center;">No findings yet. Click <strong>Run Bird Eye Review</strong> to scan your library.</div>
+        </div>
+
+        <!-- Run history -->
+        <div style="margin-top:24px;">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Run History</div>
+          <div id="be-history" style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text2);"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2298,6 +2344,7 @@ function showView(viewId, navEl, title) {
   else { btn.style.display = 'block'; btn.textContent = label || 'Open Tool'; }
 
   if (viewId === 'birdtalk' && !window.btStarted) { window.btStarted = true; btGreet(); }
+  if (viewId === 'library') { try { loadBirdEye(); } catch (_) {} }
   if (isMobileSidebarLayout()) closeSidebarDrawer();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -2313,6 +2360,187 @@ function handleTopbarBtn() {
 function setTab(el) {
   el.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+}
+
+// ── BIRD EYE REVIEW ─────────────────────────────────────────────────────────
+const BE_TYPE_LABEL = {
+  duplicate: 'Duplicate content',
+  conflict: 'Conflicting control',
+  stale: 'Stale governance',
+  framework_gap: 'Framework gap',
+  orphan: 'Orphaned document',
+};
+const BE_SEVERITY_COLOR = {
+  critical: '#ff5d5d',
+  high: '#ff9a4d',
+  medium: '#ffd24d',
+  low: '#9bd1ff',
+  info: '#9aa5b1',
+};
+
+function beEscape(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+async function loadBirdEye() {
+  await Promise.all([loadBirdEyeSummary(), loadBirdEyeHistory(), loadBirdEyeFindings()]);
+}
+
+async function loadBirdEyeSummary() {
+  try {
+    const r = await fetch(`${API}/bird-eye/library-summary`, { credentials: 'include' });
+    if (!r.ok) return;
+    const s = await r.json();
+    document.getElementById('be-stat-docs').textContent = s.documents_reviewed ?? '—';
+    document.getElementById('be-stat-issues').textContent = s.issues_open ?? '—';
+    document.getElementById('be-stat-merge').textContent = s.merge_opportunities ?? '—';
+    const sev = s.severity_breakdown || {};
+    document.getElementById('be-stat-severity').innerHTML = (
+      ['critical', 'high', 'medium', 'low', 'info']
+        .filter(k => sev[k])
+        .map(k => `<span style="display:inline-block;margin-right:10px;">
+          <span style="display:inline-block;width:7px;height:7px;background:${BE_SEVERITY_COLOR[k]};border-radius:50%;margin-right:5px;"></span>${beEscape(k)} <strong>${sev[k]}</strong>
+        </span>`).join('')
+      || '<span style="color:var(--text3);">no open findings</span>'
+    );
+    const typ = s.type_breakdown || {};
+    document.getElementById('be-type-counts').textContent = (
+      Object.keys(typ).length
+        ? Object.entries(typ).map(([k, v]) => `${BE_TYPE_LABEL[k] || k}: ${v}`).join(' · ')
+        : ''
+    );
+    const last = s.last_run;
+    document.getElementById('be-last-run').textContent = last
+      ? `Last run ${new Date(last.completed_at || last.created_at).toLocaleString()}`
+      : 'No runs yet';
+  } catch (err) {
+    console.warn('Bird Eye summary failed', err);
+  }
+}
+
+async function loadBirdEyeFindings() {
+  try {
+    const r = await fetch(`${API}/bird-eye/findings?status=open`, { credentials: 'include' });
+    if (!r.ok) return;
+    const findings = await r.json();
+    const list = document.getElementById('be-findings-list');
+    if (!findings.length) {
+      list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:24px;text-align:center;">No open findings. Click <strong>Run Bird Eye Review</strong> to scan again.</div>';
+      return;
+    }
+    const grouped = {};
+    findings.forEach(f => {
+      const t = f.finding_type || 'other';
+      grouped[t] = grouped[t] || [];
+      grouped[t].push(f);
+    });
+    const sevOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+    const typeOrder = ['conflict', 'duplicate', 'stale', 'framework_gap', 'orphan'];
+    const html = typeOrder
+      .filter(t => grouped[t])
+      .map(t => {
+        const items = grouped[t].sort((a, b) => (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9));
+        return `
+          <div style="margin-top:6px;font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">${beEscape(BE_TYPE_LABEL[t] || t)} (${items.length})</div>
+          ${items.map(f => beRenderFinding(f)).join('')}
+        `;
+      })
+      .join('');
+    list.innerHTML = html;
+  } catch (err) {
+    console.warn('Bird Eye findings failed', err);
+  }
+}
+
+function beRenderFinding(f) {
+  const color = BE_SEVERITY_COLOR[f.severity] || '#9aa5b1';
+  const summary = beEscape(f.description || f.summary || '');
+  const recommendation = beEscape(f.recommendation || '');
+  const primary = f.primary_document;
+  const related = f.related_document;
+  const docLinks = [primary, related]
+    .filter(Boolean)
+    .map(d => `<span style="display:inline-block;margin-right:8px;padding:2px 8px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">${beEscape(d.policy_number || '')} · ${beEscape(d.policy_name || '')}</span>`)
+    .join('');
+  const sim = f.similarity_score != null ? ` · ${(Number(f.similarity_score) * 100).toFixed(1)}%` : '';
+  return `
+    <div style="padding:14px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;" data-finding-id="${beEscape(f.id)}">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="margin-top:6px;width:8px;height:8px;background:${color};border-radius:50%;box-shadow:0 0 8px ${color}80;flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:${color};">${beEscape(f.severity || 'info')}${sim}</span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;">${beEscape(BE_TYPE_LABEL[f.finding_type] || f.finding_type || '')}</span>
+          </div>
+          <div style="margin-top:6px;font-size:13px;color:var(--text);line-height:1.55;">${summary}</div>
+          ${docLinks ? `<div style="margin-top:8px;">${docLinks}</div>` : ''}
+          ${recommendation ? `<div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.55;"><strong style="color:var(--accent);">Recommendation:</strong> ${recommendation}</div>` : ''}
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="run-btn" style="padding:4px 10px;font-size:10px;background:var(--bg4);color:var(--text2);border:1px solid var(--border2);" onclick="patchBirdEyeFinding('${beEscape(f.id)}', 'resolved')">Resolve</button>
+            <button class="run-btn" style="padding:4px 10px;font-size:10px;background:transparent;color:var(--text3);border:1px solid var(--border2);" onclick="patchBirdEyeFinding('${beEscape(f.id)}', 'dismissed')">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadBirdEyeHistory() {
+  try {
+    const r = await fetch(`${API}/bird-eye/runs?limit=10`, { credentials: 'include' });
+    if (!r.ok) return;
+    const runs = await r.json();
+    const el = document.getElementById('be-history');
+    if (!runs.length) {
+      el.innerHTML = '<span style="color:var(--text3);">no runs yet</span>';
+      return;
+    }
+    el.innerHTML = runs.map(r => {
+      const dt = new Date(r.completed_at || r.created_at).toLocaleString();
+      return `<div style="padding:6px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;">
+        <span>${beEscape(dt)} · ${beEscape(r.triggered_by || 'manual')}</span>
+        <span style="color:var(--text3);">${beEscape(r.status)} · ${r.findings_count ?? 0} findings · ${r.documents_reviewed ?? 0} docs</span>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.warn('Bird Eye history failed', err);
+  }
+}
+
+async function runBirdEye() {
+  const btn = document.getElementById('be-run-btn');
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  try {
+    const r = await fetch(`${API}/bird-eye/runs`, { method: 'POST', credentials: 'include' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadBirdEye();
+    showToast('Bird Eye review complete');
+  } catch (err) {
+    console.error('Bird Eye run failed', err);
+    showToast('Bird Eye run failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
+}
+
+async function patchBirdEyeFinding(id, status) {
+  try {
+    const r = await fetch(`${API}/bird-eye/findings/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadBirdEye();
+  } catch (err) {
+    console.error('Bird Eye patch failed', err);
+    showToast('Update failed: ' + err.message);
+  }
 }
 
 const CREATE_DOC_TYPES = [
