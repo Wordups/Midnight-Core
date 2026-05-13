@@ -1,0 +1,67 @@
+
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bird Eye - Finding Detail</title><style>
+:root {
+  --bg: #0a0c10;
+  --bg2: #11141a;
+  --bg3: #161a22;
+  --bg4: #1c2230;
+  --text: #e6edf3;
+  --text2: #8e98a7;
+  --text3: #586168;
+  --accent: #00d4f5;
+  --border2: rgba(255,255,255,0.07);
+  --font-display: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 40px; background: var(--bg); color: var(--text); font-family: var(--font-display); }
+.panel { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 24px; max-width: 1080px; margin: 0 auto; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.panel-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.btn { padding: 8px 14px; font-size: 11px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--bg); cursor: pointer; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
+</style></head><body>
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;">Bird Eye Finding</div>
+      <div class="panel-title" style="margin-top:6px;">Duplicate content</div>
+    </div>
+    <span style="font-family:var(--font-mono);font-size:11px;color:var(--text3);">finding 92a0a85e</span>
+  </div>
+  
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high · 100.0%</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Duplicate content</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Duplicate content: TKO-POL-002 §4.1 Authentication Requirements ↔ TKO-STD-001 §4.1 Authentication Requirements (100.0% similar)</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Merge or designate one document as the authoritative source. If the standard is more specific, keep it there and have the policy reference it.</div>
+      <details open style="margin-top:14px;font-size:11px;color:var(--text3);"><summary style="cursor:pointer;color:var(--text2);">Evidence</summary><pre style="margin-top:8px;padding:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);overflow:auto;font-family:var(--font-mono);">{
+  &quot;doc_a&quot;: {
+    &quot;title&quot;: &quot;Access Control Policy&quot;,
+    &quot;section&quot;: &quot;4.1 Authentication Requirements&quot;,
+    &quot;chunk_id&quot;: &quot;3c8100ea-ae7b-4cfa-afff-68741c09a169&quot;,
+    &quot;policy_number&quot;: &quot;TKO-POL-002&quot;
+  },
+  &quot;doc_b&quot;: {
+    &quot;title&quot;: &quot;Identity and Authentication Standard&quot;,
+    &quot;section&quot;: &quot;4.1 Authentication Requirements&quot;,
+    &quot;chunk_id&quot;: &quot;d48c7389-c91a-41ef-a144-745d9a232433&quot;,
+    &quot;policy_number&quot;: &quot;TKO-STD-001&quot;
+  },
+  &quot;similarity&quot;: 0.9999205097787017
+}</pre></details>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body></html>

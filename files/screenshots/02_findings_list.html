@@ -1,0 +1,390 @@
+
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bird Eye - Findings</title><style>
+:root {
+  --bg: #0a0c10;
+  --bg2: #11141a;
+  --bg3: #161a22;
+  --bg4: #1c2230;
+  --text: #e6edf3;
+  --text2: #8e98a7;
+  --text3: #586168;
+  --accent: #00d4f5;
+  --border2: rgba(255,255,255,0.07);
+  --font-display: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 40px; background: var(--bg); color: var(--text); font-family: var(--font-display); }
+.panel { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 24px; max-width: 1080px; margin: 0 auto; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.panel-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.btn { padding: 8px 14px; font-size: 11px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--bg); cursor: pointer; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
+</style></head><body>
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">Bird Eye Findings <span style="font-family:var(--font-mono);font-size:11px;color:var(--text3);font-weight:400;margin-left:10px;">21 open · 5 finding types</span></div>
+    <button class="btn">Run Bird Eye Review</button>
+  </div>
+  <div style="margin-top:18px;font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;">Conflicting control (6)</div>
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff5d5d;border-radius:50%;box-shadow:0 0 10px #ff5d5da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff5d5d;">critical</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Conflicting control</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Conflict on Password minimum length: TKO-STD-001 (4.2 Password Requirements) says 12 but TKO-POL-002 (4.2 Password Requirements) says 14.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Standardize on 14 characters (the stronger of the values) and update both documents to match.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Conflicting control</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Conflict on Password reuse history: TKO-POL-002 (4.2 Password Requirements) says 12 but TKO-STD-001 (4.2 Password Requirements) says 8.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Standardize on disallowing the previous 12 passwords (the stronger of the values).</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Conflicting control</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Conflict on Password rotation cadence: TKO-POL-002 (4.2 Password Requirements) says 180 but TKO-STD-001 (4.2 Password Requirements) says 90.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Align with NIST 800-63B current guidance: avoid forced rotation absent compromise indicators, or pick one cadence and update both documents.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Conflicting control</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Conflict on Breach notification window: TKO-POL-006 (4.4 Ongoing Monitoring) says 24 but TKO-POL-003 (4.3 Customer Notification) says 72.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-006 · Vendor Management Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-003 · Incident Response Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Pick a single value and update both documents to match.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:18px;font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;">Duplicate content (5)</div>
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high · 100.0%</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Duplicate content</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Duplicate content: TKO-POL-002 §4.1 Authentication Requirements ↔ TKO-STD-001 §4.1 Authentication Requirements (100.0% similar)</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Merge or designate one document as the authoritative source. If the standard is more specific, keep it there and have the policy reference it.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high · 91.0%</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Duplicate content</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Duplicate content: TKO-POL-002 §4.2 Password Requirements ↔ TKO-STD-001 §4.2 Password Requirements (91.0% similar)</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Merge or designate one document as the authoritative source. If the standard is more specific, keep it there and have the policy reference it.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high · 95.3%</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Duplicate content</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Duplicate content: TKO-POL-002 §4.3 Privileged Access ↔ TKO-STD-001 §4.3 Privileged Identity Management (95.3% similar)</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Merge or designate one document as the authoritative source. If the standard is more specific, keep it there and have the policy reference it.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high · 94.6%</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Duplicate content</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">Duplicate content: TKO-POL-002 §4.4 Service Accounts ↔ TKO-STD-001 §4.5 Service Account Credentials (94.6% similar)</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-002 · Access Control Policy</span><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-001 · Identity and Authentication Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Merge or designate one document as the authoritative source. If the standard is more specific, keep it there and have the policy reference it.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:18px;font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;">Stale governance (3)</div>
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Stale governance</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-005 (Data Retention Policy) has no assigned owner.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-005 · Data Retention Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Assign an accountable owner before the next review cycle.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ff9a4d;border-radius:50%;box-shadow:0 0 10px #ff9a4da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ff9a4d;">high</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Stale governance</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-005 (Data Retention Policy) review is overdue by 271 days (next_review_at=2025-08-15).</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-005 · Data Retention Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Schedule an immediate review and re-approval. Update last_reviewed_at and next_review_at once complete.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#9bd1ff;border-radius:50%;box-shadow:0 0 10px #9bd1ffa0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#9bd1ff;">low</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Stale governance</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-005 (Data Retention Policy) is marked Active but versioned 0.9 (pre-release).</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-005 · Data Retention Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Promote to v1.0 once the document is approved, or change status to Draft.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:18px;font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;">Framework gap (4)</div>
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ffd24d;border-radius:50%;box-shadow:0 0 10px #ffd24da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ffd24d;">medium</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Framework gap</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-005 (Data Retention Policy) references HIPAA (&#x27;phi&#x27; appears in the body) but the document is not tagged for HIPAA.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-005 · Data Retention Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Add the HIPAA framework tag to this document so coverage reports reflect its actual scope.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ffd24d;border-radius:50%;box-shadow:0 0 10px #ffd24da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ffd24d;">medium</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Framework gap</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-006 (Vendor Management Policy) references HIPAA (&#x27;hipaa&#x27; appears in the body) but the document is not tagged for HIPAA.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-006 · Vendor Management Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Add the HIPAA framework tag to this document so coverage reports reflect its actual scope.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ffd24d;border-radius:50%;box-shadow:0 0 10px #ffd24da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ffd24d;">medium</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Framework gap</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-STD-002 (Encryption Standard) references HIPAA (&#x27;phi&#x27; appears in the body) but the document is not tagged for HIPAA.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-STD-002 · Encryption Standard</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Add the HIPAA framework tag to this document so coverage reports reflect its actual scope.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#9bd1ff;border-radius:50%;box-shadow:0 0 10px #9bd1ffa0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#9bd1ff;">low</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Framework gap</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-004 (Acceptable Use Policy) is tagged for SOC 2 and ISO 27001 but not NIST CSF, which has equivalent AUP-style controls (PR.IP-11, PR.AT-1).</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-004 · Acceptable Use Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Add the NIST CSF framework tag if NIST CSF is a target framework for the tenant.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:18px;font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;">Orphaned document (3)</div>
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ffd24d;border-radius:50%;box-shadow:0 0 10px #ffd24da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ffd24d;">medium</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Orphaned document</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-003 (Incident Response Policy) references incident response but no Incident Response Runbook exists in the document inventory.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-003 · Incident Response Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Create an Incident Response Runbook (procedure-level artifact) so responders have step-by-step actions to execute under the policy.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#ffd24d;border-radius:50%;box-shadow:0 0 10px #ffd24da0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#ffd24d;">medium</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Orphaned document</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-006 (Vendor Management Policy) references vendor security questionnaire, vendor assessment but no Vendor Assessment Procedure exists in the document inventory.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-006 · Vendor Management Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Create a Vendor Assessment Procedure (with the security questionnaire template) so the policy is executable.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="margin-top:6px;width:10px;height:10px;background:#9bd1ff;border-radius:50%;box-shadow:0 0 10px #9bd1ffa0;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#9bd1ff;">low</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Orphaned document</span>
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text);line-height:1.55;">TKO-POL-005 (Data Retention Policy) references cryptographic erasure, automated retention enforcement, disposal but no Data Disposal Procedure exists in the document inventory.</div>
+      <div style="margin-top:10px;"><span style="display:inline-block;margin-right:8px;padding:3px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;">TKO-POL-005 · Data Retention Policy</span></div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text2);line-height:1.6;"><strong style="color:var(--accent);">Recommendation:</strong> Create a Data Disposal Procedure that operationalizes the cryptographic erasure and retention enforcement requirements.</div>
+      
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border2);">Resolve</button>
+        <button class="btn" style="background:transparent;color:var(--text3);border:1px solid var(--border2);">Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body></html>
