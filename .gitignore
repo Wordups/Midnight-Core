@@ -63,6 +63,9 @@ desktop.ini
 *.swo
 *~
 
+# ── Claude Code (local agent state, worktrees, launch configs) ────────────────
+.claude/
+
 # ── Testing / coverage ────────────────────────────────────────────────────────
 .pytest_cache/
 .coverage
