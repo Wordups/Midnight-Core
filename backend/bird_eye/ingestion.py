@@ -43,14 +43,96 @@ def _extract_text_md(content: bytes) -> str:
 
 
 def _extract_text_docx(content: bytes) -> str:
+    """Extract text from a .docx, emitting markdown-equivalent headings/lists.
+
+    Bird Eye's section splitter (split_sections) uses regex on `#` prefixes
+    and bullet markers. Plain text extraction loses paragraph style info, so
+    a .docx authored with proper Word styles (Heading 1/2/3, List Bullet,
+    List Number) would arrive as a single unstructured blob and the section
+    splitter would find nothing.
+
+    We re-emit style hints inline:
+      Heading N        -> N '#' chars + space + text  (Heading 1..6)
+      List Bullet      -> '- ' + text
+      List Number      -> '1. ' + text  (counter resets per list run)
+      Intense Quote    -> '> ' + text
+    Other styles fall through as plain paragraphs. Existing literal markdown
+    (e.g. legacy docs with '## ' in the text) is preserved untouched — the
+    style-derived prefix is only added when not already present.
+    """
     from docx import Document  # type: ignore
+
     doc = Document(io.BytesIO(content))
     lines: list[str] = []
+    number_counter = 0
     for para in doc.paragraphs:
-        text = para.text.strip()
-        if text:
-            lines.append(text)
-    return "\n".join(lines)
+        raw = (para.text or "").strip()
+        if not raw:
+            number_counter = 0  # break the numbered run on blank lines
+            lines.append("")
+            continue
+
+        style_name = (para.style.name if para.style else "") or ""
+
+        # Word "Heading N" styles -> markdown ATX heading. Strip any
+        # pre-existing leading `#` so a legacy docx that has BOTH styled
+        # Heading + literal `## ` text doesn't double up.
+        heading_level = None
+        if style_name.startswith("Heading "):
+            try:
+                heading_level = int(style_name.split()[1])
+            except (ValueError, IndexError):
+                heading_level = None
+        if heading_level and 1 <= heading_level <= 6:
+            cleaned = raw.lstrip("#").strip()
+            lines.append(f"{'#' * heading_level} {cleaned}")
+            number_counter = 0
+            continue
+
+        # List Bullet -> `- text` (unless already prefixed with -, *, +)
+        if style_name.startswith("List Bullet"):
+            if not raw.startswith(("- ", "* ", "+ ")):
+                raw = f"- {raw}"
+            lines.append(raw)
+            number_counter = 0
+            continue
+
+        # List Number -> sequential `N. text` (only if not already numbered)
+        if style_name.startswith("List Number"):
+            import re as _re
+            number_counter += 1
+            if not _re.match(r"^\d+[.)]\s+", raw):
+                raw = f"{number_counter}. {raw}"
+            lines.append(raw)
+            continue
+
+        # Block quotes
+        if style_name in ("Intense Quote", "Quote"):
+            if not raw.startswith(">"):
+                raw = f"> {raw}"
+            lines.append(raw)
+            number_counter = 0
+            continue
+
+        # Default: plain paragraph
+        lines.append(raw)
+        number_counter = 0
+
+    # Trim trailing blanks and collapse stretches of >1 blank line into one.
+    out: list[str] = []
+    prev_blank = False
+    for line in lines:
+        if line == "":
+            if prev_blank:
+                continue
+            prev_blank = True
+            out.append(line)
+        else:
+            prev_blank = False
+            out.append(line)
+    while out and out[-1] == "":
+        out.pop()
+    return "\n".join(out)
 
 
 def _extract_text_pdf(content: bytes) -> str:
@@ -84,7 +166,18 @@ NUMBERED_RE = re.compile(r"^(\d+(?:\.\d+)*)\s+([A-Z].{1,120})$")
 
 
 def split_sections(raw_text: str) -> list[dict[str, str]]:
-    """Split into section dicts with heading + content. Only main numbered sections (## ...) and their 4.x subsections."""
+    """Split into section dicts with heading + content.
+
+    Treats any ATX heading (`#` .. `######`) as a section boundary. The
+    _extract_text_docx pass also emits Word `Heading 1..6` styles as
+    matching `#` prefixes, so this regex is the single source of truth.
+
+    Title-only or empty sections (heading immediately followed by another
+    heading) are filtered out so they don't pollute downstream similarity
+    detection. The MIN_CHUNK_CHARS guard in detect_duplicates would catch
+    most of those anyway, but filtering here also keeps the chunk count
+    honest.
+    """
     sections: list[dict[str, str]] = []
     current_heading: str | None = None
     current_lines: list[str] = []
@@ -93,22 +186,21 @@ def split_sections(raw_text: str) -> list[dict[str, str]]:
         line = raw_line.rstrip()
         m = HEADING_RE.match(line.strip())
         if m:
-            level = len(m.group(1))
             heading_text = m.group(2).strip()
-            if level >= 2:
-                if current_heading is not None:
-                    sections.append({"heading": current_heading, "content": "\n".join(current_lines).strip()})
-                current_heading = heading_text
-                current_lines = []
-                continue
+            # Close the previous section
+            if current_heading is not None:
+                sections.append({"heading": current_heading, "content": "\n".join(current_lines).strip()})
+            current_heading = heading_text
+            current_lines = []
+            continue
         if current_heading is not None:
             current_lines.append(line)
 
     if current_heading is not None:
         sections.append({"heading": current_heading, "content": "\n".join(current_lines).strip()})
 
-    # Drop sections with empty content (just a sub-heading container) but keep their content rolled into next
-    return [s for s in sections if s["content"] or s["heading"]]
+    # Drop empty / title-only sections (heading line with no body before the next heading).
+    return [s for s in sections if s["content"].strip()]
 
 
 # Mapping of section heading -> slot_id used in existing schema. Falls back to slugified heading.
