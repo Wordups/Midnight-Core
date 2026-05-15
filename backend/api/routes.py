@@ -37,6 +37,7 @@ from backend.core.json_parser import (
     PolicySchemaError,
     parse_model_json,
 )
+from backend.renderers.docx_renderer import render_markdown_bullet, render_markdown_into
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
 from backend.storage.file_store import (
     SupabaseStoreError,
@@ -1950,11 +1951,16 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         return heading
 
     def add_body(text: str):
-        paragraph = doc.add_paragraph(_safe_text(text))
-        return paragraph
+        # Render markdown (#/##/*** /etc.) into real Word formatting instead
+        # of leaking literal symbols. _safe_text would just str() the value;
+        # render_markdown_into walks block + inline syntax and emits proper
+        # headings, bullets, bold/italic runs.
+        render_markdown_into(doc, _safe_text(text))
 
     def add_bullet(text: str):
-        doc.add_paragraph(_safe_text(text), style="List Bullet")
+        # Bullet semantics already chosen by caller; only apply inline
+        # markdown formatting to the bullet body.
+        render_markdown_bullet(doc, _safe_text(text))
 
     fields = [
         ("Policy Name", policy_data.get("policy_name", "Untitled Policy")),
