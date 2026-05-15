@@ -1,10 +1,14 @@
 import json
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
-from backend.api.routes import ANTHROPIC_MODEL, _get_anthropic_client, _strip_json_fences
+from backend.api.routes import ANTHROPIC_MODEL, _get_anthropic_client
+from backend.core.json_parser import ParsedModelOutputError, parse_model_json
+
+logger = logging.getLogger("midnight.assessments")
 
 
 router = APIRouter(prefix="/api/v1", tags=["assessments"])
@@ -115,6 +119,7 @@ async def create_assessment(request: AssessmentRequest) -> AssessmentResponse:
         text=request.text,
     )
 
+    model_output: str | None = None
     try:
         client = _get_anthropic_client()
         message = client.messages.create(
@@ -123,11 +128,35 @@ async def create_assessment(request: AssessmentRequest) -> AssessmentResponse:
             messages=[{"role": "user", "content": prompt}],
         )
         model_output = message.content[0].text
-        parsed_output = json.loads(_strip_json_fences(model_output))
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - network / provider failures
+        logger.warning("assessment_provider_unavailable", extra={"error": str(exc)})
+        raise HTTPException(status_code=503, detail="AI provider unavailable.") from exc
+
+    # Parse the model's response with the safe two-pass parser. On any
+    # parser or schema failure return a controlled 502 instead of crashing
+    # — the global handler in errors.py wraps it in the canonical envelope
+    # {error, detail, request_id}. The raw model output is logged so we
+    # can post-mortem the specific completion that broke.
+    try:
+        parsed_output = parse_model_json(model_output or "")
         return AssessmentResponse.model_validate(parsed_output)
-    except HTTPException as exc:
-        raise HTTPException(status_code=503, detail="AI provider unavailable.") from exc
-    except (json.JSONDecodeError, ValidationError) as exc:
-        raise HTTPException(status_code=503, detail="AI provider unavailable.") from exc
-    except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=503, detail="AI provider unavailable.") from exc
+    except (ParsedModelOutputError, json.JSONDecodeError) as exc:
+        logger.warning(
+            "assessment_parse_failed",
+            extra={"error": str(exc), "raw_output": (model_output or "")[:2000]},
+        )
+        raise HTTPException(
+            status_code=502,
+            detail=f"Model returned unparseable JSON: {exc}",
+        ) from exc
+    except ValidationError as exc:
+        logger.warning(
+            "assessment_schema_invalid",
+            extra={"error": exc.errors(), "raw_output": (model_output or "")[:2000]},
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Model output did not match the assessment schema.",
+        ) from exc

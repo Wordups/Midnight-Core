@@ -17,6 +17,7 @@ from typing import Any
 
 import anthropic
 
+from backend.core.json_parser import ParsedModelOutputError, parse_model_json
 from config import settings
 
 logger = logging.getLogger("midnight.bird_eye.metadata_llm")
@@ -184,7 +185,18 @@ def extract_metadata(raw_text: str, *, default_title: str | None = None) -> dict
     text = "".join(block.text for block in response.content if getattr(block, "type", None) == "text")
     if not text.strip():
         raise RuntimeError("Claude metadata extractor returned an empty response")
-    parsed = json.loads(_strip_fences(text))
+    try:
+        parsed = parse_model_json(text)
+    except ParsedModelOutputError as exc:
+        # Log a bounded preview of the raw output so the failure is
+        # debuggable in CloudWatch without leaking arbitrary length.
+        logger.warning(
+            "metadata_llm_parse_failed",
+            extra={"error": str(exc), "raw_output": text[:2000]},
+        )
+        raise RuntimeError(f"Claude metadata extractor returned unparseable JSON: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise RuntimeError("Claude metadata extractor returned non-object JSON")
 
     title = (parsed.get("title") or "").strip() or default_title
     if not title:
