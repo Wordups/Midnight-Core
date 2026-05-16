@@ -157,6 +157,89 @@ POLICY_SLOT_SPECS = [
 ]
 SECTION_CONTENT_LIMIT = 12000
 
+# ─── P0 engine lockdown — extensibility scaffolding ──────────────────────────
+# Today's policy generator always uses POLICY_SLOT_SPECS (generic policy).
+# Next sprint wires 36 category+variant templates, each with its own section
+# structure. The resolvers below are the single seam where category-specific
+# section lists / prompts will be looked up — populating the empty registries
+# below will be a config change, not a rewrite of the validator or generator.
+
+SLOT_SPEC_REGISTRY: dict[str, list[dict[str, str]]] = {}
+# Populate per-category, e.g.
+#   SLOT_SPEC_REGISTRY["procedure"] = [purpose, scope, prerequisites, steps, ...]
+#   SLOT_SPEC_REGISTRY["risk_assessment"] = [scope, methodology, risks, ...]
+
+
+def _slot_specs_for_category(category: str | None) -> list[dict[str, str]]:
+    """Return the required-section spec list for the given category.
+
+    P0 always falls back to POLICY_SLOT_SPECS because SLOT_SPEC_REGISTRY is
+    empty. Next sprint registers per-category specs; this function does not
+    need to change.
+    """
+    if category and category in SLOT_SPEC_REGISTRY:
+        return SLOT_SPEC_REGISTRY[category]
+    return POLICY_SLOT_SPECS
+
+
+METADATA_PROMPT_REGISTRY: dict[str, Any] = {}
+SECTION_PROMPT_REGISTRY: dict[str, Any] = {}
+
+
+def _metadata_prompt_loader(category: str | None):
+    """Return the metadata-prompt builder for a given category. P0 always
+    returns the generic-policy builder (_build_metadata_prompt); next sprint
+    registers per-category builders in METADATA_PROMPT_REGISTRY."""
+    if category and category in METADATA_PROMPT_REGISTRY:
+        return METADATA_PROMPT_REGISTRY[category]
+    return _build_metadata_prompt
+
+
+def _section_prompt_loader(category: str | None):
+    """Return the per-section prompt builder for a given category. Generic
+    fallback for P0."""
+    if category and category in SECTION_PROMPT_REGISTRY:
+        return SECTION_PROMPT_REGISTRY[category]
+    return _build_section_prompt
+
+
+# ─── Framework canonicalization + recognized set ─────────────────────────────
+RECOGNIZED_FRAMEWORKS: frozenset[str] = frozenset({
+    "HIPAA",
+    "HITRUST",
+    "PCI_DSS",
+    "ISO_27001",
+    "NIST_CSF",
+    "COBIT_2019",
+    "SOC_2",
+})
+
+_FRAMEWORK_DELIMITER_RE = re.compile(r"[\s\-\.]+")
+_FRAMEWORK_REPEATED_UNDERSCORE_RE = re.compile(r"_+")
+
+
+def _canonicalize_framework(raw: str) -> str:
+    """Normalize one framework string into the canonical key form.
+
+    Strips whitespace, uppercases, collapses spaces/dashes/periods into a
+    single underscore. Examples:
+      'soc 2'   -> 'SOC_2'
+      'PCI DSS' -> 'PCI_DSS'
+      'iso-27001' -> 'ISO_27001'
+    The result may or may not be in RECOGNIZED_FRAMEWORKS; the caller checks.
+    """
+    cleaned = (raw or "").strip().upper()
+    cleaned = _FRAMEWORK_DELIMITER_RE.sub("_", cleaned)
+    cleaned = _FRAMEWORK_REPEATED_UNDERSCORE_RE.sub("_", cleaned)
+    return cleaned.strip("_")
+
+
+# ─── Quality-flag thresholds (P0) ────────────────────────────────────────────
+QUALITY_THIN_SECTION_MIN_CHARS = 200
+QUALITY_THIN_POLICY_MIN_SECTIONS = 3
+QUALITY_FAIL_THIN_RATIO = 0.30
+_PLACEHOLDER_ONLY_RE = re.compile(r"^\s*\{\{[^}]+\}\}\s*$")
+
 
 def _slugify_value(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", str(value or "").strip().lower()).strip("-")
@@ -1127,10 +1210,6 @@ def _extract_template_section_map(
     return _default_template_section_map(template_name)
 
 
-def _strip_json_fences(raw: str) -> str:
-    return raw.replace("```json", "").replace("```", "").strip()
-
-
 def _log_model_output_failure(
     *,
     flow: str,
@@ -1289,6 +1368,7 @@ def _file_docx_response(
     source_name: str,
     policy_id: str | None = None,
     watermark_exports: bool = False,
+    quality_flags: list[dict[str, Any]] | None = None,
 ) -> FileResponse:
     try:
         docx_bytes = _build_docx(policy_data, template_name)
@@ -1321,14 +1401,23 @@ def _file_docx_response(
 
     temp_path = _write_temp_docx(docx_bytes)
 
+    response_headers = {
+        "X-Midnight-Preview": preview_text,
+        "X-Midnight-Document-Id": record["id"],
+    }
+    if quality_flags:
+        # JSON-encode the flags array into a single response header so the
+        # frontend can surface them alongside the .docx download. Empty
+        # array is omitted to keep the header set tidy on clean runs.
+        response_headers["X-Midnight-Quality-Flags"] = json.dumps(
+            quality_flags, ensure_ascii=False
+        )
+
     return FileResponse(
         path=temp_path,
         filename=output_name,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "X-Midnight-Preview": preview_text,
-            "X-Midnight-Document-Id": record["id"],
-        },
+        headers=response_headers,
     )
 
 
@@ -1618,16 +1707,54 @@ def _validate_policy_metadata(
     organization_hint: str,
     normalized_frameworks: list[str],
 ) -> dict[str, Any]:
+    # P0 contract: model output that PARSED OK but has a wrong shape -> 422
+    # (caller has structurally-wrong data, not unparseable garbage). Genuine
+    # unparseable-JSON cases stay 502 and are surfaced upstream by
+    # _call_model_json_object.
     title = str(metadata.get("title") or request.policy_name).strip()
     organization = str(metadata.get("organization") or organization_hint).strip()
     owner = str(metadata.get("owner") or request.owner).strip()
     document_type = str(metadata.get("document_type") or request.doc_type or "Policy").strip()
     status = str(metadata.get("status") or "Draft").strip() or "Draft"
     schema_version = str(metadata.get("schema_version") or POLICY_SCHEMA_VERSION).strip() or POLICY_SCHEMA_VERSION
-    selected_frameworks = metadata.get("selected_frameworks") or normalized_frameworks
-    if not isinstance(selected_frameworks, list):
-        raise HTTPException(status_code=502, detail="AI returned invalid metadata: selected_frameworks must be a list.")
-    selected_frameworks = [str(item).strip() for item in selected_frameworks if str(item).strip()]
+
+    # selected_frameworks: model MUST return a non-empty array of values from
+    # RECOGNIZED_FRAMEWORKS. The previous silent fallback to
+    # normalized_frameworks hid cases where the model dropped the field
+    # entirely.
+    raw_frameworks = metadata.get("selected_frameworks")
+    if not isinstance(raw_frameworks, list):
+        raise HTTPException(
+            status_code=422,
+            detail="Model output failed schema validation: selected_frameworks must be an array.",
+        )
+    canonicalized: list[str] = []
+    rejected: list[str] = []
+    for item in raw_frameworks:
+        text = str(item or "").strip()
+        if not text:
+            continue
+        canon = _canonicalize_framework(text)
+        if canon in RECOGNIZED_FRAMEWORKS:
+            if canon not in canonicalized:
+                canonicalized.append(canon)
+        else:
+            rejected.append(text)
+    if rejected:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Model output failed schema validation: selected_frameworks contains "
+                f"unrecognized value(s): {', '.join(rejected)}. Recognized values: "
+                f"{', '.join(sorted(RECOGNIZED_FRAMEWORKS))}."
+            ),
+        )
+    if not canonicalized:
+        raise HTTPException(
+            status_code=422,
+            detail="Model output failed schema validation: selected_frameworks must be a non-empty array.",
+        )
+    selected_frameworks = canonicalized
 
     required = {
         "title": title,
@@ -1639,7 +1766,10 @@ def _validate_policy_metadata(
     }
     missing = [key for key, value in required.items() if not value]
     if missing:
-        raise HTTPException(status_code=502, detail=f"AI returned invalid metadata: missing {', '.join(missing)}.")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Model output failed schema validation: missing required field(s): {', '.join(missing)}.",
+        )
 
     return {
         "title": title,
@@ -1841,19 +1971,126 @@ def _build_section_prompt(
     )
 
 
+def _compute_quality_flags(
+    *,
+    sections: list[dict[str, Any]],
+    tenant_id: str,
+    policy_id: str,
+) -> list[dict[str, Any]]:
+    """Compute the post-generation quality flags for a policy.
+
+    Pure function over the final section list. Flags are warnings unless the
+    overall thin-ratio exceeds QUALITY_FAIL_THIN_RATIO, in which case a single
+    `fail_thin` error flag is added on top. Every triggered flag is also
+    logged at WARN with tenant_id + policy_id + section context so an
+    operator can correlate without parsing the response payload.
+
+    The frontend treats the returned array as a generic list of
+    {flag, severity, message, context} entries — no per-flag switch logic.
+    """
+    flags: list[dict[str, Any]] = []
+    thin_sections: list[dict[str, Any]] = []
+    total = len(sections)
+
+    for section in sections:
+        content = str(section.get("content") or "").strip()
+        slot_id = str(section.get("slot_id") or "")
+        heading = str(section.get("heading") or slot_id)
+        char_count = len(content)
+
+        if _PLACEHOLDER_ONLY_RE.match(content):
+            flags.append({
+                "flag": "broken_section",
+                "severity": "warning",
+                "message": f"Section '{heading}' contains only unfilled placeholder.",
+                "context": {
+                    "slot_id": slot_id,
+                    "heading": heading,
+                    "placeholder_text": content,
+                },
+            })
+            continue
+        if char_count < QUALITY_THIN_SECTION_MIN_CHARS:
+            entry = {
+                "flag": "thin_section",
+                "severity": "warning",
+                "message": (
+                    f"Section '{heading}' is only {char_count} characters "
+                    f"(below {QUALITY_THIN_SECTION_MIN_CHARS}-char minimum)."
+                ),
+                "context": {
+                    "slot_id": slot_id,
+                    "heading": heading,
+                    "char_count": char_count,
+                },
+            }
+            flags.append(entry)
+            thin_sections.append(entry["context"])
+
+    if total < QUALITY_THIN_POLICY_MIN_SECTIONS:
+        flags.append({
+            "flag": "thin_policy",
+            "severity": "warning",
+            "message": (
+                f"Policy has only {total} section(s); minimum recommended is "
+                f"{QUALITY_THIN_POLICY_MIN_SECTIONS}."
+            ),
+            "context": {"section_count": total},
+        })
+
+    if total > 0 and (len(thin_sections) / total) > QUALITY_FAIL_THIN_RATIO:
+        ratio = round(len(thin_sections) / total, 3)
+        pct = round(ratio * 100)
+        flags.append({
+            "flag": "fail_thin",
+            "severity": "error",
+            "message": (
+                f"{len(thin_sections)} of {total} sections are thin ({pct}%). "
+                "Consider regenerating with more detail."
+            ),
+            "context": {
+                "thin_count": len(thin_sections),
+                "total_count": total,
+                "ratio": ratio,
+                "thin_sections": thin_sections,
+            },
+        })
+
+    if flags:
+        logger.warning(
+            "policy_quality_flags",
+            extra={
+                "tenant_id": tenant_id,
+                "policy_id": policy_id,
+                "flag_count": len(flags),
+                "flag_ids": [f["flag"] for f in flags],
+                "thin_sections": thin_sections,
+            },
+        )
+
+    return flags
+
+
 async def _generate_policy_data(
     request: CreatePolicyRequest,
     *,
     tenant_id: str,
     organization_hint: str = "",
     existing_policy_id: str | None = None,
-) -> tuple[dict[str, Any], str]:
+) -> tuple[dict[str, Any], str, list[dict[str, Any]]]:
     normalized_frameworks, fw_context = build_framework_prompt_context(request.frameworks)
     mapping_rules = build_framework_mapping_rules(request.frameworks)
 
+    # Category-aware lookups for the next-sprint template work. Today they
+    # always resolve to the generic-policy specs / prompt builders.
+    category = (request.doc_type or "").strip().lower()
+    slot_specs = _slot_specs_for_category(category)
+    build_metadata_prompt = _metadata_prompt_loader(category)
+    build_section_prompt = _section_prompt_loader(category)
+
     metadata_raw = _call_model_json_object(
         system_prompt="You are Midnight's policy metadata generator. Return JSON only.",
-        user_prompt=_build_metadata_prompt(request, organization_hint=organization_hint, normalized_frameworks=normalized_frameworks),
+        user_prompt=build_metadata_prompt(request, organization_hint=organization_hint, normalized_frameworks=normalized_frameworks),
         flow="create_policy_metadata",
         context={"policy_name": request.policy_name, "doc_type": request.doc_type},
         max_tokens=700,
@@ -1884,11 +2121,11 @@ async def _generate_policy_data(
     sections: list[dict[str, Any]] = []
     section_errors: list[dict[str, str]] = []
 
-    for slot_spec in POLICY_SLOT_SPECS:
+    for slot_spec in slot_specs:
         try:
             raw_section = _call_model_json_object(
                 system_prompt="You are Midnight's policy section generator. Return JSON only for one section.",
-                user_prompt=_build_section_prompt(
+                user_prompt=build_section_prompt(
                     request,
                     metadata=metadata,
                     slot_spec=slot_spec,
@@ -1916,12 +2153,16 @@ async def _generate_policy_data(
                 version=metadata.get("version") or None,
                 policy_id=policy_id,
             )
-        except HTTPException as exc:
+        except (HTTPException, PolicySchemaError) as exc:
+            # Both error types degrade gracefully: skip this section, record
+            # the error, continue with the rest. Without the PolicySchemaError
+            # branch this path raised an uncaught domain error and the route
+            # returned 500 — that was a latent bug pre-P0.
             section_errors.append(
                 {
                     "slot_id": slot_spec["slot_id"],
                     "heading": slot_spec["heading"],
-                    "error": str(exc.detail),
+                    "error": str(exc.detail) if isinstance(exc, HTTPException) else str(exc),
                 }
             )
 
@@ -1936,7 +2177,13 @@ async def _generate_policy_data(
         required_frameworks=metadata.get("selected_frameworks", []),
     )
     policy_payload["_draft"] = {"policy_id": policy_id}
-    return policy_payload, policy_id
+
+    quality_flags = _compute_quality_flags(
+        sections=policy_payload.get("sections") or sections,
+        tenant_id=tenant_id,
+        policy_id=policy_id,
+    )
+    return policy_payload, policy_id, quality_flags
 
 
 def _build_docx(policy_data: dict, template_name: str) -> bytes:
@@ -2449,10 +2696,11 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
 @pipeline_router.post("/create")
 async def create_document(request: Request, payload: CreatePolicyRequest):
     tenant = None
+    quality_flags: list[dict[str, Any]] = []
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
         tenant = _enforce_trial_limits(request, frameworks=framework_list)
-        policy_data, policy_id = await _generate_policy_data(
+        policy_data, policy_id, quality_flags = await _generate_policy_data(
             payload,
             tenant_id=tenant["id"],
             organization_hint=str(tenant.get("name") or ""),
@@ -2500,6 +2748,7 @@ async def create_document(request: Request, payload: CreatePolicyRequest):
         source_name=payload.policy_name,
         policy_id=policy_id,
         watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        quality_flags=quality_flags,
     )
 
 
