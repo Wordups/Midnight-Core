@@ -674,7 +674,12 @@ class TraceAgent(BaseAgent):
             if i < len(state["activity_log_ids"]):
                 rid = state["activity_log_ids"][i]
             else:
-                rid = "(not recorded — early exit)"
+                # Steps 14-16 (write_trace itself, verify_artifacts, return)
+                # write their activity_log rows AFTER this markdown is rendered,
+                # so their IDs aren't available at write time. The rows DO exist
+                # in activity_log — they can be queried by tenant_id + intake_id
+                # after the run completes.
+                rid = "(written after this trace — see activity_log)"
             lines.append(f"- **Step {step_n:>2} — {step_name}** — activity_log id `{rid}`")
 
         history = state.get("validation_history") or []
