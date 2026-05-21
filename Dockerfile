@@ -3,10 +3,17 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies + Node.js 20.x for Trace Agent's docx-js generator
+# subprocess. NodeSource setup pulls a pinned 20.x line; the `docx` package
+# version is pinned in backend/agents/generators/package.json.
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
+    curl \
+    ca-certificates \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
@@ -24,6 +31,11 @@ COPY errors.py ./errors.py
 COPY health.py ./health.py
 COPY logging_config.py ./logging_config.py
 COPY middleware/ ./middleware/
+
+# Install the Trace Agent's pinned docx-js dependency at image build time so
+# the subprocess doesn't have to npm install on first request in prod.
+RUN cd backend/agents/generators \
+    && npm install --no-audit --no-fund --loglevel=error
 
 # Set Python path so backend imports resolve
 ENV PYTHONPATH=/app
