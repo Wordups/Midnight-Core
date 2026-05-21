@@ -6,6 +6,7 @@ from backend.agents.framework_mapping_agent import FrameworkMappingAgent
 from backend.agents.policy_agent import PolicyAgent
 from backend.agents.signal_manager import SignalManagerAgent
 from backend.agents.tenant_manager import TenantManagerAgent
+from backend.agents.trace_agent import TraceAgent
 
 __all__ = [
     "AgentValidationError",
@@ -17,4 +18,5 @@ __all__ = [
     "PolicyAgent",
     "SignalManagerAgent",
     "TenantManagerAgent",
+    "TraceAgent",
 ]

@@ -1,0 +1,84 @@
+# SOC Playbook outline derived from NIST SP 800-61 Rev. 3
+# (Computer Security Incident Handling Guide).
+#
+# Loaded by TraceAgent step 7 (outline). When the {deliverable_type,
+# framework_spine[0]} pair matches the filename, we use this outline
+# verbatim and skip the LLM fallback. Trace logs outline_source=template.
+
+deliverable_type: soc_playbook
+framework: NIST_800_61
+title: Security Operations Center Playbook
+description: >
+  Operations + auditor-ready playbook covering the full incident-handling
+  lifecycle defined by NIST SP 800-61 Rev. 3, scoped to the tenant's
+  declared assumptions (severity tiers, regulators, runbooks).
+
+sections:
+  - id: front_matter
+    heading: Cover, Approvals, and Revision History
+    purpose: >
+      Identify the playbook, its owners, approval signatures, and version
+      lineage. Required for auditor reads.
+  - id: purpose_scope
+    heading: 1. Purpose and Scope
+    purpose: >
+      State the playbook's mission, who it applies to, and the systems /
+      data classes covered. Reference cyber + physical scope flags from
+      the intake's scope_boundary.
+  - id: governance_roles
+    heading: 2. Governance and Roles
+    purpose: >
+      Define SOC roles, RACI for incident handling, escalation authority,
+      and decision rights. Pull team_size from business_context to size
+      role expectations appropriately.
+  - id: severity_classification
+    heading: 3. Incident Severity Classification
+    purpose: >
+      Enumerate the severity tiers declared in the intake assumptions
+      (e.g. 4 tiers). Map each tier to detection criteria, response SLAs,
+      and notification scope.
+  - id: preparation
+    heading: 4. Preparation (NIST 800-61 Phase 1)
+    purpose: >
+      Tooling baseline, training cadence, tabletop exercise frequency,
+      and pre-staged communications. Cite the tech_stack from business
+      context.
+  - id: detection_analysis
+    heading: 5. Detection and Analysis (NIST 800-61 Phase 2)
+    purpose: >
+      Detection sources, triage workflow, evidence collection rules,
+      and analyst handoff procedures. Reference chain_of_custody if it
+      appears in data_types.
+  - id: containment_eradication_recovery
+    heading: 6. Containment, Eradication, and Recovery (NIST 800-61 Phase 3)
+    purpose: >
+      Short-term containment, long-term containment, eradication
+      sequencing, and recovery validation gates.
+  - id: post_incident
+    heading: 7. Post-Incident Activity (NIST 800-61 Phase 4)
+    purpose: >
+      Hotwash, lessons-learned timeline, evidence retention policy, and
+      playbook-update process.
+  - id: regulator_notification
+    heading: 8. Regulator and Customer Notification
+    purpose: >
+      Notification timing per regulator, template language, and who
+      authorizes external communications. Enumerate every regulator
+      listed in declared_assumptions.regulators.
+  - id: runbook_index
+    heading: 9. Runbook Index
+    purpose: >
+      One-line summary of each runbook referenced by the playbook. Count
+      should match declared_assumptions.runbook_count.
+  - id: appendix_contacts
+    heading: 10. Appendix — Contact Tree and Vendor Numbers
+    purpose: >
+      On-call rotation, vendor 24/7 contacts, regulator hotlines.
+  - id: appendix_metrics
+    heading: 11. Appendix — Metrics and Audit Evidence
+    purpose: >
+      Standard metrics the SOC reports (MTTD, MTTR, escalation rate) and
+      the evidence artifacts an auditor would expect to pull for each.
+
+# Section count = 12 (includes front_matter). Matches "audit-ready"
+# deliverable expectations for a NIST 800-61 playbook.

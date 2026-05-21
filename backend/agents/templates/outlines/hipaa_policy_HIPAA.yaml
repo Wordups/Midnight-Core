@@ -1,0 +1,73 @@
+# Generic HIPAA Security Rule policy outline.
+#
+# Loaded by TraceAgent step 7 when deliverable_type=hipaa_policy and
+# framework_spine[0]=HIPAA. Trace logs outline_source=template.
+
+deliverable_type: hipaa_policy
+framework: HIPAA
+title: HIPAA Security Rule Policy
+description: >
+  Administrative, physical, and technical safeguards required by the
+  HIPAA Security Rule (45 CFR Part 164, Subpart C), scoped to the
+  tenant's business context and declared assumptions.
+
+sections:
+  - id: front_matter
+    heading: Cover, Approvals, and Revision History
+    purpose: >
+      Identify the policy, its owners, approval signatures, and version
+      lineage. Required for auditor reads.
+  - id: purpose
+    heading: 1. Purpose
+    purpose: >
+      State the policy's compliance objective: protect the
+      confidentiality, integrity, and availability of electronic
+      Protected Health Information (ePHI).
+  - id: scope
+    heading: 2. Scope
+    purpose: >
+      Define which workforce members, business associates, systems, and
+      data classes the policy applies to. Reference data_types and
+      tech_stack from business_context.
+  - id: definitions
+    heading: 3. Definitions
+    purpose: >
+      ePHI, workforce member, business associate, security incident,
+      and any tenant-specific terms.
+  - id: administrative_safeguards
+    heading: 4. Administrative Safeguards (45 CFR 164.308)
+    purpose: >
+      Security management process, assigned security responsibility,
+      workforce security, information access management, security
+      awareness and training, security incident procedures, contingency
+      plan, evaluation, and business associate contracts.
+  - id: physical_safeguards
+    heading: 5. Physical Safeguards (45 CFR 164.310)
+    purpose: >
+      Facility access controls, workstation use, workstation security,
+      and device and media controls.
+  - id: technical_safeguards
+    heading: 6. Technical Safeguards (45 CFR 164.312)
+    purpose: >
+      Access control, audit controls, integrity, person or entity
+      authentication, transmission security.
+  - id: breach_notification
+    heading: 7. Breach Notification
+    purpose: >
+      HHS OCR notification timing (60 days), individual notification,
+      media notification thresholds, and documentation requirements.
+  - id: enforcement_sanctions
+    heading: 8. Enforcement and Sanctions
+    purpose: >
+      Internal sanctions for policy violations and the workforce
+      member discipline process.
+  - id: review_cadence
+    heading: 9. Review Cadence and Risk Analysis
+    purpose: >
+      Annual risk analysis (164.308(a)(1)(ii)(A)) and policy review
+      schedule. Document who owns the next review.
+  - id: appendix_evidence
+    heading: 10. Appendix — Evidence and Audit Artifacts
+    purpose: >
+      Records the tenant must retain to demonstrate compliance during
+      an OCR audit.

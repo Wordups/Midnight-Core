@@ -122,3 +122,68 @@ class ExecutiveSummaryOutput(BaseModel):
     gaps_summary: dict[str, Any] = Field(default_factory=dict)
     audit_readiness: dict[str, Any] = Field(default_factory=dict)
     recent_activity: list[dict[str, Any]] = Field(default_factory=list)
+
+
+# ─── Trace Agent ─────────────────────────────────────────────────────────────
+
+class TraceAgentIntake(BaseModel):
+    """Server-side shape of a generation_intake row. The model_validate path
+    accepts the dict that comes back from Postgrest; field names match the
+    column names on the table."""
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    tenant_id: str
+    policy_id: Optional[str] = None
+    deliverable_type: str
+    audience: str  # 'ops' | 'auditor' | 'both'
+    framework_spine: list[str]
+    maturity_posture: str  # 'current' | 'target' | 'both'
+    scope_boundary: dict[str, Any]
+    business_context: dict[str, Any]
+    declared_assumptions: Optional[dict[str, Any]] = None
+    created_by: str
+    created_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+
+    @field_validator("audience")
+    @classmethod
+    def _audience_value(cls, v: str) -> str:
+        if v not in {"ops", "auditor", "both"}:
+            raise ValueError(f"audience must be one of ops|auditor|both, got {v!r}")
+        return v
+
+    @field_validator("maturity_posture")
+    @classmethod
+    def _maturity_value(cls, v: str) -> str:
+        if v not in {"current", "target", "both"}:
+            raise ValueError(f"maturity_posture must be one of current|target|both, got {v!r}")
+        return v
+
+    @field_validator("framework_spine")
+    @classmethod
+    def _spine_nonempty(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("framework_spine must be non-empty")
+        return v
+
+
+class GenerationResult(BaseModel):
+    """Return value from TraceAgent.run(). Surfaced to callers and serialized
+    in the trace markdown."""
+    intake_id: str
+    policy_id: Optional[str] = None
+    status: str  # 'complete' | 'draft' | 'failed'
+    docx_path: Optional[str] = None
+    trace_path: Optional[str] = None
+    outline_source: Optional[str] = None  # 'template' | 'llm_fallback'
+    activity_log_ids: list[str] = Field(default_factory=list)
+    repair_attempts: int = 0
+    error: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def _status_value(cls, v: str) -> str:
+        if v not in {"complete", "draft", "failed"}:
+            raise ValueError(f"status must be one of complete|draft|failed, got {v!r}")
+        return v
