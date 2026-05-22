@@ -1,0 +1,38 @@
+{
+  "_comment": "Midnight deploy configuration. Static infrastructure facts only. No secrets. Safe to commit. Verified against AWS CLI on 2026-05-21.",
+  "account_id": "989615776408",
+  "region": "us-east-1",
+  "ecs": {
+    "cluster": "default",
+    "service": "midnightcore-78b3",
+    "task_family": "default-midnightcore-78b3",
+    "container_name": "Main"
+  },
+  "ecr": {
+    "repository": "midnightcore",
+    "repository_uri": "989615776408.dkr.ecr.us-east-1.amazonaws.com/midnightcore",
+    "tag_pattern": "cc-deploy-{date}-{shortsha}"
+  },
+  "alb": {
+    "load_balancer_arn": "arn:aws:elasticloadbalancing:us-east-1:989615776408:loadbalancer/app/ecs-express-gateway-alb-5c8165e0/cda7856ebebf09ed",
+    "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:989615776408:listener/app/ecs-express-gateway-alb-5c8165e0/cda7856ebebf09ed/0913feb387f34e44",
+    "rules": {
+      "public": "arn:aws:elasticloadbalancing:us-east-1:989615776408:listener-rule/app/ecs-express-gateway-alb-5c8165e0/cda7856ebebf09ed/0913feb387f34e44/83811259641d2499",
+      "internal": "arn:aws:elasticloadbalancing:us-east-1:989615776408:listener-rule/app/ecs-express-gateway-alb-5c8165e0/cda7856ebebf09ed/0913feb387f34e44/cbeb09392fb42bb5"
+    },
+    "target_groups": {
+      "tg_5eb4": "arn:aws:elasticloadbalancing:us-east-1:989615776408:targetgroup/ecs-gateway-tg-5eb4284ef2ccb6de3/4a14843a4c4d6ba0",
+      "tg_4053": "arn:aws:elasticloadbalancing:us-east-1:989615776408:targetgroup/ecs-gateway-tg-4053c79e2bad28213/e6df35367edfcc4f"
+    }
+  },
+  "cloudwatch": {
+    "rollback_alarm": "default/midnightcore-78b3/RollbackAlarm"
+  },
+  "deploy": {
+    "watch_interval_seconds": 15,
+    "watch_timeout_minutes": 10,
+    "smoke_test_hosts": ["https://app.midnightgrc.com"],
+    "smoke_test_paths": ["/health", "/ready"]
+  },
+  "_rules_reference": "Service uses deploymentController=ECS, strategy=CANARY (5% canary, 3min bake) + RollbackAlarm circuit breaker. DO NOT manually modify-rule during deploy — ECS owns weights. Image build + push only when image changes; for config-only deploys (env var rotation), use existing image."
+}
