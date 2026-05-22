@@ -8,6 +8,28 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the complete vertical scope aud
 
 **NO new features or agents for 3 weeks. Only wire dangling components per ARCHITECTURE.md. If a session is about to add a new product capability, stop and confirm.**
 
+## Escape hatch for all sessions
+
+If you hit a real dead end in any task, stopping and asking is a valid successful outcome. Treat the following as equally legitimate completions:
+
+1. Clean success — task complete, tests pass, here's what I did.
+2. Blocker surfaced — I hit a design decision or missing piece. Here's the blocker, here are 2-3 options I see, which do you want?
+3. Assumption flagged — I implemented this, but had to assume X to keep moving. Here's the assumption and why, want me to revise?
+
+What is NEVER acceptable:
+
+- Silently swallowing errors so tests pass
+- Returning hardcoded, mocked, or sample data in place of real computation
+- Adding TODO comments and moving on as if shipped
+- Marking a task complete when a partial fallback was actually shipped
+- Inventing "reasonable inference" logic where the underlying data doesn't exist
+
+If you find yourself reaching for any of the unacceptable patterns, stop and use option 2 or 3 instead. Surfacing a real blocker is more valuable than a hidden one.
+
+One fully-wired task beats three half-wired tasks with silent gotchas.
+
+Specifically for the ARCHITECTURE.md wiring tasks: several tasks have known dead ends. Task 1 (gap_engine) — covered_control_ids isn't stored anywhere; don't invent inference. Task 3 (template_engine) — Word splits tokens across <w:r> runs; if your substitution approach can't handle that, surface it. Task 2 (8 staged lanes) — slot specs don't exist for non-policy doc types; ask before guessing. In all three: stop and surface, don't fake-ship.
+
 ## Commands
 
 **Setup**
