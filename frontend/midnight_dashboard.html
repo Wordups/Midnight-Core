@@ -966,6 +966,35 @@
   .bt-send-btn:hover { opacity: 0.85; }
   .bt-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* BIRD EYE UPLOAD (inside Bird Talk view) */
+  .be-upload-section { max-width: 860px; margin-bottom: 32px; }
+  .be-pulse-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .be-pulse-stat { display: flex; flex-direction: column; gap: 2px; }
+  .be-pulse-stat-val { font-family: var(--font-display); font-size: 22px; color: var(--text); }
+  .be-pulse-stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+  .be-pulse-divider { width: 1px; height: 32px; background: var(--border); }
+  .be-pulse-sev { flex: 1; min-width: 160px; font-size: 12px; color: var(--text2); }
+  .be-pulse-last { font-family: var(--font-mono); font-size: 10px; color: var(--text3); margin-left: auto; }
+  .be-upload-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .be-drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; margin-bottom: 16px; }
+  .be-drop-zone:hover, .be-drop-zone.drag-over { border-color: var(--accent); background: rgba(0,212,245,0.04); }
+  .be-drop-zone-icon { font-size: 24px; margin-bottom: 8px; }
+  .be-drop-zone-label { font-size: 13px; color: var(--text2); }
+  .be-drop-zone-sub { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: var(--font-mono); }
+  .be-file-name { margin-top: 8px; font-size: 12px; color: var(--accent); font-family: var(--font-mono); }
+  .be-meta-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .be-meta-row .field { flex: 1; min-width: 160px; margin-bottom: 0; }
+  .be-status-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .be-status-msg { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+  .be-spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .be-result-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
+  .be-result-stat { display: flex; flex-direction: column; gap: 2px; }
+  .be-result-stat-val { font-family: var(--font-display); font-size: 20px; }
+  .be-result-stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+  .be-upload-findings { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .be-upload-error { color: #ff9a7a; font-size: 12px; padding: 10px 14px; background: rgba(255,107,53,.08); border: 1px solid rgba(255,107,53,.25); border-radius: 8px; }
+
   /* BIRD EYE */
   .bird-eye-overlay { display: none; position: fixed; inset: 0; background: rgba(10,12,16,0.92); z-index: 998; align-items: center; justify-content: center; flex-direction: column; gap: 24px; }
   .bird-eye-overlay.active { display: flex; }
@@ -1841,6 +1870,62 @@
   <!-- ── BIRD TALK ─────────────────────────────────────────────────────────── -->
   <div class="view" id="view-birdtalk">
     <div class="content">
+
+      <!-- Bird Eye upload section (new) -->
+      <div class="be-upload-section">
+        <div class="build-header" style="margin-bottom:20px;">
+          <div class="build-title">Bird Eye</div>
+          <div class="build-sub">Upload a document to run intelligent analysis — duplicates, conflicts, stale governance, framework gaps, and orphans.</div>
+        </div>
+
+        <!-- Library pulse card -->
+        <div class="be-pulse-card" id="bt-pulse-card">
+          <div class="be-pulse-stat"><div class="be-pulse-stat-val" id="bt-stat-docs">—</div><div class="be-pulse-stat-label">Docs Indexed</div></div>
+          <div class="be-pulse-divider"></div>
+          <div class="be-pulse-stat"><div class="be-pulse-stat-val" id="bt-stat-issues">—</div><div class="be-pulse-stat-label">Open Issues</div></div>
+          <div class="be-pulse-divider"></div>
+          <div class="be-pulse-sev" id="bt-stat-sev"><span style="color:var(--text3);">loading…</span></div>
+          <div class="be-pulse-last" id="bt-last-run"></div>
+        </div>
+
+        <!-- Upload form -->
+        <div class="be-upload-panel">
+          <div class="be-drop-zone" id="bt-drop-zone" onclick="document.getElementById('bt-file-input').click()" ondragover="btDragOver(event)" ondragleave="btDragLeave(event)" ondrop="btDrop(event)">
+            <input type="file" id="bt-file-input" accept=".docx,.pdf,.md,.txt" hidden onchange="btFileChosen(this)">
+            <div class="be-drop-zone-icon">📄</div>
+            <div class="be-drop-zone-label">Drop a document here or click to choose</div>
+            <div class="be-drop-zone-sub">.docx · .pdf · .md · .txt</div>
+            <div class="be-file-name" id="bt-file-name"></div>
+          </div>
+          <div class="be-meta-row">
+            <div class="field"><label class="field-label">Document Type</label>
+              <select class="form-select" id="bt-artifact-type">
+                <option value="">Auto-detect</option>
+                <option value="policy">Policy</option>
+                <option value="procedure">Procedure</option>
+                <option value="standard">Standard</option>
+                <option value="runbook">Runbook</option>
+                <option value="risk_assessment">Risk Assessment</option>
+                <option value="training">Training</option>
+                <option value="vendor">Vendor</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Title Override (optional)</label>
+              <input class="form-input" type="text" id="bt-title" placeholder="Leave blank to auto-extract">
+            </div>
+          </div>
+          <button class="run-btn" style="width:100%;padding:12px;font-size:13px;border-radius:8px;" id="bt-submit" onclick="btIngestDocument()">Upload &amp; Analyze →</button>
+        </div>
+
+        <!-- Status / results panel (hidden until upload starts) -->
+        <div class="be-status-panel" id="bt-status" style="display:none;">
+          <div class="be-status-msg" id="bt-status-msg"></div>
+          <div id="bt-result-body"></div>
+          <div class="be-upload-findings" id="bt-findings-out"></div>
+        </div>
+      </div>
+
+      <!-- Existing Bird Talk chat (unchanged) -->
       <div class="bt-view">
         <div class="build-header">
           <div class="build-title">Bird Talk</div>
@@ -2344,6 +2429,7 @@ function showView(viewId, navEl, title) {
   else { btn.style.display = 'block'; btn.textContent = label || 'Open Tool'; }
 
   if (viewId === 'birdtalk' && !window.btStarted) { window.btStarted = true; btGreet(); }
+  if (viewId === 'birdtalk') { try { btLoadPulse(); } catch (_) {} }
   if (viewId === 'library') { try { loadBirdEye(); } catch (_) {} }
   if (isMobileSidebarLayout()) closeSidebarDrawer();
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2541,6 +2627,157 @@ async function patchBirdEyeFinding(id, status) {
     console.error('Bird Eye patch failed', err);
     showToast('Update failed: ' + err.message);
   }
+}
+
+// ── BIRD TALK UPLOAD ──────────────────────────────────────────────────────────
+function btDragOver(e) {
+  e.preventDefault();
+  document.getElementById('bt-drop-zone').classList.add('drag-over');
+}
+
+function btDragLeave() {
+  document.getElementById('bt-drop-zone').classList.remove('drag-over');
+}
+
+function btDrop(e) {
+  e.preventDefault();
+  btDragLeave();
+  const file = (e.dataTransfer.files || [])[0];
+  if (file) btApplyFile(file);
+}
+
+function btFileChosen(input) {
+  if (input.files[0]) btApplyFile(input.files[0]);
+}
+
+function btApplyFile(file) {
+  const nameEl = document.getElementById('bt-file-name');
+  if (nameEl) nameEl.textContent = file.name;
+  try {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('bt-file-input').files = dt.files;
+  } catch (_) {}
+}
+
+async function btLoadPulse() {
+  try {
+    const r = await fetch(`${API}/bird-eye/library-summary`, { credentials: 'include' });
+    if (!r.ok) return;
+    const s = await r.json();
+    const docsEl = document.getElementById('bt-stat-docs');
+    const issuesEl = document.getElementById('bt-stat-issues');
+    const sevEl = document.getElementById('bt-stat-sev');
+    const lastEl = document.getElementById('bt-last-run');
+    if (docsEl) docsEl.textContent = s.documents_reviewed ?? '—';
+    if (issuesEl) issuesEl.textContent = s.issues_open ?? '—';
+    if (sevEl) {
+      const sev = s.severity_breakdown || {};
+      sevEl.innerHTML = ['critical', 'high', 'medium', 'low']
+        .filter(k => sev[k])
+        .map(k => `<span style="display:inline-block;margin-right:8px;"><span style="display:inline-block;width:6px;height:6px;background:${BE_SEVERITY_COLOR[k]};border-radius:50%;margin-right:4px;vertical-align:middle;"></span>${beEscape(k)} <strong>${sev[k]}</strong></span>`)
+        .join('') || '<span style="color:var(--text3);">no open findings</span>';
+    }
+    if (lastEl) {
+      const last = s.last_run;
+      lastEl.textContent = last
+        ? `Last run ${new Date(last.completed_at || last.created_at).toLocaleString()}`
+        : 'No runs yet';
+    }
+  } catch (_) {}
+}
+
+async function btIngestDocument() {
+  const fileInput = document.getElementById('bt-file-input');
+  const file = fileInput.files[0];
+  const statusPanel = document.getElementById('bt-status');
+  const statusMsg = document.getElementById('bt-status-msg');
+  const resultBody = document.getElementById('bt-result-body');
+  const findingsOut = document.getElementById('bt-findings-out');
+  const submitBtn = document.getElementById('bt-submit');
+
+  statusPanel.style.display = 'block';
+  resultBody.style.display = 'none';
+  findingsOut.style.display = 'none';
+
+  if (!file) {
+    statusMsg.innerHTML = '<span style="color:var(--orange);">Please select a file before uploading.</span>';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  statusMsg.innerHTML = '<span class="be-spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></span>Uploading document…';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  const artifactType = document.getElementById('bt-artifact-type').value;
+  const title = document.getElementById('bt-title').value.trim();
+  if (artifactType) fd.append('artifact_type', artifactType);
+  if (title) fd.append('title', title);
+  fd.append('auto_run', 'true');
+
+  try {
+    const r = await fetch(`${API}/bird-eye/ingest`, {
+      method: 'POST',
+      credentials: 'include',
+      body: fd,
+    });
+
+    if (!r.ok) {
+      let detail = `HTTP ${r.status}`;
+      try { const j = await r.json(); detail = j.detail || detail; } catch (_) {}
+      statusMsg.innerHTML = `<span style="color:var(--orange);">Upload failed: ${beEscape(String(detail))}</span>`;
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const data = await r.json();
+    statusMsg.innerHTML = '<span class="be-spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></span>Extracting content and running Bird Eye analysis…';
+
+    const runId = (data.run || {}).id;
+    const ingest = data.ingest || {};
+
+    resultBody.style.display = 'block';
+    resultBody.innerHTML = `
+      <div class="be-result-row"><span class="be-result-label">Document</span><span class="be-result-val">${beEscape(ingest.title || file.name)}</span></div>
+      <div class="be-result-row"><span class="be-result-label">Sections extracted</span><span class="be-result-val">${ingest.sections_count != null ? ingest.sections_count : '—'}</span></div>
+      <div class="be-result-row"><span class="be-result-label">Findings</span><span class="be-result-val" id="bt-findings-count">—</span></div>
+    `;
+
+    statusMsg.innerHTML = '<span style="color:var(--green);">Analysis complete.</span>';
+
+    if (runId) await btRenderFindings(runId);
+
+    await btLoadPulse();
+    fileInput.value = '';
+    const nameEl = document.getElementById('bt-file-name');
+    if (nameEl) nameEl.textContent = '';
+  } catch (err) {
+    statusMsg.innerHTML = `<span style="color:var(--orange);">Error: ${beEscape(err.message)}</span>`;
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function btRenderFindings(runId) {
+  try {
+    const r = await fetch(`${API}/bird-eye/findings?run_id=${encodeURIComponent(runId)}`, { credentials: 'include' });
+    if (!r.ok) return;
+    const findings = await r.json();
+    const countEl = document.getElementById('bt-findings-count');
+    if (countEl) countEl.textContent = findings.length;
+    const out = document.getElementById('bt-findings-out');
+    if (!findings.length) {
+      out.style.display = 'block';
+      out.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:12px 0;">No findings for this document.</div>';
+      return;
+    }
+    const visible = findings.slice(0, 20);
+    const more = findings.length - visible.length;
+    out.style.display = 'block';
+    out.innerHTML = visible.map(f => beRenderFinding(f)).join('') +
+      (more > 0 ? `<div style="color:var(--text3);font-size:12px;padding:8px 0;">…and ${more} more</div>` : '');
+  } catch (_) {}
 }
 
 const CREATE_DOC_TYPES = [
