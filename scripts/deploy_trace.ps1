@@ -244,13 +244,21 @@ if ($TaskDefRevision -gt 0) {
         $regPayload.volumes = $td.volumes
     }
 
-    # Pass JSON inline — avoids Windows file:// path handling bugs in AWS CLI on Python.
-    # -Compress produces single-line JSON; env var values in this service have no spaces
-    # so PowerShell will not add extra quoting around the argument.
-    $jsonContent = $regPayload | ConvertTo-Json -Depth 20 -Compress
-    $regResult   = aws ecs register-task-definition --region $cfg.region --cli-input-json $jsonContent | ConvertFrom-Json
-    $NewTaskDefArn = $regResult.taskDefinition.taskDefinitionArn
-    Write-OK "Registered new task definition: $NewTaskDefArn"
+    # Write to CWD and use file://./relative path — the only reliably cross-platform
+    # format for AWS CLI on Windows (absolute file:// paths mis-parse the drive letter;
+    # inline JSON has quotes stripped by PowerShell 5.1 before reaching the CLI).
+    $relFile = "td-register-$ShortSha.json"
+    $absFile = Join-Path (Get-Location).Path $relFile
+    try {
+        $regPayload | ConvertTo-Json -Depth 20 | Set-Content -Path $absFile -Encoding utf8
+        $regResult = aws ecs register-task-definition `
+            --region $cfg.region `
+            --cli-input-json "file://./$relFile" | ConvertFrom-Json
+        $NewTaskDefArn = $regResult.taskDefinition.taskDefinitionArn
+        Write-OK "Registered new task definition: $NewTaskDefArn"
+    } finally {
+        if (Test-Path $absFile) { Remove-Item -Path $absFile -Force }
+    }
 }
 
 # ── Stage 6: Trigger ECS deployment ──────────────────────────────────────────
