@@ -237,9 +237,10 @@ if ($TaskDefRevision -gt 0) {
         cpu                  = $td.cpu
         memory               = $td.memory
     }
-    if ($td.executionRoleArn) { $regPayload.executionRoleArn = $td.executionRoleArn }
-    if ($td.taskRoleArn)      { $regPayload.taskRoleArn      = $td.taskRoleArn }
-    if ($td.volumes -and $td.volumes.Count -gt 0) {
+    # Use PSObject.Properties to check optional fields safely under Set-StrictMode -Version Latest
+    if ($td.PSObject.Properties['executionRoleArn'] -and $td.executionRoleArn) { $regPayload.executionRoleArn = $td.executionRoleArn }
+    if ($td.PSObject.Properties['taskRoleArn']      -and $td.taskRoleArn)      { $regPayload.taskRoleArn      = $td.taskRoleArn }
+    if ($td.PSObject.Properties['volumes'] -and $td.volumes -and $td.volumes.Count -gt 0) {
         $regPayload.volumes = $td.volumes
     }
 
