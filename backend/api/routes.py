@@ -39,6 +39,7 @@ from backend.core.json_parser import (
 )
 from backend.renderers.docx_renderer import render_markdown_bullet, render_markdown_into
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
+from backend.core.gap_engine import CONTROL_REGISTRY, get_required_controls
 from backend.storage.file_store import (
     SupabaseStoreError,
     count_activity_for_tenant,
@@ -55,6 +56,7 @@ from backend.storage.file_store import (
     save_generated_document,
     update_onboarding_session,
     update_profile_membership,
+    update_policy_covered_controls,
 )
 
 try:
@@ -1566,6 +1568,68 @@ def _anthropic_text_response(message: Any) -> tuple[str, str]:
     return "\n".join(chunks).strip(), str(getattr(message, "stop_reason", "") or "")
 
 
+_REGISTRY_ID_SET: frozenset[str] = frozenset(c.id for c in CONTROL_REGISTRY)
+
+
+def _identify_covered_controls(
+    *,
+    sections: list[dict],
+    doc_type: str,
+    frameworks: list[str],
+) -> list[str]:
+    """Return CONTROL_REGISTRY IDs addressed by the policy sections.
+
+    Called fire-and-forget after save_policy_draft; never raises.
+    False negatives (missed IDs) are safe. False positives are not —
+    a returned ID is only kept if it is in the candidate set for this
+    doc_type + frameworks combination.
+    """
+    candidates = get_required_controls(frameworks, doc_type)
+    if not candidates:
+        return []
+
+    content_blob = " ".join(
+        str(s.get("content") or "") for s in (sections or [])
+    )[:4000]
+
+    if not content_blob.strip():
+        return []
+
+    candidate_ids = [c.id for c in candidates]
+    candidate_list = "\n".join(candidate_ids)
+
+    try:
+        result = _call_model_json_object(
+            system_prompt=(
+                "You identify which compliance control IDs are addressed by a policy document. "
+                "Return ONLY a JSON object with a single key \"control_ids\" whose value is a "
+                "JSON array of control ID strings chosen from the candidate list. "
+                "If a control is not clearly addressed in the document, omit it. "
+                "Do not include IDs not in the candidate list. Do not add prose."
+            ),
+            user_prompt=(
+                f"Candidate control IDs:\n{candidate_list}\n\n"
+                f"Policy content:\n{content_blob}"
+            ),
+            flow="coverage_identification",
+            max_tokens=300,
+        )
+    except Exception:
+        return []
+
+    raw_ids = result.get("control_ids")
+    if not isinstance(raw_ids, list):
+        return []
+
+    candidate_set = frozenset(candidate_ids)
+    return [
+        str(item) for item in raw_ids
+        if isinstance(item, str)
+        and item in _REGISTRY_ID_SET
+        and item in candidate_set
+    ]
+
+
 def _call_model_json_object(
     *,
     system_prompt: str,
@@ -2396,8 +2460,9 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
         required_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
     )
     policy_data = _ensure_required_slots_or_400(policy_data)
+    active_frameworks = [item for item in session.get("frameworks", []) if str(item).strip()]
     try:
-        save_policy_draft(
+        draft = save_policy_draft(
             tenant_id=tenant["id"],
             title=policy_data.get("title") or policy_name,
             document_type=policy_data.get("doc_type") or doc_type,
@@ -2405,7 +2470,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
             owner=policy_data.get("owner") or "Unknown",
             status=policy_data.get("status") or "Draft",
             schema_version=(policy_data.get("metadata") or {}).get("schema_version", POLICY_SCHEMA_VERSION),
-            selected_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
+            selected_frameworks=active_frameworks,
             sections=policy_data.get("sections", []),
             policy_number=policy_data.get("policy_number") or None,
             version=policy_data.get("version") or None,
@@ -2422,6 +2487,18 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
             metadata={"doc_type": doc_type, "frameworks": session.get("frameworks", []), "error": str(exc)},
         )
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    saved_policy_id = (draft.get("policy") or {}).get("id") or session.get("policy_id")
+    if saved_policy_id:
+        try:
+            covered_ids = _identify_covered_controls(
+                sections=policy_data.get("sections", []),
+                doc_type=doc_type,
+                frameworks=active_frameworks,
+            )
+            update_policy_covered_controls(saved_policy_id, covered_ids)
+        except Exception:
+            pass
 
     _emit_signal(
         request,

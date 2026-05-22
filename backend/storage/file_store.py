@@ -827,3 +827,22 @@ def upload_tenant_brand_logo(*, tenant_id: str, filename: str, file_bytes: bytes
         "storage_path": storage_path,
         "content_type": content_type,
     }
+
+
+def update_policy_covered_controls(policy_id: str, covered_control_ids: list[str]) -> None:
+    """Persist the control IDs a policy was found to address (written at generate time)."""
+    _update_policy(policy_id, {"covered_control_ids": covered_control_ids})
+
+
+def list_policies_for_gap_analysis(tenant_id: str) -> list[dict]:
+    """Return policies that have at least one tracked covered_control_id."""
+    rows = _postgrest(
+        "GET",
+        "policies",
+        params={
+            "select": "id,policy_name,document_type,selected_frameworks,covered_control_ids",
+            "tenant_id": f"eq.{tenant_id}",
+            "covered_control_ids": "neq.[]",
+        },
+    )
+    return rows or []
