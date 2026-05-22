@@ -23,6 +23,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SUPABASE_ANON_KEY", "SUPABASE_KEY"),
     )
     SUPABASE_SERVICE_ROLE_KEY: str = Field(..., min_length=1)
+    VOYAGE_API_KEY: str = ""
     ENVIRONMENT: Literal["dev", "prod"] = "dev"
     LOG_LEVEL: str = "INFO"
 
