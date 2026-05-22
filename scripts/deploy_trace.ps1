@@ -250,7 +250,9 @@ if ($TaskDefRevision -gt 0) {
     $relFile = "td-register-$ShortSha.json"
     $absFile = Join-Path (Get-Location).Path $relFile
     try {
-        $regPayload | ConvertTo-Json -Depth 20 | Set-Content -Path $absFile -Encoding utf8
+        # PS 5.1 Set-Content -Encoding utf8 writes a BOM; Python's json.loads rejects it.
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($absFile, ($regPayload | ConvertTo-Json -Depth 20), $utf8NoBom)
         $regResult = aws ecs register-task-definition `
             --region $cfg.region `
             --cli-input-json "file://./$relFile" | ConvertFrom-Json
