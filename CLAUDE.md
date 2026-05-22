@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Strategic Posture
+
+See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the complete vertical scope audit: every layer, every dangling component, every gap, and the 8 ranked wiring tasks.
+
+**NO new features or agents for 3 weeks. Only wire dangling components per ARCHITECTURE.md. If a session is about to add a new product capability, stop and confirm.**
+
 ## Commands
 
 **Setup**
