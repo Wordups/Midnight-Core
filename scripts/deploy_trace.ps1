@@ -192,12 +192,11 @@ if (-not $SkipBuild) {
 
 Write-Stage 'Stage 5: Task definition'
 
-# Get current service task def to extract family name
+# Use task_family from config; read current ARN from PRIMARY deployment (service.taskDefinition can be empty)
+$tdFamily    = $cfg.ecs.task_family
 $svcDesc     = aws ecs describe-services --cluster $cfg.ecs.cluster --services $cfg.ecs.service --region $cfg.region | ConvertFrom-Json
-$currentArn  = $svcDesc.services[0].taskDefinition
-# ARN: arn:aws:ecs:{region}:{account}:task-definition/{family}:{revision}
-$arnParts    = $currentArn -split '/'
-$tdFamily    = ($arnParts[1] -split ':')[0]
+$primaryDep  = $svcDesc.services[0].deployments | Where-Object { $_.status -eq 'PRIMARY' } | Select-Object -First 1
+$currentArn  = if ($primaryDep -and $primaryDep.taskDefinition) { $primaryDep.taskDefinition } else { 'unknown' }
 Write-Info "Task definition family: $tdFamily"
 Write-Info "Current service task def: $currentArn"
 
