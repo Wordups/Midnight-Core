@@ -995,6 +995,27 @@
   .be-upload-findings { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
   .be-upload-error { color: #ff9a7a; font-size: 12px; padding: 10px 14px; background: rgba(255,107,53,.08); border: 1px solid rgba(255,107,53,.25); border-radius: 8px; }
 
+  /* FRAMEWORK COVERAGE VIEW */
+  .an-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; max-width: 860px; }
+  .an-panel-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .an-panel-sub { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 18px; }
+  .an-status { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border2); }
+  .an-score-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .an-score-badge { display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 50%; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+  .an-score-badge.good { background: rgba(63,214,140,.12); color: var(--green); border: 1.5px solid rgba(63,214,140,.3); }
+  .an-score-badge.warn { background: rgba(255,210,77,.1); color: var(--amber); border: 1.5px solid rgba(255,210,77,.25); }
+  .an-score-badge.bad { background: rgba(255,93,93,.1); color: #ff5d5d; border: 1.5px solid rgba(255,93,93,.25); }
+  .an-chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .an-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-family: var(--font-mono); border: 1px solid var(--border2); }
+  .an-chip.covered { color: var(--green); background: rgba(63,214,140,.07); border-color: rgba(63,214,140,.2); }
+  .an-chip.partial { color: var(--amber); background: rgba(255,210,77,.07); border-color: rgba(255,210,77,.2); }
+  .an-chip.missing { color: #ff9a4d; background: rgba(255,154,77,.07); border-color: rgba(255,154,77,.2); }
+  .an-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); font-family: var(--font-mono); margin: 12px 0 6px; }
+  .an-list-item { padding: 8px 12px; background: var(--bg3); border-radius: 6px; font-size: 12px; color: var(--text2); margin-bottom: 4px; line-height: 1.5; }
+  .an-file-pick { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text2); transition: border-color .15s; }
+  .an-file-pick:hover { border-color: var(--accent); }
+  .an-file-pick-icon { font-size: 16px; flex-shrink: 0; }
+
   /* BIRD EYE */
   .bird-eye-overlay { display: none; position: fixed; inset: 0; background: rgba(10,12,16,0.92); z-index: 998; align-items: center; justify-content: center; flex-direction: column; gap: 24px; }
   .bird-eye-overlay.active { display: flex; }
@@ -1113,6 +1134,10 @@
     <div class="nav-item" id="nav-gaps" data-label="Gap Analysis" title="Gap Analysis" onclick="showView('gaps', this, 'Gap Analysis')">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       <span class="nav-item-label">Gap Analysis</span>
+    </div>
+    <div class="nav-item" id="nav-coverage" data-label="Framework Coverage" title="Framework Coverage" onclick="showView('coverage', this, 'Framework Coverage')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 11l3-3 2.5 2.5L11 6l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span class="nav-item-label">Framework Coverage</span>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-label">Reports</div>
@@ -1969,6 +1994,75 @@
     </div>
   </div>
 
+  <!-- ── FRAMEWORK COVERAGE ───────────────────────────────────────────────── -->
+  <div class="view" id="view-coverage">
+    <div class="content">
+      <div class="build-header">
+        <div class="build-title">Framework Coverage</div>
+        <div class="build-sub">Analyze a document's compliance coverage against selected frameworks, or run a Smart Scan to score its structural quality.</div>
+      </div>
+
+      <!-- Panel 1: Framework Coverage Analysis (/pipeline/analyze) -->
+      <div class="an-panel">
+        <div class="an-panel-title">Framework Coverage Analysis</div>
+        <div class="an-panel-sub">Upload a policy document and select frameworks. Midnight maps the content against control requirements and identifies covered, partial, and missing controls.</div>
+        <div class="be-drop-zone" id="an-drop-zone" onclick="document.getElementById('an-file').click()" ondragover="anDragOver(event)" ondragleave="anDragLeave(event)" ondrop="anDrop(event)">
+          <input type="file" id="an-file" accept=".docx,.txt,.md" hidden onchange="anFileChosen(this)">
+          <div class="be-drop-zone-icon">📋</div>
+          <div class="be-drop-zone-label">Drop document here or click to choose</div>
+          <div class="be-drop-zone-sub">.docx · .txt · .md</div>
+          <div class="be-file-name" id="an-file-name"></div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div class="field-label" style="margin-bottom:8px;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;">Frameworks to analyze</div>
+          <div class="fw-checkboxes" id="an-frameworks">
+            <label class="fw-check selected"><input type="checkbox" value="HIPAA" checked>HIPAA</label>
+            <label class="fw-check"><input type="checkbox" value="PCI DSS">PCI DSS</label>
+            <label class="fw-check"><input type="checkbox" value="NIST CSF">NIST CSF</label>
+            <label class="fw-check selected"><input type="checkbox" value="SOC 2" checked>SOC 2</label>
+            <label class="fw-check"><input type="checkbox" value="HITRUST">HITRUST</label>
+            <label class="fw-check"><input type="checkbox" value="ISO 27001">ISO 27001</label>
+          </div>
+        </div>
+        <button class="run-btn" id="an-submit" style="width:100%;padding:11px;font-size:13px;border-radius:8px;" onclick="anCoverageSubmit()">Analyze Coverage →</button>
+        <div class="an-status" id="an-status" style="display:none;">
+          <div id="an-status-msg"></div>
+          <div id="an-results" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Smart Scan (/api/smart-scan/run or /preflight) -->
+      <div class="an-panel">
+        <div class="an-panel-title">Smart Scan — Section Quality</div>
+        <div class="an-panel-sub">Upload your source document (.docx). Optionally upload a reference template (.docx) — a document whose headings define your target structure. Without a template, the built-in policy schema is used.</div>
+        <div class="form-row" style="gap:12px;margin-bottom:16px;">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Source Document <span style="color:var(--orange);">*</span></label>
+            <div class="an-file-pick" id="an-src-pick" onclick="document.getElementById('an-src').click()">
+              <input type="file" id="an-src" accept=".docx" hidden onchange="anSrcChosen(this)">
+              <span class="an-file-pick-icon">📄</span>
+              <span id="an-src-name">Choose .docx…</span>
+            </div>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Reference Template <span style="color:var(--text3);font-weight:400;">(optional)</span></label>
+            <div class="an-file-pick" id="an-tpl-pick" onclick="document.getElementById('an-tpl').click()">
+              <input type="file" id="an-tpl" accept=".docx" hidden onchange="anTplChosen(this)">
+              <span class="an-file-pick-icon">📐</span>
+              <span id="an-tpl-name">Choose .docx…</span>
+            </div>
+          </div>
+        </div>
+        <button class="run-btn" id="an-scan-submit" style="width:100%;padding:11px;font-size:13px;border-radius:8px;" onclick="anSmartScanSubmit()">Run Smart Scan →</button>
+        <div class="an-status" id="an-scan-status" style="display:none;">
+          <div id="an-scan-status-msg"></div>
+          <div id="an-scan-result" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ── GRC SUMMARY ────────────────────────────────────────────────────────── -->
   <div class="view" id="view-grc">
     <div class="content">
@@ -2339,6 +2433,7 @@ const VIEW_MODULE_MAP = {
   create: ['policy_migration', 'audit_readiness'],
   library: ['policy_migration', 'gap_analysis', 'audit_readiness', 'consultant'],
   gaps: ['policy_migration', 'gap_analysis', 'audit_readiness'],
+  coverage: ['policy_migration', 'gap_analysis', 'audit_readiness'],
   grc: ['policy_migration', 'gap_analysis', 'audit_readiness', 'consultant'],
 };
 
@@ -2418,6 +2513,7 @@ function showView(viewId, navEl, title) {
     migrate: 'Migrate Document',
     birdtalk: null,
     gaps: null,
+    coverage: null,
     grc: 'Generate Summary',
     profile: null,
     library: null,
@@ -2778,6 +2874,218 @@ async function btRenderFindings(runId) {
     out.innerHTML = visible.map(f => beRenderFinding(f)).join('') +
       (more > 0 ? `<div style="color:var(--text3);font-size:12px;padding:8px 0;">…and ${more} more</div>` : '');
   } catch (_) {}
+}
+
+// ── FRAMEWORK COVERAGE VIEW ───────────────────────────────────────────────────
+function anDragOver(e) {
+  e.preventDefault();
+  document.getElementById('an-drop-zone').classList.add('drag-over');
+}
+function anDragLeave() {
+  document.getElementById('an-drop-zone').classList.remove('drag-over');
+}
+function anDrop(e) {
+  e.preventDefault();
+  anDragLeave();
+  const file = (e.dataTransfer.files || [])[0];
+  if (file) _anApplyFile(file, 'an-file', 'an-file-name');
+}
+function anFileChosen(input) {
+  if (input.files[0]) _anApplyFile(input.files[0], 'an-file', 'an-file-name');
+}
+function anSrcChosen(input) {
+  if (input.files[0]) {
+    document.getElementById('an-src-name').textContent = input.files[0].name;
+  }
+}
+function anTplChosen(input) {
+  if (input.files[0]) {
+    document.getElementById('an-tpl-name').textContent = input.files[0].name;
+  }
+}
+function _anApplyFile(file, inputId, nameId) {
+  const nameEl = document.getElementById(nameId);
+  if (nameEl) nameEl.textContent = file.name;
+  try {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById(inputId).files = dt.files;
+  } catch (_) {}
+}
+
+function _anScoreClass(score) {
+  if (score >= 70) return 'good';
+  if (score >= 40) return 'warn';
+  return 'bad';
+}
+
+function _anEsc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+async function anCoverageSubmit() {
+  const fileInput = document.getElementById('an-file');
+  const file = fileInput.files[0];
+  const statusEl = document.getElementById('an-status');
+  const msgEl = document.getElementById('an-status-msg');
+  const resultsEl = document.getElementById('an-results');
+  const submitBtn = document.getElementById('an-submit');
+
+  statusEl.style.display = 'block';
+  resultsEl.style.display = 'none';
+
+  if (!file) {
+    msgEl.innerHTML = '<span style="color:var(--orange);">Please select a file before analyzing.</span>';
+    return;
+  }
+
+  const checked = [...document.querySelectorAll('#an-frameworks input:checked')].map(cb => cb.value);
+  if (!checked.length) {
+    msgEl.innerHTML = '<span style="color:var(--orange);">Select at least one framework.</span>';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  msgEl.innerHTML = '<span class="be-spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></span>Analyzing coverage…';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('frameworks', checked.join(','));
+
+  try {
+    const r = await fetch(`${API}/pipeline/analyze`, { method: 'POST', credentials: 'include', body: fd });
+
+    if (!r.ok) {
+      let detail = `HTTP ${r.status}`;
+      try { const j = await r.json(); detail = j.detail || detail; } catch (_) {}
+      msgEl.innerHTML = `<span style="color:var(--orange);">Analysis failed: ${_anEsc(String(detail))}</span>`;
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const data = await r.json();
+    const score = data.overall_score ?? 0;
+    const covered = Array.isArray(data.covered_controls) ? data.covered_controls : [];
+    const partial = Array.isArray(data.partial_controls) ? data.partial_controls : [];
+    const missing = Array.isArray(data.missing_controls) ? data.missing_controls : [];
+    const gaps = Array.isArray(data.gaps) ? data.gaps : [];
+    const recs = Array.isArray(data.recommendations) ? data.recommendations : [];
+
+    msgEl.innerHTML = '';
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = `
+      <div class="an-score-row">
+        <div class="an-score-badge ${_anScoreClass(score)}">${score}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">Overall Coverage Score</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${_anEsc(file.name)} · ${_anEsc(checked.join(', '))}</div>
+        </div>
+      </div>
+      <div class="an-chip-row">
+        <span class="an-chip covered">✓ ${covered.length} covered</span>
+        <span class="an-chip partial">◑ ${partial.length} partial</span>
+        <span class="an-chip missing">✗ ${missing.length} missing</span>
+      </div>
+      ${gaps.length ? `<div class="an-section-title">Gaps (${gaps.length})</div>${gaps.slice(0,10).map(g => `<div class="an-list-item">${_anEsc(typeof g === 'string' ? g : (g.gap || g.control || JSON.stringify(g)))}</div>`).join('')}` : ''}
+      ${recs.length ? `<div class="an-section-title">Recommendations</div>${recs.slice(0,5).map(rec => `<div class="an-list-item">${_anEsc(typeof rec === 'string' ? rec : JSON.stringify(rec))}</div>`).join('')}` : ''}
+    `;
+    fileInput.value = '';
+    document.getElementById('an-file-name').textContent = '';
+  } catch (err) {
+    msgEl.innerHTML = `<span style="color:var(--orange);">Error: ${_anEsc(err.message)}</span>`;
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function anSmartScanSubmit() {
+  const srcInput = document.getElementById('an-src');
+  const tplInput = document.getElementById('an-tpl');
+  const srcFile = srcInput.files[0];
+  const tplFile = tplInput.files[0];
+  const statusEl = document.getElementById('an-scan-status');
+  const msgEl = document.getElementById('an-scan-status-msg');
+  const resultEl = document.getElementById('an-scan-result');
+  const submitBtn = document.getElementById('an-scan-submit');
+
+  statusEl.style.display = 'block';
+  resultEl.style.display = 'none';
+
+  if (!srcFile) {
+    msgEl.innerHTML = '<span style="color:var(--orange);">Please select a source document (.docx).</span>';
+    return;
+  }
+  if (!srcFile.name.toLowerCase().endsWith('.docx')) {
+    msgEl.innerHTML = '<span style="color:var(--orange);">Source document must be a .docx file.</span>';
+    return;
+  }
+  if (tplFile && !tplFile.name.toLowerCase().endsWith('.docx')) {
+    msgEl.innerHTML = '<span style="color:var(--orange);">Reference template must be a .docx file.</span>';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  const useFullScan = !!tplFile;
+  const endpoint = useFullScan ? `${API}/api/smart-scan/run` : `${API}/api/smart-scan/preflight`;
+  msgEl.innerHTML = `<span class="be-spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></span>${useFullScan ? 'Running full Smart Scan…' : 'Running preflight scan (no template)…'}`;
+
+  const fd = new FormData();
+  fd.append('source_doc', srcFile);
+  if (useFullScan) fd.append('template_doc', tplFile);
+
+  try {
+    const r = await fetch(endpoint, { method: 'POST', credentials: 'include', body: fd });
+
+    if (!r.ok) {
+      let detail = `HTTP ${r.status}`;
+      try { const j = await r.json(); detail = j.detail || detail; } catch (_) {}
+      msgEl.innerHTML = `<span style="color:var(--orange);">Scan failed: ${_anEsc(String(detail))}</span>`;
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const data = await r.json();
+    msgEl.innerHTML = '';
+    resultEl.style.display = 'block';
+
+    const score = data.quality_score ?? 0;
+    const label = data.quality_label || '';
+    const statuses = data.section_statuses || {};
+    const priorityGaps = Array.isArray(data.priority_gaps) ? data.priority_gaps : [];
+    const notes = Array.isArray(data.notes) ? data.notes : [];
+    const mode = useFullScan ? 'Full scan · template-matched' : 'Preflight · built-in schema';
+
+    const statusOrder = ['complete', 'partial', 'missing'];
+    const statusIcon = { complete: '✓', partial: '◑', missing: '✗' };
+    const statusColor = { complete: 'var(--green)', partial: 'var(--amber)', missing: '#ff9a4d' };
+
+    const sectionRows = Object.entries(statuses)
+      .sort((a, b) => statusOrder.indexOf(a[1]) - statusOrder.indexOf(b[1]))
+      .map(([k, v]) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg3);border-radius:5px;font-size:11px;font-family:var(--font-mono);color:${statusColor[v] || 'var(--text2)'};">${statusIcon[v] || '·'} ${_anEsc(k.replace(/_/g,' '))}</span>`)
+      .join('');
+
+    resultEl.innerHTML = `
+      <div class="an-score-row">
+        <div class="an-score-badge ${_anScoreClass(score)}">${score}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${_anEsc(label)} Quality</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${_anEsc(srcFile.name)} · ${_anEsc(mode)}</div>
+        </div>
+      </div>
+      ${sectionRows ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">${sectionRows}</div>` : ''}
+      ${priorityGaps.length ? `<div class="an-section-title">Priority Gaps</div>${priorityGaps.map(g => `<div class="an-list-item"><strong style="color:var(--orange);">${_anEsc(g.severity || '')}</strong> · ${_anEsc(g.section || '')} — ${_anEsc(g.action || '')}</div>`).join('')}` : ''}
+      ${notes.length ? `<div class="an-section-title">Notes</div>${notes.slice(0,5).map(n => `<div class="an-list-item">${_anEsc(n)}</div>`).join('')}` : ''}
+    `;
+
+    srcInput.value = '';
+    tplInput.value = '';
+    document.getElementById('an-src-name').textContent = 'Choose .docx…';
+    document.getElementById('an-tpl-name').textContent = 'Choose .docx…';
+  } catch (err) {
+    msgEl.innerHTML = `<span style="color:var(--orange);">Error: ${_anEsc(err.message)}</span>`;
+  } finally {
+    submitBtn.disabled = false;
+  }
 }
 
 const CREATE_DOC_TYPES = [
@@ -3689,6 +3997,7 @@ function openModuleView(viewId) {
     overview: 'Overview',
     profile: 'Profile & Settings',
     birdtalk: 'Bird Talk',
+    coverage: 'Framework Coverage',
   }[viewId] || 'Overview';
   showView(viewId, navEl, pageTitle);
 }
