@@ -158,10 +158,10 @@ if (-not $SkipBuild) {
     Write-Stage 'Stage 4: Docker build + push'
 
     $FullImage = "$($cfg.ecr.repository_uri):$ImageTag"
-
-    # ECR login
-    $loginPassword = aws ecr get-login-password --region $cfg.region
-    $loginPassword | docker login --username AWS --password-stdin $cfg.ecr.repository_uri
+    # Login to the registry host only (no /repo suffix); use cmd /c to avoid
+    # PowerShell 5.1 pipe-encoding issues that corrupt the ECR bearer token.
+    $ecrHost = ($cfg.ecr.repository_uri -split '/')[0]
+    cmd /c "aws ecr get-login-password --region $($cfg.region) | docker login --username AWS --password-stdin $ecrHost"
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "ECR login failed."
         exit 1
