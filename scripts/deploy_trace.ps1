@@ -244,19 +244,13 @@ if ($TaskDefRevision -gt 0) {
         $regPayload.volumes = $td.volumes
     }
 
-    # Write to temp file (Windows-compatible; avoids stdin pipe issues)
-    $tempFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "td-register-$ShortSha.json")
-    try {
-        $regPayload | ConvertTo-Json -Depth 20 | Set-Content -Path $tempFile -Encoding utf8
-        $filePath  = $tempFile -replace '\\', '/'
-        $regResult = aws ecs register-task-definition `
-            --region $cfg.region `
-            --cli-input-json "file:///$filePath" | ConvertFrom-Json
-        $NewTaskDefArn = $regResult.taskDefinition.taskDefinitionArn
-        Write-OK "Registered new task definition: $NewTaskDefArn"
-    } finally {
-        if (Test-Path $tempFile) { Remove-Item -Path $tempFile -Force }
-    }
+    # Pass JSON inline — avoids Windows file:// path handling bugs in AWS CLI on Python.
+    # -Compress produces single-line JSON; env var values in this service have no spaces
+    # so PowerShell will not add extra quoting around the argument.
+    $jsonContent = $regPayload | ConvertTo-Json -Depth 20 -Compress
+    $regResult   = aws ecs register-task-definition --region $cfg.region --cli-input-json $jsonContent | ConvertFrom-Json
+    $NewTaskDefArn = $regResult.taskDefinition.taskDefinitionArn
+    Write-OK "Registered new task definition: $NewTaskDefArn"
 }
 
 # ── Stage 6: Trigger ECS deployment ──────────────────────────────────────────
