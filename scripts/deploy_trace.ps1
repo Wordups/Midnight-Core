@@ -64,10 +64,10 @@ if (-not (Test-Path $ConfigPath)) {
 }
 $cfg = Get-Content -Path $ConfigPath -Raw | ConvertFrom-Json
 
-Write-OK "cluster  = $($cfg.cluster)"
-Write-OK "service  = $($cfg.service)"
+Write-OK "cluster  = $($cfg.ecs.cluster)"
+Write-OK "service  = $($cfg.ecs.service)"
 Write-OK "region   = $($cfg.region)"
-Write-OK "ecr_repo = $($cfg.ecr_repo)"
+Write-OK "ecr_repo = $($cfg.ecr.repository_uri)"
 
 # ── Stage 2: Preflight checks ─────────────────────────────────────────────────
 
@@ -119,14 +119,14 @@ if (-not $SkipBuild) {
 
 # ── Stage 3: Pre-deploy alarm check ──────────────────────────────────────────
 
-Write-Stage "Stage 3: Pre-deploy alarm check  [$($cfg.rollback_alarm)]"
+Write-Stage "Stage 3: Pre-deploy alarm check  [$($cfg.cloudwatch.rollback_alarm)]"
 
 $alarmResult = aws cloudwatch describe-alarms `
-    --alarm-names $cfg.rollback_alarm `
+    --alarm-names $cfg.cloudwatch.rollback_alarm `
     --region $cfg.region | ConvertFrom-Json
 
 if (-not $alarmResult.MetricAlarms -or $alarmResult.MetricAlarms.Count -eq 0) {
-    Write-Fail "RollbackAlarm '$($cfg.rollback_alarm)' not found in CloudWatch. Check config."
+    Write-Fail "RollbackAlarm '$($cfg.cloudwatch.rollback_alarm)' not found in CloudWatch. Check config."
     exit 1
 }
 
@@ -157,11 +157,11 @@ $ImageUri  = $null
 if (-not $SkipBuild) {
     Write-Stage 'Stage 4: Docker build + push'
 
-    $FullImage = "$($cfg.ecr_repo):$ImageTag"
+    $FullImage = "$($cfg.ecr.repository_uri):$ImageTag"
 
     # ECR login
     $loginPassword = aws ecr get-login-password --region $cfg.region
-    $loginPassword | docker login --username AWS --password-stdin $cfg.ecr_repo
+    $loginPassword | docker login --username AWS --password-stdin $cfg.ecr.repository_uri
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "ECR login failed."
         exit 1
@@ -193,7 +193,7 @@ if (-not $SkipBuild) {
 Write-Stage 'Stage 5: Task definition'
 
 # Get current service task def to extract family name
-$svcDesc     = aws ecs describe-services --cluster $cfg.cluster --services $cfg.service --region $cfg.region | ConvertFrom-Json
+$svcDesc     = aws ecs describe-services --cluster $cfg.ecs.cluster --services $cfg.ecs.service --region $cfg.region | ConvertFrom-Json
 $currentArn  = $svcDesc.services[0].taskDefinition
 # ARN: arn:aws:ecs:{region}:{account}:task-definition/{family}:{revision}
 $arnParts    = $currentArn -split '/'
@@ -219,14 +219,14 @@ if ($TaskDefRevision -gt 0) {
 
     $mainIdx = -1
     for ($i = 0; $i -lt $containerDefs.Count; $i++) {
-        if ($containerDefs[$i].name -eq 'Main') { $mainIdx = $i; break }
+        if ($containerDefs[$i].name -eq $cfg.ecs.container_name) { $mainIdx = $i; break }
     }
     if ($mainIdx -lt 0) {
-        Write-Fail "Container named 'Main' not found in task definition $currentArn"
+        Write-Fail "Container named '$($cfg.ecs.container_name)' not found in task definition $currentArn"
         exit 1
     }
     $containerDefs[$mainIdx].image = $ImageUri
-    Write-Info "Swapped image on container 'Main' to: $ImageUri"
+    Write-Info "Swapped image on container '$($cfg.ecs.container_name)' to: $ImageUri"
 
     # Build registration payload — include only fields accepted by register-task-definition
     $td = $currentTd.taskDefinition
@@ -262,18 +262,18 @@ if ($TaskDefRevision -gt 0) {
 # ── Stage 6: Trigger ECS deployment ──────────────────────────────────────────
 
 Write-Stage 'Stage 6: Trigger ECS deployment'
-Write-Info "  cluster  : $($cfg.cluster)"
-Write-Info "  service  : $($cfg.service)"
+Write-Info "  cluster  : $($cfg.ecs.cluster)"
+Write-Info "  service  : $($cfg.ecs.service)"
 Write-Info "  task-def : $NewTaskDefArn"
 Write-Warn "NOTE: ALB listener rules are NOT touched. ECS owns rule weights during canary."
 
 $updateResult = aws ecs update-service `
-    --cluster $cfg.cluster `
-    --service $cfg.service `
+    --cluster $cfg.ecs.cluster `
+    --service $cfg.ecs.service `
     --task-definition $NewTaskDefArn `
     --region $cfg.region | ConvertFrom-Json
 
-$primaryDep  = $updateResult.service.deployments | Where-Object { $_.status -eq 'PRIMARY' } | Select-Object -First 1
+$primaryDep   = $updateResult.service.deployments | Where-Object { $_.status -eq 'PRIMARY' } | Select-Object -First 1
 $deploymentId = if ($primaryDep) { $primaryDep.id } else { 'unknown' }
 Write-OK "Deployment triggered.  ID: $deploymentId"
 
@@ -281,13 +281,13 @@ Write-OK "Deployment triggered.  ID: $deploymentId"
 
 Write-Stage 'Stage 7: Watch loop'
 
-$WatchStart   = Get-Date
-$TimeoutSec   = [int]$cfg.watch_timeout_s
-$IntervalSec  = [int]$cfg.watch_interval_s
-$FinalState   = 'TIMEOUT'
+$WatchStart  = Get-Date
+$TimeoutSec  = [int]($cfg.deploy.watch_timeout_minutes * 60)
+$IntervalSec = [int]$cfg.deploy.watch_interval_seconds
+$FinalState  = 'TIMEOUT'
 
 Write-Info "Interval: ${IntervalSec}s   Timeout: ${TimeoutSec}s"
-Write-Info "Watching: rolloutState on PRIMARY deployment + $($cfg.rollback_alarm)"
+Write-Info "Watching: rolloutState on PRIMARY deployment + $($cfg.cloudwatch.rollback_alarm)"
 Write-Info ""
 
 while ($true) {
@@ -299,15 +299,15 @@ while ($true) {
     }
 
     # Poll service
-    $svc        = aws ecs describe-services --cluster $cfg.cluster --services $cfg.service --region $cfg.region | ConvertFrom-Json
-    $dep        = $svc.services[0].deployments | Where-Object { $_.status -eq 'PRIMARY' } | Select-Object -First 1
-    $rollout    = if ($dep -and $dep.rolloutState)  { $dep.rolloutState  } else { 'UNKNOWN' }
-    $running    = if ($dep) { $dep.runningCount  } else { '?' }
-    $desired    = if ($dep) { $dep.desiredCount  } else { '?' }
-    $pending    = if ($dep) { $dep.pendingCount  } else { '?' }
+    $svc     = aws ecs describe-services --cluster $cfg.ecs.cluster --services $cfg.ecs.service --region $cfg.region | ConvertFrom-Json
+    $dep     = $svc.services[0].deployments | Where-Object { $_.status -eq 'PRIMARY' } | Select-Object -First 1
+    $rollout = if ($dep -and $dep.rolloutState)  { $dep.rolloutState  } else { 'UNKNOWN' }
+    $running = if ($dep) { $dep.runningCount  } else { '?' }
+    $desired = if ($dep) { $dep.desiredCount  } else { '?' }
+    $pending = if ($dep) { $dep.pendingCount  } else { '?' }
 
     # Poll alarm
-    $alm        = aws cloudwatch describe-alarms --alarm-names $cfg.rollback_alarm --region $cfg.region | ConvertFrom-Json
+    $alm        = aws cloudwatch describe-alarms --alarm-names $cfg.cloudwatch.rollback_alarm --region $cfg.region | ConvertFrom-Json
     $alarmState = if ($alm.MetricAlarms -and $alm.MetricAlarms.Count -gt 0) { $alm.MetricAlarms[0].StateValue } else { 'UNKNOWN' }
 
     $ts = (Get-Date).ToString('HH:mm:ss')
@@ -337,19 +337,19 @@ while ($true) {
 if ($FinalState -eq 'COMPLETED') {
     Write-Stage 'Stage 8: Smoke tests'
     $smokePass = $true
-    foreach ($smokeHost in $cfg.smoke_test_hosts) {
-        foreach ($path in @('/health', '/ready')) {
-            $url = "https://${smokeHost}${path}"
+    foreach ($smokeHost in $cfg.deploy.smoke_test_hosts) {
+        foreach ($path in $cfg.deploy.smoke_test_paths) {
+            $url = "${smokeHost}${path}"
             try {
                 $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10
                 if ($resp.StatusCode -eq 200) {
-                    Write-OK "$url  → $($resp.StatusCode)"
+                    Write-OK "$url  -> $($resp.StatusCode)"
                 } else {
-                    Write-Warn "$url  → $($resp.StatusCode)  (expected 200)"
+                    Write-Warn "$url  -> $($resp.StatusCode)  (expected 200)"
                     $smokePass = $false
                 }
             } catch {
-                Write-Fail "$url  → ERROR: $($_.Exception.Message)"
+                Write-Fail "$url  -> ERROR: $($_.Exception.Message)"
                 $smokePass = $false
             }
         }
@@ -365,7 +365,7 @@ if ($FinalState -eq 'COMPLETED') {
 
 if ($FinalState -ne 'COMPLETED') {
     Write-Stage 'Stage 9: Last 10 service events'
-    $svc    = aws ecs describe-services --cluster $cfg.cluster --services $cfg.service --region $cfg.region | ConvertFrom-Json
+    $svc    = aws ecs describe-services --cluster $cfg.ecs.cluster --services $cfg.ecs.service --region $cfg.region | ConvertFrom-Json
     $events = $svc.services[0].events | Select-Object -First 10
     foreach ($evt in $events) {
         Write-Info "  $($evt.createdAt)  $($evt.message)"
@@ -376,22 +376,22 @@ if ($FinalState -ne 'COMPLETED') {
 
 Write-Stage 'Stage 10: Summary'
 
-$TotalSec    = [int]((Get-Date) - $StartTime).TotalSeconds
-$tdShort     = if ($NewTaskDefArn) { "${tdFamily}:$(($NewTaskDefArn -split ':')[-1])" } else { 'n/a' }
+$TotalSec     = [int]((Get-Date) - $StartTime).TotalSeconds
+$tdShort      = if ($NewTaskDefArn) { "${tdFamily}:$(($NewTaskDefArn -split ':')[-1])" } else { 'n/a' }
 $summaryColor = if ($FinalState -eq 'COMPLETED') { 'Green' } else { 'Red' }
 
 $lines = @(
     '',
-    '  ┌──────────────────────────────────────────────────────┐',
-    '  │  Deploy Summary                                       │',
-    '  ├──────────────────────────────────────────────────────┤',
-    "  │  Service      : $($cfg.service.PadRight(36))│",
-    "  │  Cluster      : $($cfg.cluster.PadRight(36))│",
-    "  │  Task Def     : $($tdShort.PadRight(36))│",
-    "  │  Commit       : $($head.Substring(0,7).PadRight(36))│",
-    "  │  Final State  : $($FinalState.PadRight(36))│",
-    "  │  Duration     : $("${TotalSec}s".PadRight(36))│",
-    '  └──────────────────────────────────────────────────────┘',
+    '  +------------------------------------------------------+',
+    '  |  Deploy Summary                                       |',
+    '  +------------------------------------------------------+',
+    "  |  Service      : $($cfg.ecs.service.PadRight(36))|",
+    "  |  Cluster      : $($cfg.ecs.cluster.PadRight(36))|",
+    "  |  Task Def     : $($tdShort.PadRight(36))|",
+    "  |  Commit       : $($head.Substring(0,7).PadRight(36))|",
+    "  |  Final State  : $($FinalState.PadRight(36))|",
+    "  |  Duration     : $("${TotalSec}s".PadRight(36))|",
+    '  +------------------------------------------------------+',
     ''
 )
 foreach ($line in $lines) {
