@@ -73,7 +73,7 @@ def main(skip_run: bool = False) -> None:
             skip_storage=False,
         )
         print(
-            f"  ok {result['policy_number']:<14} {result['artifact_type']:<10} sections={result['section_count']:<2} :: {result['title']}"
+            f"  ok {result['policy_number']:<14} {result['artifact_type']:<10} sections={result['sections_count']:<2} :: {result['title']}"
         )
 
     print()

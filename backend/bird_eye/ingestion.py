@@ -42,6 +42,39 @@ def _extract_text_md(content: bytes) -> str:
         return content.decode("latin-1")
 
 
+def _iter_paragraphs_in_order(doc) -> list:
+    """Yield Paragraph objects in document body order, including table cells.
+
+    doc.paragraphs skips table cell paragraphs entirely. Many policy documents
+    (JAMF, vendor templates, audit forms) put all body content inside Word
+    tables, leaving doc.paragraphs nearly empty. This walker visits every
+    <w:p> in the body in XML order, recursing into nested tables, and
+    deduplicates merged-cell paragraphs by element identity.
+    """
+    from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph as _Paragraph
+    from docx.table import Table as _Table
+
+    seen: set[int] = set()
+    result: list = []
+
+    def _collect(parent_elm: object) -> None:
+        for child in parent_elm:  # type: ignore[call-overload]
+            if child.tag == qn("w:p"):
+                cid = id(child)
+                if cid not in seen:
+                    seen.add(cid)
+                    result.append(_Paragraph(child, doc))
+            elif child.tag == qn("w:tbl"):
+                tbl = _Table(child, doc)
+                for row in tbl.rows:
+                    for cell in row.cells:
+                        _collect(cell._tc)
+
+    _collect(doc.element.body)
+    return result
+
+
 def _extract_text_docx(content: bytes) -> str:
     """Extract text from a .docx, emitting markdown-equivalent headings/lists.
 
@@ -65,7 +98,7 @@ def _extract_text_docx(content: bytes) -> str:
     doc = Document(io.BytesIO(content))
     lines: list[str] = []
     number_counter = 0
-    for para in doc.paragraphs:
+    for para in _iter_paragraphs_in_order(doc):
         raw = (para.text or "").strip()
         if not raw:
             number_counter = 0  # break the numbered run on blank lines
@@ -373,7 +406,7 @@ def ingest_document(
         "policy_number": doc_id_external,
         "title": title,
         "artifact_type": detected_type,
-        "section_count": len(sections),
+        "sections_count": len(sections),
         "storage_path": storage_path,
         "metadata": metadata,
     }

@@ -140,7 +140,6 @@ async def library_summary(request: Request):
         TABLE_DOCUMENTS,
         tenant_id=tenant_id,
         columns="id,policy_name,policy_number,document_type,status",
-        filters={"policy_number": "like.TKO-*"},
     )
     runs = db_select(
         TABLE_RUNS,
