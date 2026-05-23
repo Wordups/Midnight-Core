@@ -7,6 +7,26 @@
 
 ---
 
+## 0. PRODUCT PRINCIPLES
+
+Seven principles govern every product and scope decision. The seventh is the override.
+
+1. **Self-serve.** No human in the loop between signup and value.
+2. **Always online.** Uptime is a product feature, not an infra detail.
+3. **Framework-led expansion.** Depth before breadth. Add frameworks as marketing events.
+4. **Demo-free.** Product converts cold visitors. Stripe checkout at every tier.
+5. **Build upward.** Deepen existing surfaces and add frameworks. Don't add unrelated product
+   surfaces.
+6. **Everything done before launch.** No "coming soon" buttons in the launch product. Half-built
+   features signal "not ready" to compliance buyers.
+7. **Visibility over productivity. (OVERRIDE)** Every feature must make the practitioner more
+   visible-as-competent — not just save them time. If a feature only saves time, it doesn't ship.
+   This override supersedes any other product argument.
+
+Full strategic context: [STRATEGY.md](./STRATEGY.md) §XIII.
+
+---
+
 ## 1. SELF-SERVE SIGNUP
 
 ### What happens between "hits signup" and "tenant is usable"
@@ -279,18 +299,20 @@ the generalized detection logic needs adjustment.
 
 These prevent self-onboarding from working. Fix before first external tenant.
 
+For definitions of done on each item, see [LAUNCH_READY.md](./LAUNCH_READY.md).
+
 | Location | Issue | Fix direction |
 |---|---|---|
-| `detectors.py:130` | `detect_duplicates` fetches docs with `"policy_number": "like.TKO-*"` | Remove filter; docs already scoped to tenant_id |
-| `detectors.py:252` | `detect_conflicts` same filter | Same |
-| `detectors.py:415` | `detect_stale_governance` same filter | Same |
-| `detectors.py:520` | `detect_framework_gaps` same filter | Same |
-| `detectors.py:621` | `detect_orphans` same filter | Same |
-| `orchestrator.py:61` | `documents_reviewed` count uses same filter | Remove filter; count all tenant docs |
+| `detectors.py:130` | `detect_duplicates` fetches docs with `"policy_number": "like.TKO-*"` | Remove filter; docs already scoped to tenant_id. Unblocks the Logic stage of ILWAO — without this fix, Bird Eye's detectors cannot reason about any non-TKO tenant's documents. |
+| `detectors.py:252` | `detect_conflicts` same filter | Same. Logic stage unblock. |
+| `detectors.py:415` | `detect_stale_governance` same filter | Same. Logic stage unblock. |
+| `detectors.py:520` | `detect_framework_gaps` same filter | Same. Logic stage unblock. |
+| `detectors.py:621` | `detect_orphans` same filter | Same. Logic stage unblock. |
+| `orchestrator.py:61` | `documents_reviewed` count uses same filter | Remove filter; count all tenant docs. Logic stage unblock — without this, the Wedge has an inaccurate document count to reason against. |
 | `detectors.py:592,599,606` | `ORPHAN_CUES` checks `TKO-POL-003`, `TKO-POL-005`, `TKO-POL-006` by policy number | Generalize: match by document content type, not policy number (see below) |
 | `detectors.py:567` | `detect_framework_gaps` special-cases `number == "TKO-POL-004"` for AUP | Remove; `"acceptable use" in title` already covers it generically |
-| `main.py:837` | `/onboarding/plan` is a 307 redirect back to `/login.html?mode=signup` — new users loop back to signup after registering | Build 3-question wizard; write to onboarding_sessions; redirect to dashboard |
-| `verify_access()` | Trial cap: 1 user per tenant. B2B compliance buyers add teammates within the first hour. If they can't add a second user, they churn before they see value. | Wire a paid-tier check; `profiles` table already supports multiple users per tenant_id |
+| `main.py:837` | `/onboarding/plan` is a 307 redirect back to `/login.html?mode=signup` — new users loop back to signup after registering | Build 3-question wizard; write to onboarding_sessions; redirect to dashboard. Completes the Input stage of ILWAO for self-serve tenants — without this, no external tenant can submit their context (frameworks, objectives, build method) to the system. |
+| `verify_access()` | Trial cap: 1 user per tenant. B2B compliance buyers add teammates within the first hour. If they can't add a second user, they churn before they see value. | Wire a paid-tier check; `profiles` table already supports multiple users per tenant_id. Unblocks multi-user Input — B2B compliance work requires the analyst and at least one SME contributor to be in the system simultaneously. |
 
 **ORPHAN_CUES generalization design:**
 
