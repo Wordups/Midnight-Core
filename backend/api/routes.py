@@ -2666,6 +2666,14 @@ async def create_grc_summary(request: Request, payload: GrcSummaryRequest):
             "recent_activity": recent,
         })
         exec_narrative = exec_out.summary
+        _emit_signal(
+            request,
+            tenant_id=tenant["id"],
+            event_type="executive_summary_generated",
+            source="pipeline.grc-summary",
+            summary=f"GRC executive summary generated for {payload.organization_name.strip() or 'workspace'}.",
+            metadata={"narrative": exec_narrative},
+        )
     except Exception:
         pass
 

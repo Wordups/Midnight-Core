@@ -68,7 +68,8 @@ STATUS_QUERY_LIMIT = 500
 
 
 def _classify_action(action: str) -> str:
-    """Map an activity_log.action string to a responsible agent id."""
+    """Map an activity_log.action string to a responsible agent id.
+    JS mirror: classifyAction() in frontend/midnight_dashboard.html — keep in sync."""
     a = (action or "").lower()
     if not a:
         return "signal_manager"

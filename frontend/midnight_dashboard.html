@@ -1255,6 +1255,13 @@
           </div>
         </div>
       </div>
+      <div class="panel" id="agent-activity-panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <span class="panel-title">Agent Activity</span>
+          <span id="agent-filter-label" style="font-size:11px;color:var(--text3);"></span>
+        </div>
+        <div id="agent-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px;"></div>
+      </div>
       <div class="bottom-grid">
         <div class="panel">
           <div class="panel-header"><div class="panel-title">Recent Activity</div></div>
@@ -5014,7 +5021,7 @@ function renderActivityList(targetId, items) {
   }
   el.innerHTML = items.map(item => {
     const ok = /audit|complete/i.test(item.result || '');
-    return `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;">
+    return `<div class="activity-row" style="grid-template-columns:70px 1fr 1fr 1fr 90px;" data-action="${escHtml(item.action || '')}">
       <div class="time-cell">${escHtml(relTime(item.timestamp))}</div>
       <div class="user-cell"><div class="avatar" style="background:rgba(74,158,255,0.15);color:var(--blue);">${escHtml(item.user_initials)}</div>${escHtml(item.user_name)}</div>
       <div style="color:var(--text2);">${escHtml(item.action)}</div>
@@ -5114,8 +5121,91 @@ async function loadGaps() {
   renderGapList('gaps-list', data.items || []);
 }
 
+// ── Agent Activity Panel ──────────────────────────────────────────────────────
+
+// Mirror of _classify_action() in backend/api/agent_ops.py — keep in sync.
+function classifyAction(action) {
+  const a = (action || '').toLowerCase();
+  if (a.includes('policy') || a === 'generated') return 'policy_agent';
+  if (a.includes('migration') || a.includes('clean')) return 'cleaner_agent';
+  if (a.includes('framework')) return 'framework_mapping_agent';
+  if (a.includes('invite') || a.includes('onboarding') || a.includes('signup') ||
+      a.includes('tenant') || a.includes('membership')) return 'tenant_manager';
+  if (a.includes('evidence')) return 'evidence_agent';
+  if (a.includes('executive') || a.includes('summary') || a.includes('grc_summary') ||
+      a.includes('grc-summary')) return 'executive_summary_agent';
+  return 'signal_manager';
+}
+
+let activeAgentFilter = null;
+
+function filterActivityByAgent(agentId) {
+  if (activeAgentFilter === agentId) {
+    activeAgentFilter = null;
+    document.getElementById('agent-filter-label').textContent = '';
+    document.querySelectorAll('.agent-card').forEach(c => c.style.borderColor = '');
+  } else {
+    activeAgentFilter = agentId;
+    document.getElementById('agent-filter-label').textContent =
+      'Filtered: ' + agentId.replace(/_/g, ' ');
+    document.querySelectorAll('.agent-card').forEach(c =>
+      c.style.borderColor = c.dataset.agentId === agentId ? 'var(--accent)' : ''
+    );
+  }
+  applyActivityFilter();
+}
+
+function applyActivityFilter() {
+  const rows = document.querySelectorAll('#overview-activity-list .activity-row');
+  rows.forEach(row => {
+    if (!activeAgentFilter) {
+      row.style.display = '';
+    } else {
+      const action = row.dataset.action || '';
+      row.style.display = classifyAction(action) === activeAgentFilter ? '' : 'none';
+    }
+  });
+}
+
+function renderAgentCards(agents) {
+  const el = document.getElementById('agent-cards');
+  if (!el) return;
+  if (!agents.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">No agent data yet.</div>';
+    return;
+  }
+  el.innerHTML = agents.map(a => {
+    const dot = a.status === 'active' ? 'var(--green)' : 'var(--amber)';
+    const last = a.last_event_at ? relTime(a.last_event_at) : 'Not yet triggered';
+    const selected = activeAgentFilter === a.id;
+    return `<div class="agent-card" data-agent-id="${escHtml(a.id)}"
+      onclick="filterActivityByAgent('${escHtml(a.id)}')"
+      style="background:var(--bg2);border:1px solid ${selected ? 'var(--accent)' : 'var(--border)'};
+        border-radius:8px;padding:12px;cursor:pointer;transition:border-color .15s;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${dot};display:inline-block;"></span>
+        <span style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(a.name)}</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(a.role)}</div>
+      <div style="font-size:11px;color:var(--text2);">${escHtml(last)}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent);margin-top:4px;">
+        ${a.event_count_24h}<span style="font-size:10px;font-weight:400;color:var(--text3);"> 24h</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function fetchAgents() {
+  try {
+    const r = await fetch(API + '/agents/status', { credentials: 'include' });
+    if (!r.ok) return;
+    const data = await r.json();
+    renderAgentCards(data.agents || []);
+  } catch {}
+}
+
 async function refreshDashboardData() {
-  await Promise.all([loadSummary(), loadDocuments(), loadActivity(), loadGaps()]);
+  await Promise.all([loadSummary(), loadDocuments(), loadActivity(), loadGaps(), fetchAgents()]);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -5392,6 +5482,7 @@ resetCreateStudio();
 ensureAuthenticated().then(() => {
   applyCreateWorkflowRoute();
   refreshDashboardData().catch(() => {});
+  setInterval(fetchAgents, 30000);
 }).catch(() => {
   // ensureAuthenticated already redirected to /login.html
 });
