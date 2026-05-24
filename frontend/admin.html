@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Midnight — Platform Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #06101b;
+    --bg2:     #0c1726;
+    --bg3:     #122033;
+    --bg4:     #16283f;
+    --border:  rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text:    #ffffff;
+    --text2:   rgba(255,255,255,0.88);
+    --text3:   rgba(188,209,234,0.62);
+    --green:   #00e89a;
+    --green-bg:rgba(0,232,154,0.08);
+    --amber:   #faaa28;
+    --amber-bg:rgba(250,170,40,0.10);
+    --red:     #ff6b35;
+    --red-bg:  rgba(255,107,53,0.08);
+    --blue:    #00d4f5;
+    --blue-bg: rgba(0,212,245,0.07);
+    --accent:  #00d4f5;
+    --font-display: 'Bebas Neue', display;
+    --font-body:    'Inter', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255,107,53,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,212,245,0.04) 0%, transparent 60%);
+  }
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 36px 28px 72px; }
+
+  header.page {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    flex-wrap: wrap; gap: 18px; margin-bottom: 28px;
+    border-bottom: 1px solid var(--border); padding-bottom: 22px;
+  }
+  .title-block .eyebrow {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+    color: var(--red); text-transform: uppercase;
+  }
+  .title-block h1 {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 42px; letter-spacing: 0.04em; margin-top: 4px;
+  }
+  .title-block p { color: var(--text3); font-size: 14px; margin-top: 6px; }
+
+  .meta-row {
+    display: flex; gap: 28px; align-items: center; flex-wrap: wrap;
+    font-family: var(--font-mono); font-size: 12px; color: var(--text3);
+  }
+  .meta-row span strong { color: var(--text2); font-weight: 500; }
+
+  .pulse {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; background: var(--green-bg); border: 1px solid var(--green);
+    color: var(--green); border-radius: 999px; font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .pulse .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    animation: pulse-anim 1.6s ease-out infinite;
+  }
+  .pulse[data-state="error"]   { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .pulse[data-state="error"] .dot { background: var(--red); animation: none; }
+  .pulse[data-state="loading"] { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+  .pulse[data-state="loading"] .dot { background: var(--blue); animation: none; }
+  @keyframes pulse-anim {
+    0%   { box-shadow: 0 0 0 0 rgba(0,232,154,0.6); }
+    70%  { box-shadow: 0 0 0 10px rgba(0,232,154,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,232,154,0); }
+  }
+
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stat-card .label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    color: var(--text3); text-transform: uppercase; margin-bottom: 8px;
+  }
+  .stat-card .value {
+    font-family: var(--font-mono); font-size: 28px; font-weight: 500;
+    color: var(--accent);
+  }
+  .stat-card .sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  section.panel {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; margin-bottom: 24px;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.22);
+  }
+  section.panel h2 {
+    font-family: var(--font-display); font-weight: 400; font-size: 22px;
+    letter-spacing: 0.04em; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  section.panel h2 .count {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text3);
+    letter-spacing: 0.06em;
+  }
+
+  /* Tenant table */
+  .tenant-table { width: 100%; border-collapse: collapse; }
+  .tenant-table th {
+    text-align: left; padding: 8px 12px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    color: var(--text3); text-transform: uppercase; border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .tenant-table td {
+    padding: 10px 12px; font-size: 13px; color: var(--text2);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+  .tenant-table tr:last-child td { border-bottom: none; }
+  .tenant-table tr:hover td { background: var(--bg3); }
+  .tenant-table td.org { color: var(--text); font-weight: 600; }
+  .tenant-table td.mono { font-family: var(--font-mono); font-size: 12px; }
+  .badge-plan {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 6px;
+    border: 1px solid transparent;
+  }
+  .badge-plan[data-plan="trial"]      { background: var(--amber-bg); color: var(--amber); border-color: rgba(250,170,40,0.35); }
+  .badge-plan[data-plan="starter"]    { background: var(--blue-bg);  color: var(--blue);  border-color: rgba(0,212,245,0.35); }
+  .badge-plan[data-plan="pro"]        { background: var(--green-bg); color: var(--green); border-color: rgba(0,232,154,0.35); }
+  .badge-plan[data-plan="enterprise"] { background: var(--bg4);      color: var(--text2); border-color: var(--border2); }
+
+  /* Event feed */
+  .events { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .event {
+    display: grid; grid-template-columns: 120px 160px 1fr auto;
+    gap: 14px; align-items: center; padding: 11px 14px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  }
+  .event-time   { font-family: var(--font-mono); font-size: 11.5px; color: var(--text3); }
+  .event-tenant { font-family: var(--font-mono); font-size: 11px; color: var(--blue);
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .event-action { font-size: 13px; font-weight: 600; color: var(--text); }
+  .event-agent  { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+                  color: var(--accent); text-transform: uppercase; text-align: right; }
+
+  .empty {
+    padding: 28px; text-align: center; color: var(--text3); font-size: 14px;
+    border: 1px dashed var(--border2); border-radius: 12px;
+  }
+  .empty strong { display: block; color: var(--text2); margin-bottom: 6px; }
+
+  .err {
+    padding: 14px 18px; border-radius: 10px;
+    background: var(--red-bg); border: 1px solid var(--red); color: var(--red);
+    font-family: var(--font-mono); font-size: 12.5px; margin-bottom: 18px; display: none;
+  }
+  .err.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <div class="title-block">
+      <div class="eyebrow">Midnight Core · Restricted</div>
+      <h1>Platform Admin</h1>
+      <p>Cross-tenant view. Service-role scoped. Not visible to workspace users.</p>
+    </div>
+    <div class="meta-row">
+      <span>Updated <strong id="meta-updated">—</strong></span>
+      <span class="pulse" id="pulse" data-state="loading">
+        <span class="dot"></span><span id="pulse-text">connecting</span>
+      </span>
+    </div>
+  </header>
+
+  <div class="err" id="err"></div>
+
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="label">Total Tenants</div>
+      <div class="value" id="stat-tenants">—</div>
+      <div class="sub">all time</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Active 24h</div>
+      <div class="value" id="stat-active">—</div>
+      <div class="sub">tenants with events</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Events 24h</div>
+      <div class="value" id="stat-events">—</div>
+      <div class="sub">across all tenants</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total Events</div>
+      <div class="value" id="stat-total">—</div>
+      <div class="sub">last 2000 rows</div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2>Tenants <span class="count" id="tenant-count">—</span></h2>
+    <div id="tenant-table-wrap">
+      <table class="tenant-table">
+        <thead>
+          <tr>
+            <th>Organization</th>
+            <th>Slug</th>
+            <th>Plan</th>
+            <th>Members</th>
+            <th>Last Active</th>
+            <th>Industry</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="tenant-tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="tenant-empty" style="display:none;">
+      <strong>No tenants found</strong>
+      This may indicate a configuration issue with the service role key.
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Live Event Feed <span class="count" id="events-count">—</span></h2>
+    <ul class="events" id="events-list"></ul>
+    <div class="empty" id="events-empty" style="display:none;">
+      <strong>No events recorded</strong>
+      Activity will appear here once workspace runs begin.
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const POLL_MS = 15_000;
+
+  const els = {
+    pulse:       document.getElementById('pulse'),
+    pulseText:   document.getElementById('pulse-text'),
+    err:         document.getElementById('err'),
+    updated:     document.getElementById('meta-updated'),
+    statTenants: document.getElementById('stat-tenants'),
+    statActive:  document.getElementById('stat-active'),
+    statEvents:  document.getElementById('stat-events'),
+    statTotal:   document.getElementById('stat-total'),
+    tenantCount: document.getElementById('tenant-count'),
+    tenantTbody: document.getElementById('tenant-tbody'),
+    tenantEmpty: document.getElementById('tenant-empty'),
+    eventsCount: document.getElementById('events-count'),
+    eventsList:  document.getElementById('events-list'),
+    eventsEmpty: document.getElementById('events-empty'),
+  };
+
+  function setPulse(state, text) {
+    els.pulse.setAttribute('data-state', state);
+    els.pulseText.textContent = text;
+  }
+
+  function showError(msg) {
+    if (!msg) { els.err.classList.remove('show'); return; }
+    els.err.textContent = msg;
+    els.err.classList.add('show');
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
+    );
+  }
+
+  function fmtClock(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return isNaN(d) ? '—' : d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return isNaN(d) ? '—' : d.toLocaleDateString([], { year:'numeric', month:'short', day:'numeric' });
+  }
+
+  function fmtRel(iso) {
+    if (!iso) return '—';
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (!Number.isFinite(diff) || diff < 0) return 'just now';
+    if (diff < 60)    return `${diff}s ago`;
+    if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  }
+
+  function renderTenants(tenants, perTenant) {
+    els.tenantCount.textContent = tenants.length ? `${tenants.length} total` : '';
+    if (!tenants.length) {
+      els.tenantTbody.innerHTML = '';
+      els.tenantEmpty.style.display = 'block';
+      return;
+    }
+    els.tenantEmpty.style.display = 'none';
+    const plan = p => (p || 'trial').toLowerCase();
+    els.tenantTbody.innerHTML = tenants.map(t => {
+      const stats  = perTenant[t.id] || {};
+      const lastAt = stats.last_event_at ? fmtRel(stats.last_event_at) : '—';
+      const p      = plan(t.plan_type);
+      return `<tr>
+        <td class="org">${esc(t.organization_name)}</td>
+        <td class="mono">${esc(t.slug)}</td>
+        <td><span class="badge-plan" data-plan="${esc(p)}">${esc(p)}</span></td>
+        <td class="mono" style="text-align:center;">${t.profile_count}</td>
+        <td class="mono">${esc(lastAt)}</td>
+        <td>${esc(t.industry)}</td>
+        <td class="mono">${esc(fmtDate(t.created_at))}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderEvents(events) {
+    els.eventsCount.textContent = events.length ? `${events.length} shown` : '';
+    if (!events.length) {
+      els.eventsList.innerHTML = '';
+      els.eventsEmpty.style.display = 'block';
+      return;
+    }
+    els.eventsEmpty.style.display = 'none';
+    els.eventsList.innerHTML = events.map(ev => `
+      <li class="event">
+        <div class="event-time" title="${esc(ev.timestamp || '')}">${esc(fmtClock(ev.timestamp))}</div>
+        <div class="event-tenant">${esc(ev.tenant_id ? ev.tenant_id.slice(0, 8) + '…' : '—')}</div>
+        <div class="event-action">${esc(ev.action_label || ev.action || 'Activity')}</div>
+        <div class="event-agent">${esc(ev.agent_name || '')}</div>
+      </li>`).join('');
+  }
+
+  async function fetchJson(url) {
+    const r = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+    if (r.status === 401) { window.location.href = '/login.html'; throw new Error('Unauthenticated'); }
+    if (r.status === 403) throw new Error('Access denied — check PLATFORM_ADMIN_EMAILS in .env');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+
+  let inFlight = false;
+
+  async function refresh() {
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      setPulse('loading', 'polling');
+      const [tenants, agents, events] = await Promise.all([
+        fetchJson('/api/admin/tenants'),
+        fetchJson('/api/admin/agents'),
+        fetchJson('/api/admin/events?limit=50'),
+      ]);
+
+      els.statTenants.textContent = tenants.count ?? '—';
+      els.statActive.textContent  = agents.active_tenants_24h ?? '—';
+      els.statEvents.textContent  = agents.total_events_24h ?? '—';
+      els.statTotal.textContent   = agents.total_events ?? '—';
+      els.updated.textContent     = fmtClock(agents.fetched_at);
+
+      renderTenants(tenants.tenants || [], agents.per_tenant || {});
+      renderEvents(events.events || []);
+      showError(null);
+      setPulse('active', 'live');
+    } catch (err) {
+      console.error('admin refresh failed', err);
+      setPulse('error', 'stalled');
+      showError(err.message || String(err));
+    } finally {
+      inFlight = false;
+    }
+  }
+
+  refresh();
+  setInterval(refresh, POLL_MS);
+})();
+</script>
+</body>
+</html>
