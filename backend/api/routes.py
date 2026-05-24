@@ -27,7 +27,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
-from backend.agents import AgentValidationError, CleanerAgent
+from backend.agents import AgentValidationError, CleanerAgent, EvidenceAgent, ExecutiveSummaryAgent
 from backend.core.framework_layer import (
     build_framework_mapping_rules,
     build_framework_prompt_context,
@@ -39,7 +39,7 @@ from backend.core.json_parser import (
 )
 from backend.renderers.docx_renderer import render_markdown_bullet, render_markdown_into
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
-from backend.core.gap_engine import CONTROL_REGISTRY, get_required_controls
+from backend.core.gap_engine import CONTROL_REGISTRY, get_required_controls, run_program_gap_analysis
 from backend.storage.file_store import (
     SupabaseStoreError,
     count_activity_for_tenant,
@@ -51,6 +51,8 @@ from backend.storage.file_store import (
     get_tenant,
     get_tenant_by_slug,
     list_generated_documents,
+    list_policies_for_gap_analysis,
+    list_recent_activity,
     replace_enabled_modules,
     save_policy_draft,
     save_generated_document,
@@ -73,6 +75,8 @@ load_dotenv()
 
 logger = logging.getLogger("midnight.policy_json")
 CLEANER_AGENT = CleanerAgent()
+EVIDENCE_AGENT = EvidenceAgent()
+EXECUTIVE_SUMMARY_AGENT = ExecutiveSummaryAgent()
 
 router = APIRouter()
 pipeline_router = APIRouter(prefix="/pipeline", tags=["pipeline"])
@@ -1291,6 +1295,7 @@ def _file_docx_response(
     source_name: str,
     policy_id: str | None = None,
     watermark_exports: bool = False,
+    extra_headers: dict | None = None,
 ) -> FileResponse:
     try:
         docx_bytes = _build_docx(policy_data, template_name)
@@ -1323,14 +1328,16 @@ def _file_docx_response(
 
     temp_path = _write_temp_docx(docx_bytes)
 
+    headers = {
+        "X-Midnight-Preview": preview_text,
+        "X-Midnight-Document-Id": record["id"],
+        **(extra_headers or {}),
+    }
     return FileResponse(
         path=temp_path,
         filename=output_name,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "X-Midnight-Preview": preview_text,
-            "X-Midnight-Document-Id": record["id"],
-        },
+        headers=headers,
     )
 
 
@@ -2489,6 +2496,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     saved_policy_id = (draft.get("policy") or {}).get("id") or session.get("policy_id")
+    evidence_count = 0
     if saved_policy_id:
         try:
             covered_ids = _identify_covered_controls(
@@ -2497,6 +2505,20 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
                 frameworks=active_frameworks,
             )
             update_policy_covered_controls(saved_policy_id, covered_ids)
+        except Exception:
+            pass
+        try:
+            evidence = EVIDENCE_AGENT.run({"tenant_id": tenant["id"], "policy": policy_data})
+            evidence_count = len(evidence.evidence_requirements)
+            _emit_signal(
+                request,
+                tenant_id=tenant["id"],
+                event_type="evidence_requirements_identified",
+                source="pipeline.create.generate",
+                summary=evidence.readiness_summary,
+                policy_id=saved_policy_id,
+                metadata={"evidence_count": evidence_count},
+            )
         except Exception:
             pass
 
@@ -2520,6 +2542,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
         source_name=session.get("source_name", policy_name),
         policy_id=session.get("policy_id"),
         watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        extra_headers={"X-Midnight-Evidence-Count": str(evidence_count)},
     )
 
 
@@ -2617,11 +2640,41 @@ async def create_grc_summary(request: Request, payload: GrcSummaryRequest):
     except SupabaseStoreError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
+    exec_narrative = ""
+    try:
+        policies_for_gap = list_policies_for_gap_analysis(tenant["id"])
+        all_fw = list({fw for p in policies_for_gap for fw in (p.get("selected_frameworks") or [])})
+        if policies_for_gap and all_fw:
+            gap_docs = [
+                {
+                    "name": p["policy_name"],
+                    "doc_type": (p.get("document_type") or "POLICY").upper(),
+                    "covered_control_ids": p.get("covered_control_ids") or [],
+                }
+                for p in policies_for_gap
+            ]
+            gap_result = run_program_gap_analysis(documents=gap_docs, frameworks=all_fw)
+            gap_total = gap_result.get("total_gaps", 0)
+        else:
+            gap_total = 0
+        recent = list_recent_activity(tenant["id"], limit=5)
+        exec_out = EXECUTIVE_SUMMARY_AGENT.run({
+            "tenant_id": tenant["id"],
+            "policy_status": {"total": len(documents)},
+            "gaps_summary": {"total_gaps": gap_total},
+            "audit_readiness": {"status": "Needs Attention" if gap_total > 0 else "On Track"},
+            "recent_activity": recent,
+        })
+        exec_narrative = exec_out.summary
+    except Exception:
+        pass
+
     pdf_bytes = build_grc_summary_pdf(
         organization_name=payload.organization_name.strip() or "Organization",
         industry=payload.industry.strip() or "Unspecified",
         frameworks=normalized_frameworks,
         documents=documents,
+        narrative=exec_narrative,
     )
 
     if str(tenant.get("plan_type") or "").lower() == "trial":
@@ -2630,6 +2683,7 @@ async def create_grc_summary(request: Request, payload: GrcSummaryRequest):
             industry=payload.industry.strip() or "Unspecified",
             frameworks=normalized_frameworks,
             documents=documents,
+            narrative=exec_narrative,
         )
 
     org_slug = (payload.organization_name.strip() or "organization").replace(" ", "_")
