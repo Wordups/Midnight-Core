@@ -69,7 +69,7 @@ Return STRICT JSON only. No prose, no markdown fences. Schema:
 
 {{
   "title": "string - the document title (e.g. 'Access Control Policy'). Required.",
-  "document_id": "string|null - the external doc identifier if present (e.g. 'TKO-POL-002').",
+  "document_id": "string|null - the external doc identifier if present (e.g. 'POL-001').",
   "version": "string|null - version identifier as written (e.g. '1.0', '0.9').",
   "owner": "string|null - the named owner. Return null if marked unassigned, TBD, '[unassigned]', or absent.",
   "status": "string|null - e.g. 'Active', 'Draft', 'Retired'.",

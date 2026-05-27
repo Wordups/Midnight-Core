@@ -62,7 +62,7 @@ app.include_router(health_router)
 logger = logging.getLogger("midnight.auth")
 
 session_cookie_name = "midnight_session"
-TRIAL_MAX_USERS = 1
+TRIAL_MAX_USERS = 3  # raised from 1 — B2B teams need at least 3 seats to evaluate
 
 
 class LoginRequest(BaseModel):
