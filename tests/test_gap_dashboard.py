@@ -149,3 +149,88 @@ class TestGapsResponseFilterCounts(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── M1 fix: list_policies_for_gap_analysis includes uploaded docs ─────────────
+
+class TestListPoliciesForGapAnalysis(unittest.TestCase):
+    """
+    Tests for the M1 fix: list_policies_for_gap_analysis must return uploaded
+    documents (covered_control_ids=[]) so they appear in gap analysis as zero
+    coverage rather than being silently excluded.
+
+    RED before fix (neq.[] filter excluded them).
+    GREEN after fix (no filter — all tenant policies returned).
+    """
+
+    def _make_postgrest_row(self, covered_control_ids):
+        return {
+            "id": "test-policy-id",
+            "policy_name": "Test InfoSec Policy",
+            "document_type": "policy",
+            "selected_frameworks": ["HIPAA"],
+            "covered_control_ids": covered_control_ids,
+        }
+
+    @patch("backend.storage.file_store._postgrest")
+    def test_uploaded_doc_with_empty_ids_is_included(self, mock_postgrest):
+        """Uploaded doc (covered_control_ids=[]) must be returned — M1 fix."""
+        from backend.storage.file_store import list_policies_for_gap_analysis
+        mock_postgrest.return_value = [self._make_postgrest_row([])]
+
+        result = list_policies_for_gap_analysis("tenant-abc")
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["covered_control_ids"], [])
+        # Confirm no covered_control_ids filter was passed to postgrest
+        call_kwargs = mock_postgrest.call_args.kwargs
+        self.assertNotIn("covered_control_ids", call_kwargs.get("params", {}))
+
+    @patch("backend.storage.file_store._postgrest")
+    def test_ai_generated_doc_with_ids_still_included(self, mock_postgrest):
+        """AI-generated doc (covered_control_ids non-empty) must still be returned — no regression."""
+        from backend.storage.file_store import list_policies_for_gap_analysis
+        mock_postgrest.return_value = [
+            self._make_postgrest_row(["HIPAA-164.308(a)(1)", "HIPAA-164.312(a)(1)"])
+        ]
+
+        result = list_policies_for_gap_analysis("tenant-abc")
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("HIPAA-164.308(a)(1)", result[0]["covered_control_ids"])
+
+    @patch("backend.storage.file_store._postgrest")
+    def test_mixed_tenant_returns_both_doc_types(self, mock_postgrest):
+        """Tenant with uploaded + AI-generated docs — both returned, gap engine sees both."""
+        from backend.storage.file_store import list_policies_for_gap_analysis
+        mock_postgrest.return_value = [
+            self._make_postgrest_row([]),
+            self._make_postgrest_row(["HIPAA-164.308(a)(1)"]),
+        ]
+
+        result = list_policies_for_gap_analysis("tenant-abc")
+
+        self.assertEqual(len(result), 2)
+        empty_docs = [r for r in result if r["covered_control_ids"] == []]
+        mapped_docs = [r for r in result if r["covered_control_ids"] != []]
+        self.assertEqual(len(empty_docs), 1)
+        self.assertEqual(len(mapped_docs), 1)
+
+    def test_gap_engine_produces_gaps_for_empty_covered_ids(self):
+        """Gap engine with covered_control_ids=[] must return gaps — confirms engine handles M1 fix correctly."""
+        documents = [
+            {
+                "name": "Uploaded InfoSec Policy",
+                "doc_type": "POLICY",
+                "covered_control_ids": [],
+            }
+        ]
+        result = run_program_gap_analysis(documents=documents, frameworks=["HIPAA"])
+        self.assertGreater(result["total_gaps"], 0,
+            "Uploaded doc with no mapped controls should surface all required HIPAA controls as gaps")
+        self.assertEqual(result["overall_coverage_pct"], 0.0,
+            "Coverage must be 0% for a doc with no mapped controls")
+
+
+if __name__ == "__main__":
+    unittest.main()

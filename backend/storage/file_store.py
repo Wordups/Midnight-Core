@@ -835,14 +835,19 @@ def update_policy_covered_controls(policy_id: str, covered_control_ids: list[str
 
 
 def list_policies_for_gap_analysis(tenant_id: str) -> list[dict]:
-    """Return policies that have at least one tracked covered_control_id."""
+    """Return all policies for this tenant for gap analysis.
+
+    Uploaded documents have covered_control_ids=[] by default (never AI-processed).
+    They are included here and treated as zero coverage — every required control
+    for their doc_type and selected_frameworks will surface as a gap.
+    This is semantically correct: unmapped != no policy exists.
+    """
     rows = _postgrest(
         "GET",
         "policies",
         params={
             "select": "id,policy_name,document_type,selected_frameworks,covered_control_ids",
             "tenant_id": f"eq.{tenant_id}",
-            "covered_control_ids": "neq.[]",
         },
     )
     return rows or []
