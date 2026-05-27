@@ -28,6 +28,7 @@ from .db import (
 )
 from .embeddings import embed_chunks
 from .metadata_llm import extract_metadata as llm_extract_metadata
+from backend.storage.file_store import get_tenant as _get_tenant
 from .tenant_guard import require_tenant
 
 logger = logging.getLogger("midnight.bird_eye.ingestion")
@@ -356,7 +357,7 @@ def ingest_document(
         "version": metadata.get("version"),
         "status": metadata.get("status") or "Active",
         "document_type": detected_type,
-        "organization": "Takeoff LLC",
+        "organization": (_get_tenant(tenant_id) or {}).get("name") or "",
         "owner": metadata.get("owner"),
         "selected_frameworks": metadata.get("frameworks") or [],
         "last_reviewed_at": metadata.get("last_reviewed_at"),

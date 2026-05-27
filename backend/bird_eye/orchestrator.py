@@ -58,7 +58,6 @@ def run_bird_eye(tenant_id: str, *, triggered_by: str = "manual", trigger_docume
         TABLE_DOCUMENTS,
         tenant_id=tenant_id,
         columns="id",
-        filters={"policy_number": "like.TKO-*"},
     )
     documents_reviewed = len(docs)
     findings_total = 0

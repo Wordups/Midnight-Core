@@ -127,7 +127,6 @@ def detect_duplicates(tenant_id: str, run_id: str, *, threshold: float = DUPLICA
         TABLE_DOCUMENTS,
         tenant_id=tenant_id,
         columns="id,policy_name,policy_number",
-        filters={"policy_number": "like.TKO-*"},
     )
     doc_meta = {d["id"]: d for d in docs}
 
@@ -249,7 +248,6 @@ def detect_conflicts(tenant_id: str, run_id: str) -> int:
         TABLE_DOCUMENTS,
         tenant_id=tenant_id,
         columns="id,policy_name,policy_number",
-        filters={"policy_number": "like.TKO-*"},
     )
     doc_meta = {d["id"]: d for d in docs}
 
@@ -412,7 +410,6 @@ def detect_stale_governance(tenant_id: str, run_id: str) -> int:
         TABLE_DOCUMENTS,
         tenant_id=tenant_id,
         columns="id,policy_name,policy_number,version,owner,last_reviewed_at,next_review_at,status",
-        filters={"policy_number": "like.TKO-*"},
     )
     findings: list[dict[str, Any]] = []
     now = datetime.now(timezone.utc)
@@ -517,7 +514,6 @@ def detect_framework_gaps(tenant_id: str, run_id: str) -> int:
         TABLE_DOCUMENTS,
         tenant_id=tenant_id,
         columns="id,policy_name,policy_number,selected_frameworks",
-        filters={"policy_number": "like.TKO-*"},
     )
     chunks = db_select(
         TABLE_CHUNKS,
@@ -562,9 +558,8 @@ def detect_framework_gaps(tenant_id: str, run_id: str) -> int:
 
         # AUP-specific: baseline NIST CSF tag missing
         title = (d.get("policy_name") or "").lower()
-        number = (d.get("policy_number") or "").upper()
         if (
-            "acceptable use" in title or number == "TKO-POL-004"
+            "acceptable use" in title
         ) and "NIST CSF" not in tags and "NIST CSF" in tenant_baseline:
             already = any(
                 f["finding_type"] == "framework_gap" and f["policy_id"] == d["id"] and f.get("framework") == "NIST CSF"
@@ -586,26 +581,30 @@ def detect_framework_gaps(tenant_id: str, run_id: str) -> int:
     return _record_findings(tenant_id, run_id, findings)
 
 
-ORPHAN_CUES: list[tuple[str, str, list[str], str, str]] = [
-    # (policy_number, expected artifact title fragment, required_keywords_in_policy, severity, recommendation_suffix)
+# ORPHAN_CUES: content-based matching — detect policies that reference companion
+# artifacts that don't exist in the tenant's document inventory.
+# Each entry: (document_type, required_keywords_in_policy, expected_artifact_title_fragment, severity, recommendation)
+# Matches ANY policy of the given type whose body contains ALL required keywords,
+# then checks whether a companion artifact with the expected title fragment exists.
+ORPHAN_CUES: list[tuple[str, list[str], str, str, str]] = [
     (
-        "TKO-POL-003",
-        "Incident Response Runbook",
+        "policy",
         ["incident response", "runbook", "playbook"],
+        "incident response runbook",
         "medium",
         "Create an Incident Response Runbook (procedure-level artifact) so responders have step-by-step actions to execute under the policy.",
     ),
     (
-        "TKO-POL-006",
-        "Vendor Assessment Procedure",
+        "policy",
         ["vendor security questionnaire", "vendor security assessment", "vendor assessment"],
+        "vendor assessment procedure",
         "medium",
         "Create a Vendor Assessment Procedure (with the security questionnaire template) so the policy is executable.",
     ),
     (
-        "TKO-POL-005",
-        "Data Disposal Procedure",
+        "policy",
         ["cryptographic erasure", "automated retention enforcement", "disposal"],
+        "data disposal procedure",
         "low",
         "Create a Data Disposal Procedure that operationalizes the cryptographic erasure and retention enforcement requirements.",
     ),
@@ -618,7 +617,6 @@ def detect_orphans(tenant_id: str, run_id: str) -> int:
         TABLE_DOCUMENTS,
         tenant_id=tenant_id,
         columns="id,policy_name,policy_number,document_type",
-        filters={"policy_number": "like.TKO-*"},
     )
     chunks = db_select(
         TABLE_CHUNKS,
@@ -633,37 +631,37 @@ def detect_orphans(tenant_id: str, run_id: str) -> int:
     for pid, name in name_by_policy.items():
         body_by_policy[pid] = name + "\n" + body_by_policy.get(pid, "")
 
-    by_number = {(d.get("policy_number") or "").upper(): d for d in docs}
+    # All existing document title fragments for companion-artifact presence check
     titles = [(d.get("policy_name") or "").lower() for d in docs]
 
     findings: list[dict[str, Any]] = []
-    for policy_number, expected_title, required_keywords, severity, suggestion in ORPHAN_CUES:
-        doc = by_number.get(policy_number)
-        if not doc:
-            continue
-        body = body_by_policy.get(doc["id"], "").lower()
-        mentions = [kw for kw in required_keywords if kw in body]
-        if not mentions:
-            continue
-        # Does any other document satisfy the orphan?
-        target_fragment = expected_title.lower()
-        has_target = any(target_fragment in t for t in titles)
-        if has_target:
-            continue
-        findings.append(
-            {
-                "finding_type": "orphan",
-                "severity": severity,
-                "summary": (
-                    f"{policy_number} ({doc.get('policy_name')}) references "
-                    f"{', '.join(mentions)} but no {expected_title} exists in the document inventory."
-                ),
-                "recommendation": suggestion,
-                "policy_id": doc["id"],
-                "evidence": {
-                    "missing_artifact": expected_title,
-                    "policy_cues": mentions,
-                },
-            }
-        )
+    for doc_type, required_keywords, expected_title, severity, suggestion in ORPHAN_CUES:
+        for d in docs:
+            # Match by document type (loose: "policy" matches "policy", "procedure", etc.)
+            if doc_type not in (d.get("document_type") or "").lower():
+                continue
+            body = body_by_policy.get(d["id"], "").lower()
+            mentions = [kw for kw in required_keywords if kw in body]
+            if not mentions:
+                continue
+            # Does any other document satisfy the companion artifact?
+            has_target = any(expected_title in t for t in titles)
+            if has_target:
+                continue
+            findings.append(
+                {
+                    "finding_type": "orphan",
+                    "severity": severity,
+                    "summary": (
+                        f"{d.get('policy_number') or d.get('policy_name')} references "
+                        f"{', '.join(mentions)} but no {expected_title.title()} exists in the document inventory."
+                    ),
+                    "recommendation": suggestion,
+                    "policy_id": d["id"],
+                    "evidence": {
+                        "missing_artifact": expected_title,
+                        "policy_cues": mentions,
+                    },
+                }
+            )
     return _record_findings(tenant_id, run_id, findings)
