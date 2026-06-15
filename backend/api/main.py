@@ -15,7 +15,7 @@ configure_logging(level=settings.LOG_LEVEL)
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from gotrue.errors import AuthApiError
 from pydantic import BaseModel, Field
@@ -835,8 +835,19 @@ async def manual_join_beta_tester(request: Request, payload: ManualTesterJoinReq
 
 
 @app.get("/onboarding/plan")
-async def onboarding_plan_entry():
-    return RedirectResponse(url="/login.html?mode=signup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+async def onboarding_plan_entry(request: Request):
+    access_token = request.cookies.get(session_cookie_name, "").strip()
+    if not access_token:
+        return RedirectResponse(url="/login.html?mode=signup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+    try:
+        _authenticate_token(access_token)
+    except HTTPException as exc:
+        if exc.status_code in {status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN}:
+            return RedirectResponse(url="/login.html?mode=signup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+        raise
+
+    return FileResponse("frontend/onboarding_plan.html")
 
 
 @app.get("/auth/session")

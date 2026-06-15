@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Midnight Onboarding</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05070d;
+      --panel: rgba(14, 20, 33, 0.88);
+      --panel-strong: rgba(21, 31, 51, 0.96);
+      --line: rgba(148, 163, 184, 0.20);
+      --text: #eef4ff;
+      --muted: #9aa8bd;
+      --accent: #8bd3ff;
+      --accent-2: #8fffcb;
+      --warn: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(53, 108, 190, 0.22), transparent 34rem),
+        radial-gradient(circle at 84% 12%, rgba(55, 188, 139, 0.16), transparent 32rem),
+        var(--bg);
+      color: var(--text);
+    }
+    main {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 56px 0;
+    }
+    .eyebrow {
+      color: var(--accent-2);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    h1 {
+      margin: 14px 0 12px;
+      font-size: clamp(38px, 6vw, 76px);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+    }
+    .subhead {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+      margin-top: 34px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.36);
+      padding: 26px;
+    }
+    .card strong { color: var(--text); }
+    .steps {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 14px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+    }
+    .num {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: rgba(139,211,255,0.12);
+      color: var(--accent);
+      font-weight: 900;
+    }
+    .step h2 { margin: 0 0 6px; font-size: 17px; }
+    .step p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .workspace {
+      background: var(--panel-strong);
+      position: sticky;
+      top: 24px;
+    }
+    .badge {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,209,102,0.35);
+      color: var(--warn);
+      background: rgba(255,209,102,0.08);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+    }
+    .meta {
+      display: grid;
+      gap: 12px;
+      margin: 22px 0;
+      color: var(--muted);
+    }
+    .meta div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .actions { display: grid; gap: 12px; margin-top: 20px; }
+    button, a.button {
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-weight: 900;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+    .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #021018; }
+    .secondary { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--line); }
+    .error { color: #ff9aa8; margin-top: 12px; min-height: 20px; }
+    @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } .workspace { position: static; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Start onboarding</div>
+    <h1>Shape your Midnight workspace.</h1>
+    <p class="subhead">
+      Your trial tenant exists. This step should come before throwing you into the dashboard:
+      choose the starting package, confirm the workspace profile, then continue with a clean setup path.
+    </p>
+
+    <section class="grid">
+      <div class="card">
+        <div class="eyebrow">Setup path</div>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <div>
+              <h2>Confirm trial workspace</h2>
+              <p>We created your tenant and owner profile. Confirm the org details before loading dashboard modules.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <div>
+              <h2>Select your launch motion</h2>
+              <p>Start with GRC analyst mode, AI governance readiness, or evidence/upload review. Full guided choices come next.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <div>
+              <h2>Enter the dashboard intentionally</h2>
+              <p>No surprise drop-in. Dashboard access should happen after onboarding state is explicit.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card workspace">
+        <span class="badge">TRIAL</span>
+        <div class="meta">
+          <div><span>Workspace</span><strong id="org-name">Loading…</strong></div>
+          <div><span>Email</span><strong id="user-email">Loading…</strong></div>
+          <div><span>Status</span><strong id="access-state">Checking…</strong></div>
+        </div>
+        <div class="actions">
+          <button class="primary" type="button" id="continue-btn">Continue to dashboard →</button>
+          <a class="button secondary" href="/login.html?mode=signup">Back to signup</a>
+        </div>
+        <div class="error" id="error"></div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const API = window.location.origin;
+    const errorEl = document.getElementById('error');
+
+    async function loadSession() {
+      const res = await fetch(API + '/auth/session', { credentials: 'include' });
+      const session = await res.json().catch(() => ({}));
+      if (!res.ok || !session.authenticated) {
+        window.location.replace('/login.html?mode=signup');
+        return;
+      }
+      document.getElementById('org-name').textContent = session.organization_name || 'Midnight Workspace';
+      document.getElementById('user-email').textContent = session.email || 'Unknown user';
+      document.getElementById('access-state').textContent = String(session.access_state || 'authorized').replaceAll('_', ' ');
+    }
+
+    document.getElementById('continue-btn')?.addEventListener('click', () => {
+      window.location.assign('/midnight_dashboard.html');
+    });
+
+    loadSession().catch((err) => {
+      errorEl.textContent = err?.message || 'Could not load onboarding session.';
+    });
+  </script>
+</body>
+</html>
