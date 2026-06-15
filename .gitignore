@@ -83,3 +83,6 @@ htmlcov/
 
 # ── Visual Studio ─────────────────────────────────────────────────────────────
 .vs/
+
+task-def.json
+midnight_task_def.json
