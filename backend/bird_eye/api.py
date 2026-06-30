@@ -16,9 +16,12 @@ from .db import (
     select as db_select,
     update as db_update,
 )
+from fastapi.responses import Response
+
 from .ingestion import ingest_document
 from .orchestrator import run_bird_eye
 from .tenant_guard import require_tenant
+from backend.renderers.pdf_renderer import build_bird_eye_findings_pdf
 
 logger = logging.getLogger("midnight.bird_eye.api")
 
@@ -117,6 +120,43 @@ async def list_findings(request: Request, run_id: str | None = None, status: str
         limit=500,
     )
     return _hydrate_findings(tenant_id, findings)
+
+
+@router.get("/findings/pdf")
+async def export_findings_pdf(request: Request, run_id: str | None = None):
+    tenant_id = _tenant_from_request(request)
+    auth = getattr(request.state, "auth_context", {}) or {}
+    org = auth.get("organization_name") or "Your Organization"
+    watermark = "TRIAL" if (auth.get("plan_type") or "").lower() == "trial" else None
+    filters: dict[str, str] = {}
+    if run_id:
+        filters["run_id"] = f"eq.{run_id}"
+    raw = db_select(
+        TABLE_FINDINGS,
+        tenant_id=tenant_id,
+        columns="*",
+        filters=filters or None,
+        order="created_at.desc",
+        limit=500,
+    )
+    raw = _hydrate_findings(tenant_id, raw)
+    findings = [
+        {
+            "title": (
+                f.get("title")
+                or (f.get("primary_document") or {}).get("policy_name")
+                or f.get("finding_type")
+                or "Finding"
+            ),
+            "type": f.get("finding_type") or "",
+            "severity": f.get("severity") or "",
+            "detail": f.get("description") or f.get("recommendation") or "",
+        }
+        for f in raw
+    ]
+    pdf = build_bird_eye_findings_pdf(organization_name=org, findings=findings, watermark=watermark)
+    headers = {"Content-Disposition": 'attachment; filename="midnight-bird-eye-findings.pdf"'}
+    return Response(content=pdf, media_type="application/pdf", headers=headers)
 
 
 @router.patch("/findings/{finding_id}")

@@ -1,38 +1,612 @@
 [
   {
-    "id": "SOC2-CC1",
-    "name": "Control Environment",
-    "description": "Establish governance and accountability practices that support reliable control execution.",
-    "category": "Governance"
+    "id": "SOC2-CC1.1",
+    "framework": "SOC 2",
+    "name": "Integrity and Ethical Values",
+    "description": "The entity demonstrates a commitment to integrity and ethical values.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Adopt a code of conduct and ethics policy, and document how it is communicated and enforced."
   },
   {
-    "id": "SOC2-CC2",
-    "name": "Communication and Information",
-    "description": "Maintain communication and information practices that support control awareness and operation.",
-    "category": "Governance"
+    "id": "SOC2-CC1.2",
+    "framework": "SOC 2",
+    "name": "Board Independence and Oversight",
+    "description": "The board of directors demonstrates independence from management and exercises oversight of the development and performance of internal control.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Document the board's governance charter and evidence of its oversight of internal control."
   },
   {
-    "id": "SOC2-CC3",
-    "name": "Risk Assessment",
-    "description": "Assess and prioritize risks that could affect service commitments and system requirements.",
-    "category": "Risk Management"
+    "id": "SOC2-CC1.3",
+    "framework": "SOC 2",
+    "name": "Organizational Structure and Authority",
+    "description": "Management establishes, with board oversight, structures, reporting lines, and appropriate authorities and responsibilities in the pursuit of objectives.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Document the organizational chart, reporting lines, and defined roles, authorities, and responsibilities."
   },
   {
-    "id": "SOC2-CC6",
-    "name": "Logical and Physical Access Controls",
-    "description": "Apply access controls to protect systems, data, and supporting infrastructure.",
-    "category": "Access Control"
+    "id": "SOC2-CC1.4",
+    "framework": "SOC 2",
+    "name": "Commitment to Competence",
+    "description": "The entity demonstrates a commitment to attract, develop, and retain competent individuals in alignment with objectives.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document hiring, training, and competency-evaluation procedures for personnel in control roles."
   },
   {
-    "id": "SOC2-CC7",
-    "name": "System Operations",
-    "description": "Monitor systems and respond to events so service commitments remain reliable.",
-    "category": "Logging & Monitoring"
+    "id": "SOC2-CC1.5",
+    "framework": "SOC 2",
+    "name": "Accountability for Internal Control",
+    "description": "The entity holds individuals accountable for their internal control responsibilities in the pursuit of objectives.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Define and document accountability measures, performance evaluations, and disciplinary processes tied to control responsibilities."
   },
   {
-    "id": "SOC2-CC9",
-    "name": "Risk Mitigation",
-    "description": "Mitigate operational and third-party risks through defined control activities.",
-    "category": "Vendor Management"
+    "id": "SOC2-CC2.1",
+    "framework": "SOC 2",
+    "name": "Use of Relevant, Quality Information",
+    "description": "The entity obtains or generates and uses relevant, quality information to support the functioning of internal control.",
+    "category": "Governance",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document how relevant, quality information is identified, captured, and used to support internal control."
+  },
+  {
+    "id": "SOC2-CC2.2",
+    "framework": "SOC 2",
+    "name": "Internal Communication",
+    "description": "The entity internally communicates information, including objectives and responsibilities for internal control, necessary to support the functioning of internal control.",
+    "category": "Governance",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document internal communication channels and how control objectives and responsibilities are communicated to personnel."
+  },
+  {
+    "id": "SOC2-CC2.3",
+    "framework": "SOC 2",
+    "name": "External Communication",
+    "description": "The entity communicates with external parties regarding matters affecting the functioning of internal control.",
+    "category": "Governance",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document how commitments, requirements, and control-relevant matters are communicated to customers, vendors, and other external parties."
+  },
+  {
+    "id": "SOC2-CC3.1",
+    "framework": "SOC 2",
+    "name": "Specification of Objectives",
+    "description": "The entity specifies objectives with sufficient clarity to enable the identification and assessment of risks relating to objectives.",
+    "category": "Risk Management",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document the entity's objectives and service commitments to provide a basis for risk identification."
+  },
+  {
+    "id": "SOC2-CC3.2",
+    "framework": "SOC 2",
+    "name": "Identification and Analysis of Risk",
+    "description": "The entity identifies risks to the achievement of its objectives across the entity and analyzes risks as a basis for determining how the risks should be managed.",
+    "category": "Risk Management",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAN"],
+    "suggested_action": "Establish and document a formal risk assessment process that identifies, analyzes, and rates risks to objectives."
+  },
+  {
+    "id": "SOC2-CC3.3",
+    "framework": "SOC 2",
+    "name": "Consideration of Fraud Risk",
+    "description": "The entity considers the potential for fraud in assessing risks to the achievement of objectives.",
+    "category": "Risk Management",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Incorporate and document the assessment of fraud risk within the risk assessment process."
+  },
+  {
+    "id": "SOC2-CC3.4",
+    "framework": "SOC 2",
+    "name": "Identification and Assessment of Change",
+    "description": "The entity identifies and assesses changes that could significantly impact the system of internal control.",
+    "category": "Risk Management",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document a process to identify and assess internal and external changes that could affect internal control."
+  },
+  {
+    "id": "SOC2-CC4.1",
+    "framework": "SOC 2",
+    "name": "Performance of Ongoing and Separate Evaluations",
+    "description": "The entity selects, develops, and performs ongoing and/or separate evaluations to ascertain whether the components of internal control are present and functioning.",
+    "category": "Logging & Monitoring",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAN"],
+    "suggested_action": "Define and document ongoing and separate evaluations, such as control self-assessments and internal or external audits."
+  },
+  {
+    "id": "SOC2-CC4.2",
+    "framework": "SOC 2",
+    "name": "Evaluation and Communication of Deficiencies",
+    "description": "The entity evaluates and communicates internal control deficiencies in a timely manner to those parties responsible for taking corrective action, including senior management and the board of directors, as appropriate.",
+    "category": "Logging & Monitoring",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document how control deficiencies are evaluated, tracked to remediation, and communicated to management and the board."
+  },
+  {
+    "id": "SOC2-CC5.1",
+    "framework": "SOC 2",
+    "name": "Selection and Development of Control Activities",
+    "description": "The entity selects and develops control activities that contribute to the mitigation of risks to the achievement of objectives to acceptable levels.",
+    "category": "Risk Management",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document the control activities selected to mitigate identified risks to an acceptable level."
+  },
+  {
+    "id": "SOC2-CC5.2",
+    "framework": "SOC 2",
+    "name": "Control Activities Over Technology",
+    "description": "The entity also selects and develops general control activities over technology to support the achievement of objectives.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Document general IT controls over technology infrastructure, security, and acquisition that support objectives."
+  },
+  {
+    "id": "SOC2-CC5.3",
+    "framework": "SOC 2",
+    "name": "Deployment Through Policies and Procedures",
+    "description": "The entity deploys control activities through policies that establish what is expected and procedures that put policies into action.",
+    "category": "Governance",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Establish and maintain policies and supporting procedures that operationalize the entity's control activities."
+  },
+  {
+    "id": "SOC2-CC6.1",
+    "framework": "SOC 2",
+    "name": "Logical Access Security Software and Infrastructure",
+    "description": "The entity implements logical access security software, infrastructure, and architectures over protected information assets to protect them from security events to meet the entity's objectives.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Document logical access security architecture, including identity management, authentication, and encryption of data at rest and in transit."
+  },
+  {
+    "id": "SOC2-CC6.2",
+    "framework": "SOC 2",
+    "name": "Registration and Authorization of Access",
+    "description": "Prior to issuing system credentials and granting system access, the entity registers and authorizes new internal and external users whose access is administered by the entity, and removes access when no longer required.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "SOP"],
+    "suggested_action": "Document logical access provisioning and de-provisioning procedures, including approval before access is granted and timely removal."
+  },
+  {
+    "id": "SOC2-CC6.3",
+    "framework": "SOC 2",
+    "name": "Role-Based Access and Least Privilege",
+    "description": "The entity authorizes, modifies, or removes access to data, software, functions, and other protected information assets based on roles, responsibilities, or the system design and changes, giving consideration to the concepts of least privilege and segregation of duties, to meet the entity's objectives.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Define role-based access controls and document periodic access reviews enforcing least privilege and segregation of duties."
+  },
+  {
+    "id": "SOC2-CC6.4",
+    "framework": "SOC 2",
+    "name": "Physical Access Restrictions",
+    "description": "The entity restricts physical access to facilities and protected information assets to authorized personnel to meet the entity's objectives.",
+    "category": "Access Control",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document physical access controls for facilities and data centers, including authorization, badging, and periodic review."
+  },
+  {
+    "id": "SOC2-CC6.5",
+    "framework": "SOC 2",
+    "name": "Disposal of Protected Information Assets",
+    "description": "The entity discontinues logical and physical protections over physical assets only after the ability to read or recover data and software from those assets has been diminished and is no longer required to meet the entity's objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document secure media sanitization and asset disposal procedures that render data unrecoverable before reuse or disposal."
+  },
+  {
+    "id": "SOC2-CC6.6",
+    "framework": "SOC 2",
+    "name": "Protection Against External Threats",
+    "description": "The entity implements logical access security measures to protect against threats from sources outside its system boundaries.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Document boundary protection controls such as firewalls, multi-factor authentication, and intrusion prevention against external threats."
+  },
+  {
+    "id": "SOC2-CC6.7",
+    "framework": "SOC 2",
+    "name": "Restriction of Information in Transit and on Media",
+    "description": "The entity restricts the transmission, movement, and removal of information to authorized internal and external users and processes, and protects it during transmission, movement, or removal to meet the entity's objectives.",
+    "category": "Data Protection",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Document controls protecting data in transit and on removable media, including encryption and restrictions on data transfer."
+  },
+  {
+    "id": "SOC2-CC6.8",
+    "framework": "SOC 2",
+    "name": "Prevention and Detection of Unauthorized Software",
+    "description": "The entity implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software to meet the entity's objectives.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Document anti-malware, endpoint protection, and software allowlisting controls to prevent and detect unauthorized software."
+  },
+  {
+    "id": "SOC2-CC7.1",
+    "framework": "SOC 2",
+    "name": "Detection of Vulnerabilities and Misconfigurations",
+    "description": "To meet its objectives, the entity uses detection and monitoring procedures to identify changes to configurations that result in the introduction of new vulnerabilities, and susceptibilities to newly discovered vulnerabilities.",
+    "category": "Logging & Monitoring",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document vulnerability management and configuration monitoring procedures, including baselines and scheduled scanning."
+  },
+  {
+    "id": "SOC2-CC7.2",
+    "framework": "SOC 2",
+    "name": "Monitoring of System Components for Anomalies",
+    "description": "The entity monitors system components and the operation of those components for anomalies that are indicative of malicious acts, natural disasters, and errors affecting the entity's ability to meet its objectives; anomalies are analyzed to determine whether they represent security events.",
+    "category": "Logging & Monitoring",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Document continuous security monitoring and logging procedures that detect and analyze anomalies and indicators of compromise."
+  },
+  {
+    "id": "SOC2-CC7.3",
+    "framework": "SOC 2",
+    "name": "Evaluation of Security Events",
+    "description": "The entity evaluates security events to determine whether they could or have resulted in a failure of the entity to meet its objectives (security incidents) and, if so, takes actions to prevent or address such failures.",
+    "category": "Incident Response",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Document procedures to triage and evaluate security events to determine whether they constitute incidents requiring response."
+  },
+  {
+    "id": "SOC2-CC7.4",
+    "framework": "SOC 2",
+    "name": "Response to Security Incidents",
+    "description": "The entity responds to identified security incidents by executing a defined incident response program to understand, contain, remediate, and communicate security incidents, as appropriate.",
+    "category": "Incident Response",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PLAN", "PLAYBOOK", "PROCEDURE"],
+    "suggested_action": "Establish and document an incident response plan covering roles, containment, eradication, recovery, and communication."
+  },
+  {
+    "id": "SOC2-CC7.5",
+    "framework": "SOC 2",
+    "name": "Recovery from Security Incidents",
+    "description": "The entity identifies, develops, and implements activities to recover from identified security incidents.",
+    "category": "Incident Response",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PLAN", "PLAYBOOK", "PROCEDURE"],
+    "suggested_action": "Document recovery and post-incident review procedures, including restoration of systems and lessons-learned analysis."
+  },
+  {
+    "id": "SOC2-CC8.1",
+    "framework": "SOC 2",
+    "name": "Change Management",
+    "description": "The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures to meet its objectives.",
+    "category": "Change Management",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document a change management process requiring authorization, testing, approval, and documentation for all system changes."
+  },
+  {
+    "id": "SOC2-CC9.1",
+    "framework": "SOC 2",
+    "name": "Risk Mitigation for Business Disruptions",
+    "description": "The entity identifies, selects, and develops risk mitigation activities for risks arising from potential business disruptions.",
+    "category": "Risk Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PLAN", "PROCEDURE"],
+    "suggested_action": "Document risk mitigation activities for business disruptions, including business continuity planning and insurance considerations."
+  },
+  {
+    "id": "SOC2-CC9.2",
+    "framework": "SOC 2",
+    "name": "Vendor and Business Partner Risk Management",
+    "description": "The entity assesses and manages risks associated with vendors and business partners.",
+    "category": "Vendor Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Establish and document a vendor risk management program covering due diligence, contractual commitments, and ongoing monitoring."
+  },
+  {
+    "id": "SOC2-A1.1",
+    "framework": "SOC 2",
+    "name": "Capacity Management",
+    "description": "The entity maintains, monitors, and evaluates current processing capacity and use of system components to manage capacity demand and to enable the implementation of additional capacity to help meet its objectives.",
+    "category": "Availability",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document capacity monitoring and forecasting procedures to ensure system resources meet availability commitments."
+  },
+  {
+    "id": "SOC2-A1.2",
+    "framework": "SOC 2",
+    "name": "Environmental Protections, Backup, and Recovery",
+    "description": "The entity authorizes, designs, develops or acquires, implements, operates, approves, maintains, and monitors environmental protections, software, data backup processes, and recovery infrastructure to meet its objectives.",
+    "category": "Availability",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PLAN", "PROCEDURE"],
+    "suggested_action": "Document environmental controls, backup processes, and recovery infrastructure supporting availability commitments."
+  },
+  {
+    "id": "SOC2-A1.3",
+    "framework": "SOC 2",
+    "name": "Recovery Plan Testing",
+    "description": "The entity tests recovery plan procedures supporting system recovery to meet its objectives.",
+    "category": "Availability",
+    "severity": "medium",
+    "doc_types": ["PLAN", "PROCEDURE"],
+    "suggested_action": "Document and perform periodic testing of business continuity and disaster recovery plans, retaining evidence of results."
+  },
+  {
+    "id": "SOC2-C1.1",
+    "framework": "SOC 2",
+    "name": "Identification and Maintenance of Confidential Information",
+    "description": "The entity identifies and maintains confidential information to meet the entity's objectives related to confidentiality.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Document data classification procedures to identify confidential information and the controls protecting it throughout its lifecycle."
+  },
+  {
+    "id": "SOC2-C1.2",
+    "framework": "SOC 2",
+    "name": "Disposal of Confidential Information",
+    "description": "The entity disposes of confidential information to meet the entity's objectives related to confidentiality.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document retention and secure disposal procedures for confidential information once it is no longer required."
+  },
+  {
+    "id": "SOC2-PI1.1",
+    "framework": "SOC 2",
+    "name": "Use of Quality Information for Processing Integrity",
+    "description": "The entity obtains or generates, uses, and communicates relevant, quality information regarding the objectives related to processing, including definitions of data processed and product and service specifications, to support the use of products and services.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document data definitions and product/service specifications that support complete and accurate processing."
+  },
+  {
+    "id": "SOC2-PI1.2",
+    "framework": "SOC 2",
+    "name": "Completeness and Accuracy of Inputs",
+    "description": "The entity implements policies and procedures over system inputs, including controls over completeness and accuracy, to result in products, services, and reporting to meet the entity's objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document input validation controls that ensure data entering the system is complete and accurate."
+  },
+  {
+    "id": "SOC2-PI1.3",
+    "framework": "SOC 2",
+    "name": "Completeness and Accuracy of Processing",
+    "description": "The entity implements policies and procedures over system processing to result in products, services, and reporting to meet the entity's objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document processing controls that ensure data is processed completely, accurately, and in a timely manner."
+  },
+  {
+    "id": "SOC2-PI1.4",
+    "framework": "SOC 2",
+    "name": "Accuracy and Completeness of Outputs",
+    "description": "The entity implements policies and procedures to make available or deliver output completely, accurately, and timely in accordance with specifications to meet the entity's objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document output controls that ensure deliverables are complete, accurate, and delivered to authorized parties on time."
+  },
+  {
+    "id": "SOC2-PI1.5",
+    "framework": "SOC 2",
+    "name": "Storage of Inputs and Outputs",
+    "description": "The entity implements policies and procedures to store inputs, items in processing, and outputs completely, accurately, and timely in accordance with system specifications to meet the entity's objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document storage controls protecting the completeness and accuracy of inputs, in-process items, and outputs."
+  },
+  {
+    "id": "SOC2-P1.1",
+    "framework": "SOC 2",
+    "name": "Privacy Notice",
+    "description": "The entity provides notice to data subjects about its privacy practices to meet the entity's objectives related to privacy, including notice of the purposes for collecting, using, retaining, and disclosing personal information.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Publish and maintain a privacy notice describing how personal information is collected, used, retained, and disclosed."
+  },
+  {
+    "id": "SOC2-P2.1",
+    "framework": "SOC 2",
+    "name": "Choice and Consent",
+    "description": "The entity communicates choices available regarding the collection, use, retention, disclosure, and disposal of personal information and obtains consent as required to meet the entity's privacy objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document procedures for communicating privacy choices and capturing and honoring data subject consent."
+  },
+  {
+    "id": "SOC2-P3.1",
+    "framework": "SOC 2",
+    "name": "Collection of Personal Information",
+    "description": "Personal information is collected consistent with the entity's privacy objectives, limited to that which is necessary, and collected by fair and lawful means.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document data collection practices to ensure personal information is collected lawfully and limited to stated purposes."
+  },
+  {
+    "id": "SOC2-P3.2",
+    "framework": "SOC 2",
+    "name": "Explicit Consent for Sensitive Information",
+    "description": "For information requiring explicit consent, the entity communicates the need for such consent and obtains the consent prior to the collection of the information to meet the entity's privacy objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document procedures to obtain explicit consent before collecting sensitive personal information."
+  },
+  {
+    "id": "SOC2-P4.1",
+    "framework": "SOC 2",
+    "name": "Use of Personal Information",
+    "description": "The entity limits the use of personal information to the purposes identified in the entity's privacy notice and for which the data subject provided consent.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document controls restricting use of personal information to consented and noticed purposes."
+  },
+  {
+    "id": "SOC2-P4.2",
+    "framework": "SOC 2",
+    "name": "Retention of Personal Information",
+    "description": "The entity retains personal information consistent with the entity's privacy objectives and for no longer than necessary to fulfill the stated purposes.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document personal information retention schedules aligned to stated purposes and legal requirements."
+  },
+  {
+    "id": "SOC2-P4.3",
+    "framework": "SOC 2",
+    "name": "Disposal of Personal Information",
+    "description": "The entity securely disposes of personal information to meet the entity's privacy objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document secure disposal procedures for personal information that is no longer required."
+  },
+  {
+    "id": "SOC2-P5.1",
+    "framework": "SOC 2",
+    "name": "Data Subject Access",
+    "description": "The entity grants identified and authenticated data subjects the ability to access their stored personal information for review and, upon request, provides physical or electronic copies to meet the entity's privacy objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document procedures enabling data subjects to access and obtain copies of their personal information after authentication."
+  },
+  {
+    "id": "SOC2-P5.2",
+    "framework": "SOC 2",
+    "name": "Correction of Personal Information",
+    "description": "The entity corrects, amends, or appends personal information based on information provided by data subjects and communicates such information to third parties as committed or required to meet the entity's privacy objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document procedures to correct or amend personal information at the request of data subjects and notify relevant third parties."
+  },
+  {
+    "id": "SOC2-P6.1",
+    "framework": "SOC 2",
+    "name": "Disclosure of Personal Information to Third Parties",
+    "description": "The entity discloses personal information to third parties with the explicit consent of data subjects, and such consent is obtained prior to disclosure to meet the entity's privacy objectives.",
+    "category": "Vendor Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document procedures governing disclosure of personal information to third parties, including obtaining required consent."
+  },
+  {
+    "id": "SOC2-P6.2",
+    "framework": "SOC 2",
+    "name": "Authorized Third-Party Disclosures",
+    "description": "The entity creates and retains a complete, accurate, and timely record of authorized disclosures of personal information to meet the entity's privacy objectives.",
+    "category": "Vendor Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Maintain a record of authorized disclosures of personal information to third parties."
+  },
+  {
+    "id": "SOC2-P6.3",
+    "framework": "SOC 2",
+    "name": "Unauthorized Disclosure Records",
+    "description": "The entity creates and retains a complete, accurate, and timely record of detected or reported unauthorized disclosures of personal information to meet the entity's privacy objectives.",
+    "category": "Incident Response",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Document procedures to record and track unauthorized disclosures of personal information."
+  },
+  {
+    "id": "SOC2-P6.4",
+    "framework": "SOC 2",
+    "name": "Third-Party Disposal Commitments",
+    "description": "The entity obtains privacy commitments from vendors and other third parties who have access to personal information to enable consistent disposal of personal information and assesses those parties' compliance on a periodic and as-needed basis.",
+    "category": "Vendor Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Obtain and assess vendor privacy and disposal commitments for personal information they process."
+  },
+  {
+    "id": "SOC2-P6.5",
+    "framework": "SOC 2",
+    "name": "Third-Party Unauthorized Disclosure Notification",
+    "description": "The entity obtains commitments from vendors and other third parties with access to personal information to notify the entity in the event of actual or suspected unauthorized disclosures, and such notifications are recorded and assessed.",
+    "category": "Vendor Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Obtain vendor commitments to notify the entity of unauthorized disclosures and document the assessment of such notifications."
+  },
+  {
+    "id": "SOC2-P6.6",
+    "framework": "SOC 2",
+    "name": "Notification of Privacy Breaches",
+    "description": "The entity provides notification of breaches and incidents to affected data subjects, regulators, and others to meet the entity's privacy objectives.",
+    "category": "Incident Response",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PLAN", "PLAYBOOK", "PROCEDURE"],
+    "suggested_action": "Document a privacy breach notification procedure covering affected data subjects, regulators, and other required parties."
+  },
+  {
+    "id": "SOC2-P6.7",
+    "framework": "SOC 2",
+    "name": "Accounting of Personal Information Held and Disclosed",
+    "description": "The entity provides data subjects with an accounting of the personal information held and disclosure of the data subjects' personal information, upon request, to meet the entity's privacy objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document procedures to provide data subjects an accounting of their personal information held and disclosed upon request."
+  },
+  {
+    "id": "SOC2-P7.1",
+    "framework": "SOC 2",
+    "name": "Quality of Personal Information",
+    "description": "The entity collects and maintains accurate, up-to-date, complete, and relevant personal information to meet the entity's privacy objectives.",
+    "category": "Data Protection",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document data quality controls to keep personal information accurate, current, complete, and relevant."
+  },
+  {
+    "id": "SOC2-P8.1",
+    "framework": "SOC 2",
+    "name": "Privacy Complaint and Dispute Management",
+    "description": "The entity implements a process for receiving, addressing, resolving, and communicating the resolution of inquiries, complaints, and disputes from data subjects and others, and periodically monitors compliance to meet the entity's privacy objectives, including a process to correct misstatements.",
+    "category": "Incident Response",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Establish and document a process to receive, investigate, resolve, and communicate privacy complaints and disputes."
   }
 ]

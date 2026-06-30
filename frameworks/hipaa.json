@@ -1,38 +1,202 @@
 [
   {
     "id": "HIPAA-164.308(a)(1)",
+    "framework": "HIPAA",
     "name": "Security Management Process",
-    "description": "Establish and maintain a security management process that includes identifying and reducing risks to electronic protected health information.",
-    "category": "Risk Management"
+    "description": "Requires implementing policies and procedures to prevent, detect, contain, and correct security violations, including conducting an accurate risk analysis, managing identified risks, applying a sanction policy, and reviewing information system activity.",
+    "category": "Risk Management",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAN"],
+    "suggested_action": "Conduct and document a formal risk analysis of all systems handling ePHI, implement a risk management plan to reduce risks to a reasonable level, define a workforce sanction policy, and establish regular review of system activity logs."
+  },
+  {
+    "id": "HIPAA-164.308(a)(2)",
+    "framework": "HIPAA",
+    "name": "Assigned Security Responsibility",
+    "description": "Requires identifying a single security official who is responsible for developing and implementing the policies and procedures required by the Security Rule.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Formally designate a named Security Official, document the role and responsibilities, and communicate the assignment across the organization."
   },
   {
     "id": "HIPAA-164.308(a)(3)",
+    "framework": "HIPAA",
     "name": "Workforce Security",
-    "description": "Apply workforce access procedures so only appropriate personnel can access electronic protected health information.",
-    "category": "Access Control"
+    "description": "Requires policies and procedures to ensure all workforce members have appropriate access to ePHI and to prevent those who should not have access from obtaining it, including authorization, clearance, and termination procedures.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Implement authorization and supervision procedures for staff working with ePHI, establish workforce clearance checks before granting access, and define termination procedures to promptly revoke access when employment ends."
+  },
+  {
+    "id": "HIPAA-164.308(a)(4)",
+    "framework": "HIPAA",
+    "name": "Information Access Management",
+    "description": "Requires policies and procedures for authorizing access to ePHI consistent with the minimum necessary principle, including access authorization, establishment, and modification.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Define role-based access authorization procedures aligned to the minimum necessary standard, and document how access rights are granted, established, and modified over a user's lifecycle."
   },
   {
     "id": "HIPAA-164.308(a)(5)",
+    "framework": "HIPAA",
     "name": "Security Awareness and Training",
-    "description": "Provide a security awareness and training program for the workforce with ongoing reinforcement.",
-    "category": "Training"
+    "description": "Requires a security awareness and training program for all workforce members, including security reminders, protection from malicious software, log-in monitoring, and password management.",
+    "category": "Training",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAN"],
+    "suggested_action": "Establish a recurring security awareness training program covering periodic reminders, malware protection, log-in monitoring, and password management, and track completion for all workforce members."
+  },
+  {
+    "id": "HIPAA-164.308(a)(6)",
+    "framework": "HIPAA",
+    "name": "Security Incident Procedures",
+    "description": "Requires policies and procedures to address security incidents, including identifying and responding to suspected or known incidents, mitigating their harmful effects, and documenting incidents and their outcomes.",
+    "category": "Incident Response",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Develop an incident response plan that defines how to detect, report, respond to, and mitigate security incidents, and document each incident along with its outcome."
+  },
+  {
+    "id": "HIPAA-164.308(a)(7)",
+    "framework": "HIPAA",
+    "name": "Contingency Plan",
+    "description": "Requires policies and procedures for responding to emergencies or events that damage systems containing ePHI, including data backup, disaster recovery, emergency mode operation, testing and revision, and applications and data criticality analysis.",
+    "category": "Contingency Planning",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PLAN", "PROCEDURE"],
+    "suggested_action": "Establish and test a contingency plan including a data backup plan, disaster recovery plan, emergency mode operation plan, periodic testing and revision procedures, and an applications and data criticality analysis."
+  },
+  {
+    "id": "HIPAA-164.308(a)(8)",
+    "framework": "HIPAA",
+    "name": "Evaluation",
+    "description": "Requires periodic technical and nontechnical evaluation of security safeguards to demonstrate and document ongoing compliance with the Security Rule in response to environmental or operational changes.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAN"],
+    "suggested_action": "Perform and document periodic technical and nontechnical evaluations of security controls, triggered by environmental or operational changes, to confirm continued compliance."
+  },
+  {
+    "id": "HIPAA-164.308(b)(1)",
+    "framework": "HIPAA",
+    "name": "Business Associate Contracts and Other Arrangements",
+    "description": "Requires obtaining satisfactory assurances, through a written contract or other arrangement, that any business associate creating, receiving, maintaining, or transmitting ePHI will appropriately safeguard it.",
+    "category": "Vendor Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Identify all business associates handling ePHI and execute compliant business associate agreements that obtain satisfactory assurances they will safeguard the data."
+  },
+  {
+    "id": "HIPAA-164.310(a)(1)",
+    "framework": "HIPAA",
+    "name": "Facility Access Controls",
+    "description": "Requires policies and procedures to limit physical access to electronic information systems and the facilities housing them while ensuring properly authorized access, including contingency operations, a facility security plan, access control and validation, and maintenance records.",
+    "category": "Physical Security",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "PLAN"],
+    "suggested_action": "Implement facility access controls including contingency operations procedures, a facility security plan, access control and validation procedures, and maintenance records for physical security components."
+  },
+  {
+    "id": "HIPAA-164.310(b)",
+    "framework": "HIPAA",
+    "name": "Workstation Use",
+    "description": "Requires policies and procedures that specify the proper functions, the manner in which they are performed, and the physical attributes of the surroundings of workstations that can access ePHI.",
+    "category": "Physical Security",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Document acceptable workstation use policies defining permitted functions, how tasks are performed, and the physical environment requirements for any workstation accessing ePHI."
+  },
+  {
+    "id": "HIPAA-164.310(c)",
+    "framework": "HIPAA",
+    "name": "Workstation Security",
+    "description": "Requires implementing physical safeguards for all workstations that access ePHI to restrict access to authorized users.",
+    "category": "Physical Security",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Deploy physical safeguards such as positioning, locks, privacy screens, and secured areas to ensure only authorized users can physically access workstations handling ePHI."
+  },
+  {
+    "id": "HIPAA-164.310(d)(1)",
+    "framework": "HIPAA",
+    "name": "Device and Media Controls",
+    "description": "Requires policies and procedures governing the receipt and removal of hardware and electronic media containing ePHI into, out of, and within a facility, including disposal, media re-use, accountability, and data backup and storage.",
+    "category": "Physical Security",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Establish device and media control procedures covering secure disposal, media re-use sanitization, hardware and media movement accountability, and data backup before equipment relocation."
   },
   {
     "id": "HIPAA-164.312(a)(1)",
+    "framework": "HIPAA",
     "name": "Access Control",
-    "description": "Implement technical access controls so electronic protected health information is available only to authorized people and systems.",
-    "category": "Access Control"
+    "description": "Requires technical policies and procedures that allow access to ePHI only to authorized persons or software, including unique user identification, emergency access procedures, automatic logoff, and encryption and decryption.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Implement technical access controls including unique user identifiers, emergency access procedures, automatic logoff, and encryption and decryption of ePHI."
   },
   {
     "id": "HIPAA-164.312(b)",
+    "framework": "HIPAA",
     "name": "Audit Controls",
-    "description": "Record and examine system activity involving systems that store or use electronic protected health information.",
-    "category": "Logging & Monitoring"
+    "description": "Requires implementing hardware, software, or procedural mechanisms that record and examine activity in information systems that contain or use ePHI.",
+    "category": "Logging & Monitoring",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Enable audit logging across systems that store or process ePHI, and implement mechanisms and procedures to regularly record and review system activity."
+  },
+  {
+    "id": "HIPAA-164.312(c)(1)",
+    "framework": "HIPAA",
+    "name": "Integrity",
+    "description": "Requires policies and procedures to protect ePHI from improper alteration or destruction, including mechanisms to authenticate that ePHI has not been altered or destroyed in an unauthorized manner.",
+    "category": "Data Protection",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Implement integrity controls such as hashing, digital signatures, or checksums to detect and prevent unauthorized alteration or destruction of ePHI."
+  },
+  {
+    "id": "HIPAA-164.312(d)",
+    "framework": "HIPAA",
+    "name": "Person or Entity Authentication",
+    "description": "Requires implementing procedures to verify that a person or entity seeking access to ePHI is the one claimed.",
+    "category": "Access Control",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Deploy authentication mechanisms such as passwords, multi-factor authentication, or tokens to verify the identity of users and systems before granting access to ePHI."
   },
   {
     "id": "HIPAA-164.312(e)(1)",
+    "framework": "HIPAA",
     "name": "Transmission Security",
-    "description": "Protect electronic protected health information when it is transmitted across networks.",
-    "category": "Data Protection"
+    "description": "Requires technical security measures to guard against unauthorized access to ePHI being transmitted over an electronic communications network, including integrity controls and encryption.",
+    "category": "Data Protection",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD", "PROCEDURE"],
+    "suggested_action": "Encrypt ePHI in transit and implement transmission integrity controls to prevent unauthorized access or modification of data sent over electronic networks."
+  },
+  {
+    "id": "HIPAA-164.314(a)",
+    "framework": "HIPAA",
+    "name": "Business Associate Contracts or Other Arrangements",
+    "description": "Requires that contracts or other arrangements between a covered entity and its business associates contain specified provisions ensuring the business associate appropriately safeguards ePHI in compliance with the Security Rule.",
+    "category": "Vendor Management",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Ensure all business associate agreements include the required Security Rule provisions, including safeguarding ePHI, reporting security incidents, and flowing requirements down to subcontractors."
+  },
+  {
+    "id": "HIPAA-164.316",
+    "framework": "HIPAA",
+    "name": "Policies and Procedures and Documentation Requirements",
+    "description": "Requires implementing reasonable and appropriate policies and procedures to comply with the Security Rule and maintaining required documentation in written or electronic form, retaining it for six years, making it available to responsible workforce members, and reviewing and updating it periodically.",
+    "category": "Governance",
+    "severity": "low",
+    "doc_types": ["POLICY", "PROCEDURE", "STANDARD"],
+    "suggested_action": "Document all Security Rule policies and procedures, retain documentation for at least six years from creation or last effective date, make it available to relevant staff, and review and update it periodically."
   }
 ]

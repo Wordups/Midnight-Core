@@ -88,270 +88,86 @@ class GapReport:
         }
 
 
-# ── Control registry ───────────────────────────────────────────────────────────
-# This is your compliance intelligence layer.
-# Add controls here as you expand framework coverage.
-# Each control maps to which doc_types are expected to address it.
+# ── Control registry (loaded from frameworks/*.json) ───────────────
+# The compliance intelligence layer now lives in frameworks/*.json (one file per
+# framework). Add or expand controls by editing those files, not this module.
+import json as _json
+from pathlib import Path as _Path
 
-CONTROL_REGISTRY: list[Control] = [
+_FRAMEWORKS_DIR = _Path(__file__).resolve().parents[2] / "frameworks"
 
-    # ── HIPAA ──────────────────────────────────────────────────────────────────
-    Control(
-        id="HIPAA-164.308(a)(1)",
-        framework="HIPAA",
-        name="Security Management Process",
-        description="Risk analysis and risk management procedures required",
-        severity="critical",
-        doc_types=["POLICY", "PLAN"],
-        suggested_action="Create or update Information Security Policy with risk management section",
-    ),
-    Control(
-        id="HIPAA-164.308(a)(3)",
-        framework="HIPAA",
-        name="Workforce Security",
-        description="Access authorization and termination procedures required",
-        severity="critical",
-        doc_types=["POLICY", "PROCEDURE", "SOP"],
-        suggested_action="Build access control policy with onboarding and offboarding procedures",
-    ),
-    Control(
-        id="HIPAA-164.308(a)(5)",
-        framework="HIPAA",
-        name="Security Awareness Training",
-        description="Security awareness and training program required for all staff",
-        severity="critical",
-        doc_types=["POLICY", "PLAN"],
-        suggested_action="Build security awareness training policy",
-    ),
-    Control(
-        id="HIPAA-164.308(a)(6)",
-        framework="HIPAA",
-        name="Security Incident Procedures",
-        description="Incident response and reporting procedures required",
-        severity="critical",
-        doc_types=["PLAN", "PLAYBOOK", "PROCEDURE"],
-        suggested_action="Build incident response plan",
-    ),
-    Control(
-        id="HIPAA-164.308(a)(7)",
-        framework="HIPAA",
-        name="Contingency Plan",
-        description="Data backup, disaster recovery, and emergency mode procedures",
-        severity="critical",
-        doc_types=["PLAN"],
-        suggested_action="Build business continuity and disaster recovery plan",
-    ),
-    Control(
-        id="HIPAA-164.312(a)(1)",
-        framework="HIPAA",
-        name="Access Control",
-        description="Unique user identification and access control required",
-        severity="critical",
-        doc_types=["POLICY", "STANDARD"],
-        suggested_action="Create or update access control policy",
-    ),
-    Control(
-        id="HIPAA-164.312(a)(2)",
-        framework="HIPAA",
-        name="Encryption and Decryption",
-        description="Encryption of ePHI at rest and in transit required",
-        severity="medium",
-        doc_types=["POLICY", "STANDARD"],
-        suggested_action="Update encryption policy to current standards",
-    ),
-    Control(
-        id="HIPAA-164.312(e)(2)",
-        framework="HIPAA",
-        name="Transmission Security",
-        description="Guard against unauthorized access to ePHI in transit",
-        severity="medium",
-        doc_types=["POLICY", "STANDARD"],
-        suggested_action="Add transmission security section to encryption policy",
-    ),
+# Filename stem -> framework display name, used when a JSON file uses the thin
+# legacy schema (id/name/description only, no per-control "framework" field).
+_FILE_FRAMEWORK = {
+    "soc2": "SOC 2",
+    "hipaa": "HIPAA",
+    "iso27001": "ISO 27001",
+    "nist": "NIST CSF",
+    "pci": "PCI DSS",
+}
+_VALID_SEVERITY = {"critical", "medium", "low"}
+_VALID_DOC_TYPES = {"POLICY", "STANDARD", "PROCEDURE", "SOP", "PLAYBOOK", "PLAN"}
 
-    # ── PCI DSS ────────────────────────────────────────────────────────────────
-    Control(
-        id="PCI-3.5.1",
-        framework="PCI DSS",
-        name="Cryptographic Key Protection",
-        description="Procedures to protect cryptographic keys",
-        severity="critical",
-        doc_types=["POLICY", "PROCEDURE", "STANDARD"],
-        suggested_action="Build cryptographic key management policy",
-    ),
-    Control(
-        id="PCI-6.3",
-        framework="PCI DSS",
-        name="Vulnerability Management",
-        description="Security vulnerabilities identified and addressed",
-        severity="critical",
-        doc_types=["POLICY", "PROCEDURE", "SOP"],
-        suggested_action="Build vulnerability management policy and patch SOP",
-    ),
-    Control(
-        id="PCI-7.1",
-        framework="PCI DSS",
-        name="Access Control",
-        description="Access to system components limited by business need",
-        severity="critical",
-        doc_types=["POLICY", "STANDARD", "PROCEDURE"],
-        suggested_action="Create access control review procedure",
-    ),
-    Control(
-        id="PCI-12.1",
-        framework="PCI DSS",
-        name="Security Policy",
-        description="Information security policy established and maintained",
-        severity="critical",
-        doc_types=["POLICY"],
-        suggested_action="Establish formal information security policy",
-    ),
-    Control(
-        id="PCI-12.8",
-        framework="PCI DSS",
-        name="Vendor Risk Management",
-        description="Policies to manage service providers and vendors",
-        severity="critical",
-        doc_types=["POLICY", "PROCEDURE"],
-        suggested_action="Generate vendor risk management policy",
-    ),
 
-    # ── NIST CSF ───────────────────────────────────────────────────────────────
-    Control(
-        id="NIST-PR.DS-5",
-        framework="NIST CSF",
-        name="Data Protection",
-        description="Protections against data leaks implemented",
-        severity="critical",
-        doc_types=["POLICY", "STANDARD"],
-        suggested_action="Build data protection policy",
-    ),
-    Control(
-        id="NIST-PR.IP-9",
-        framework="NIST CSF",
-        name="Response and Recovery Plans",
-        description="Response and recovery plans in place and managed",
-        severity="critical",
-        doc_types=["PLAN", "PLAYBOOK"],
-        suggested_action="Build business continuity and IR plan",
-    ),
-    Control(
-        id="NIST-AC-2",
-        framework="NIST CSF",
-        name="Account Management",
-        description="Account management procedures documented",
-        severity="medium",
-        doc_types=["POLICY", "PROCEDURE", "SOP"],
-        suggested_action="Create account management procedure",
-    ),
-    Control(
-        id="NIST-PR.AT-1",
-        framework="NIST CSF",
-        name="Awareness Training",
-        description="All users informed and trained on security risks",
-        severity="medium",
-        doc_types=["POLICY", "PLAN"],
-        suggested_action="Build security awareness training plan",
-    ),
+def _coerce_control(raw: dict, default_framework: str) -> Control:
+    framework = (raw.get("framework") or default_framework or "").strip() or default_framework
+    severity = str(raw.get("severity", "")).lower().strip()
+    if severity not in _VALID_SEVERITY:
+        severity = "medium"
+    doc_types = [d for d in (raw.get("doc_types") or []) if d in _VALID_DOC_TYPES]
+    if not doc_types:
+        doc_types = ["POLICY"]
+    cid = raw["id"]
+    return Control(
+        id=cid,
+        framework=framework,
+        name=raw.get("name") or cid,
+        description=raw.get("description") or "",
+        severity=severity,
+        doc_types=doc_types,
+        suggested_action=raw.get("suggested_action") or f"Document and implement control {cid}.",
+    )
 
-    # ── HITRUST Domains (alignment only) ──────────────────────────────────────
-    Control(
-        id="HITRUST-DOMAIN-ACCESS",
-        framework="HITRUST Domains",
-        name="Access Control",
-        description="Access control practices align to the HITRUST access control domain",
-        severity="critical",
-        doc_types=["POLICY"],
-        suggested_action="Create or update access control policy for HITRUST-aligned domain coverage",
-    ),
-    Control(
-        id="HITRUST-DOMAIN-VENDOR",
-        framework="HITRUST Domains",
-        name="Vendor Management",
-        description="Third-party oversight aligns to the HITRUST vendor management domain",
-        severity="critical",
-        doc_types=["POLICY", "PROCEDURE"],
-        suggested_action="Build vendor risk management policy for HITRUST-aligned domain coverage",
-    ),
-    Control(
-        id="HITRUST-DOMAIN-INCIDENT",
-        framework="HITRUST Domains",
-        name="Incident Management",
-        description="Incident response procedures align to the HITRUST incident response domain",
-        severity="critical",
-        doc_types=["PLAN", "PLAYBOOK", "PROCEDURE"],
-        suggested_action="Build incident response plan and playbooks for HITRUST-aligned domain coverage",
-    ),
 
-    # ── ISO 27001 ──────────────────────────────────────────────────────────────
-    Control(
-        id="ISO-A.8.1",
-        framework="ISO 27001",
-        name="Responsibility for Assets",
-        description="Assets identified and clear ownership assigned",
-        severity="medium",
-        doc_types=["POLICY"],
-        suggested_action="Update access control policy with user responsibility definitions",
-    ),
-    Control(
-        id="ISO-A.9.1",
-        framework="ISO 27001",
-        name="Access Control Policy",
-        description="Access control policy established and reviewed",
-        severity="critical",
-        doc_types=["POLICY"],
-        suggested_action="Create or review access control policy",
-    ),
-    Control(
-        id="ISO-A.16.1",
-        framework="ISO 27001",
-        name="Incident Management",
-        description="Responsibilities and procedures for incident management",
-        severity="critical",
-        doc_types=["PLAN", "PLAYBOOK"],
-        suggested_action="Build incident response plan",
-    ),
+def load_control_registry(frameworks_dir: _Path = _FRAMEWORKS_DIR) -> list[Control]:
+    """Load every control from frameworks/*.json into a flat Control list.
 
-    # ── SOC 2 ──────────────────────────────────────────────────────────────────
-    Control(
-        id="SOC2-CC6.1",
-        framework="SOC 2",
-        name="Logical Access Controls",
-        description="Logical access security software, infrastructure, and architectures",
-        severity="low",
-        doc_types=["POLICY", "STANDARD"],
-        suggested_action="Document logical access controls",
-    ),
-    Control(
-        id="SOC2-CC7.2",
-        framework="SOC 2",
-        name="Monitoring",
-        description="System components monitored for anomalies",
-        severity="low",
-        doc_types=["SOP", "PROCEDURE"],
-        suggested_action="Build monitoring and alerting SOP",
-    ),
-    Control(
-        id="SOC2-CC9.2",
-        framework="SOC 2",
-        name="Vendor Risk",
-        description="Vendor and partner risk management",
-        severity="medium",
-        doc_types=["POLICY"],
-        suggested_action="Build vendor risk management policy",
-    ),
-]
+    Tolerates both the enriched schema (all fields) and the thin legacy schema
+    (id/name/description only) — missing fields get sane defaults and the
+    framework name is inferred from the filename.
+    """
+    registry: list[Control] = []
+    seen: set[str] = set()
+    for path in sorted(frameworks_dir.glob("*.json")):
+        default_fw = _FILE_FRAMEWORK.get(path.stem, path.stem.upper())
+        try:
+            entries = _json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for raw in entries:
+            cid = raw.get("id")
+            if not cid or cid in seen:
+                continue
+            registry.append(_coerce_control(raw, default_fw))
+            seen.add(cid)
+    return registry
 
-# Controls that map across multiple frameworks (cross-reference table)
+
+CONTROL_REGISTRY: list[Control] = load_control_registry()
+
+
+# Controls that map across multiple frameworks (cross-reference table).
+# IDs here are verified against the loaded frameworks/*.json libraries — a
+# control covered in one framework satisfies its equivalents in the others.
 CROSS_FRAMEWORK_MAP: dict[str, list[str]] = {
-    # Incident response appears in all four primary frameworks
-    "HIPAA-164.308(a)(6)": ["HITRUST-DOMAIN-INCIDENT", "NIST-PR.IP-9", "ISO-A.16.1"],
-    # Access control is universal
-    "PCI-7.1":             ["HIPAA-164.312(a)(1)", "HITRUST-DOMAIN-ACCESS", "NIST-AC-2", "ISO-A.9.1"],
-    # Vendor management
-    "PCI-12.8":            ["HITRUST-DOMAIN-VENDOR", "SOC2-CC9.2"],
-    # Awareness training
-    "HIPAA-164.308(a)(5)": ["NIST-PR.AT-1"],
+    # Logical access control
+    "HIPAA-164.312(a)(1)": ["ISO-A.5.15", "ISO-A.8.3", "SOC2-CC6.1", "SOC2-CC6.3", "PCI-7.2"],
+    # Authentication
+    "HIPAA-164.312(d)":    ["ISO-A.5.17", "ISO-A.8.5", "PCI-8.2"],
+    # Security incident response
+    "HIPAA-164.308(a)(6)": ["ISO-A.5.24", "ISO-A.5.26", "SOC2-CC7.4"],
+    # Vendor / third-party risk
+    "SOC2-CC9.2":          ["ISO-A.5.19", "ISO-A.5.20", "PCI-12.8"],
 }
 
 

@@ -1,12 +1,104 @@
 from __future__ import annotations
 
+from datetime import datetime, UTC
 from io import BytesIO
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+
+MIDNIGHT_INK = colors.HexColor("#10131a")
+_GRID = colors.HexColor("#cfd6e4")
+_MUTED = colors.HexColor("#6b7280")
+_SEV_COLOR = {
+    "critical": colors.HexColor("#ff5c5c"),
+    "medium": colors.HexColor("#f5a623"),
+    "low": colors.HexColor("#3fd68c"),
+}
+
+
+def _now_str() -> str:
+    return datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def _make_decorator(*, tenant_name: str, date_str: str, watermark: str | None):
+    """Return an onPage callback that draws the Midnight header, footer, and an
+    optional diagonal watermark on every page."""
+    def decorate(canvas, doc):
+        canvas.saveState()
+        w, h = LETTER
+
+        # Header band
+        canvas.setFillColor(MIDNIGHT_INK)
+        canvas.rect(0, h - 0.6 * inch, w, 0.6 * inch, fill=1, stroke=0)
+        canvas.setFillColor(colors.white)
+        canvas.setFont("Helvetica-Bold", 12)
+        canvas.drawString(0.75 * inch, h - 0.4 * inch, "MIDNIGHT")
+        canvas.setFont("Helvetica", 8)
+        canvas.drawRightString(w - 0.75 * inch, h - 0.4 * inch, tenant_name or "")
+
+        # Diagonal watermark
+        if watermark:
+            canvas.saveState()
+            canvas.setFont("Helvetica-Bold", 64)
+            canvas.setFillColor(MIDNIGHT_INK)
+            try:
+                canvas.setFillAlpha(0.06)
+            except Exception:
+                pass
+            canvas.translate(w / 2, h / 2)
+            canvas.rotate(45)
+            canvas.drawCentredString(0, 0, watermark)
+            canvas.restoreState()
+
+        # Footer
+        canvas.setFillColor(_MUTED)
+        canvas.setFont("Helvetica", 8)
+        canvas.drawString(0.75 * inch, 0.5 * inch, f"Generated {date_str} · Midnight")
+        canvas.drawRightString(w - 0.75 * inch, 0.5 * inch, f"Page {doc.page}")
+        canvas.restoreState()
+
+    return decorate
+
+
+def _new_doc(buffer: BytesIO, title: str) -> SimpleDocTemplate:
+    return SimpleDocTemplate(
+        buffer,
+        pagesize=LETTER,
+        title=title,
+        topMargin=0.95 * inch,
+        bottomMargin=0.8 * inch,
+        leftMargin=0.75 * inch,
+        rightMargin=0.75 * inch,
+    )
+
+
+def _render(
+    *,
+    title: str,
+    story: list,
+    tenant_name: str,
+    watermark: str | None,
+) -> bytes:
+    buffer = BytesIO()
+    doc = _new_doc(buffer, title)
+    decorate = _make_decorator(tenant_name=tenant_name, date_str=_now_str(), watermark=watermark)
+    doc.build(story, onFirstPage=decorate, onLaterPages=decorate)
+    return buffer.getvalue()
+
+
+def _meta_lines(styles, organization_name: str, extra: dict[str, str]) -> list:
+    out = [Paragraph(f"Organization: {organization_name}", styles["BodyText"])]
+    for label, value in extra.items():
+        out.append(Paragraph(f"{label}: {value}", styles["BodyText"]))
+    out.append(Paragraph(f"Date generated: {_now_str()}", styles["BodyText"]))
+    return out
+
+
+# ── GRC Summary ──────────────────────────────────────────────────────────────
 
 def build_grc_summary_pdf(
     *,
@@ -15,17 +107,14 @@ def build_grc_summary_pdf(
     frameworks: list[str],
     documents: list[dict],
     narrative: str = "",
+    watermark: str | None = None,
 ) -> bytes:
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=LETTER, title="Midnight GRC Summary")
     styles = getSampleStyleSheet()
-    story = []
-
-    story.append(Paragraph("Midnight GRC Summary", styles["Title"]))
-    story.append(Spacer(1, 12))
-    story.append(Paragraph(f"Organization: {organization_name}", styles["BodyText"]))
-    story.append(Paragraph(f"Industry: {industry}", styles["BodyText"]))
-    story.append(Paragraph(f"Framework Scope: {', '.join(frameworks) or 'Not specified'}", styles["BodyText"]))
+    story: list = [Paragraph("GRC Summary", styles["Title"]), Spacer(1, 12)]
+    story += _meta_lines(styles, organization_name, {
+        "Industry": industry or "Not specified",
+        "Framework Scope": ", ".join(frameworks) or "Not specified",
+    })
     story.append(Spacer(1, 16))
 
     story.append(Paragraph("Program Snapshot", styles["Heading2"]))
@@ -47,30 +136,133 @@ def build_grc_summary_pdf(
             item.get("status", ""),
             item.get("timestamp", ""),
         ])
-
     if len(table_rows) == 1:
         table_rows.append(["No generated artifacts yet", "-", "empty", "-"])
 
     table = Table(table_rows, colWidths=[220, 70, 80, 140])
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#10131a")),
+        ("BACKGROUND", (0, 0), (-1, 0), MIDNIGHT_INK),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cfd6e4")),
+        ("GRID", (0, 0), (-1, -1), 0.5, _GRID),
         ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
     ]))
     story.append(table)
+
+    return _render(title="Midnight GRC Summary", story=story,
+                   tenant_name=organization_name, watermark=watermark)
+
+
+# ── Gap Analysis ─────────────────────────────────────────────────────────────
+
+def build_gap_analysis_pdf(
+    *,
+    organization_name: str,
+    frameworks: list[str],
+    coverage_by_framework: dict,
+    gaps: list[dict],
+    overall_coverage_pct: int = 0,
+    watermark: str | None = None,
+) -> bytes:
+    styles = getSampleStyleSheet()
+    story: list = [Paragraph("Gap Analysis", styles["Title"]), Spacer(1, 12)]
+    story += _meta_lines(styles, organization_name, {
+        "Framework Scope": ", ".join(frameworks) or "Not specified",
+        "Overall coverage": f"{overall_coverage_pct}%",
+    })
     story.append(Spacer(1, 16))
 
-    story.append(Paragraph("Framework Positioning", styles["Heading2"]))
-    for framework in frameworks:
-        story.append(Paragraph(
-            f"{framework}: Midnight maps generated artifacts against bounded framework guidance for preparation and review.",
-            styles["BodyText"],
-        ))
-        story.append(Spacer(1, 6))
+    story.append(Paragraph("Coverage by Framework", styles["Heading2"]))
+    cov_rows = [["Framework", "Coverage"]]
+    for fw, pct in sorted((coverage_by_framework or {}).items()):
+        cov_rows.append([fw, f"{pct}%"])
+    if len(cov_rows) == 1:
+        cov_rows.append(["No coverage data yet", "-"])
+    cov = Table(cov_rows, colWidths=[360, 110])
+    cov.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), MIDNIGHT_INK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.5, _GRID),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+    ]))
+    story.append(cov)
+    story.append(Spacer(1, 16))
 
-    doc.build(story)
-    return buffer.getvalue()
+    story.append(Paragraph(f"Open Gaps ({len(gaps)})", styles["Heading2"]))
+    gap_rows = [["Control", "Framework", "Severity", "Suggested action"]]
+    for g in gaps:
+        gap_rows.append([
+            g.get("control_id", ""),
+            g.get("framework", ""),
+            (g.get("severity", "") or "").upper(),
+            g.get("suggested_action", ""),
+        ])
+    if len(gap_rows) == 1:
+        gap_rows.append(["No open gaps", "-", "-", "-"])
+    gaps_table = Table(gap_rows, colWidths=[110, 90, 70, 200])
+    style = [
+        ("BACKGROUND", (0, 0), (-1, 0), MIDNIGHT_INK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.5, _GRID),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+    ]
+    for i, g in enumerate(gaps, start=1):
+        sev = (g.get("severity", "") or "").lower()
+        if sev in _SEV_COLOR:
+            style.append(("TEXTCOLOR", (2, i), (2, i), _SEV_COLOR[sev]))
+    gaps_table.setStyle(TableStyle(style))
+    story.append(gaps_table)
+
+    return _render(title="Midnight Gap Analysis", story=story,
+                   tenant_name=organization_name, watermark=watermark)
+
+
+# ── Bird Eye Findings ────────────────────────────────────────────────────────
+
+def build_bird_eye_findings_pdf(
+    *,
+    organization_name: str,
+    findings: list[dict],
+    watermark: str | None = None,
+) -> bytes:
+    styles = getSampleStyleSheet()
+    story: list = [Paragraph("Bird Eye Findings Report", styles["Title"]), Spacer(1, 12)]
+    story += _meta_lines(styles, organization_name, {
+        "Total findings": str(len(findings)),
+    })
+    story.append(Spacer(1, 16))
+
+    story.append(Paragraph("Findings", styles["Heading2"]))
+    rows = [["Finding", "Type", "Severity", "Detail"]]
+    for f in findings:
+        rows.append([
+            f.get("title") or f.get("control_id") or "Finding",
+            f.get("type") or f.get("detector") or "",
+            (f.get("severity", "") or "").upper(),
+            f.get("detail") or f.get("description") or f.get("recommendation") or "",
+        ])
+    if len(rows) == 1:
+        rows.append(["No findings", "-", "-", "-"])
+    table = Table(rows, colWidths=[150, 80, 70, 170])
+    style = [
+        ("BACKGROUND", (0, 0), (-1, 0), MIDNIGHT_INK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.5, _GRID),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+    ]
+    for i, f in enumerate(findings, start=1):
+        sev = (f.get("severity", "") or "").lower()
+        if sev in _SEV_COLOR:
+            style.append(("TEXTCOLOR", (2, i), (2, i), _SEV_COLOR[sev]))
+    table.setStyle(TableStyle(style))
+    story.append(table)
+
+    return _render(title="Midnight Bird Eye Findings", story=story,
+                   tenant_name=organization_name, watermark=watermark)

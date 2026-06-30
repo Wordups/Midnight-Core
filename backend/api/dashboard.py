@@ -15,6 +15,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from backend.core.gap_engine import run_program_gap_analysis
+from backend.renderers.pdf_renderer import build_gap_analysis_pdf
 from backend.storage.file_store import (
     SupabaseStoreError,
     download_generated_document,
@@ -119,9 +120,18 @@ def _summary(request: Request) -> SummaryResponse:
     ready_count = sum(1 for record in documents if record["status"] == "ready")
 
     try:
-        gap_data = _gaps(request)
+        result = _gap_result(request)
     except HTTPException:
-        gap_data = GapsResponse(total=0, critical=0, medium=0, low=0, items=[])
+        result = {}
+    gap_data = _gaps_from_result(result)
+
+    # Live per-framework coverage (was hardcoded to []). Feeds the GRC Card
+    # coverage bars and the "N frameworks" metric.
+    coverage = (result or {}).get("coverage_by_framework", {})
+    frameworks = [
+        {"framework": fw, "coverage_pct": pct}
+        for fw, pct in sorted(coverage.items())
+    ]
 
     return SummaryResponse(
         policies_processed=len(documents),
@@ -132,11 +142,13 @@ def _summary(request: Request) -> SummaryResponse:
         needs_review_total=max(0, len(documents) - ready_count),
         needs_review_critical=0,
         overall_coverage_pct=gap_data.overall_coverage_pct,
-        frameworks=[],
+        frameworks=frameworks,
     )
 
 
-def _gaps(request: Request) -> GapsResponse:
+def _gap_result(request: Request) -> dict:
+    """Run the program-level gap analysis for the tenant. Returns the raw
+    run_program_gap_analysis dict, or {} when there are no policies/frameworks."""
     tenant_id = _tenant_id(request)
     try:
         policies = list_policies_for_gap_analysis(tenant_id)
@@ -144,7 +156,7 @@ def _gaps(request: Request) -> GapsResponse:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     if not policies:
-        return GapsResponse(total=0, critical=0, medium=0, low=0, items=[])
+        return {}
 
     documents = [
         {
@@ -160,9 +172,14 @@ def _gaps(request: Request) -> GapsResponse:
     })
 
     if not all_frameworks:
-        return GapsResponse(total=0, critical=0, medium=0, low=0, items=[])
+        return {}
 
-    result = run_program_gap_analysis(documents=documents, frameworks=all_frameworks)
+    return run_program_gap_analysis(documents=documents, frameworks=all_frameworks)
+
+
+def _gaps_from_result(result: dict) -> GapsResponse:
+    if not result:
+        return GapsResponse(total=0, critical=0, medium=0, low=0, items=[])
 
     items = [
         GapItem(
@@ -185,6 +202,10 @@ def _gaps(request: Request) -> GapsResponse:
         items=items,
         overall_coverage_pct=result.get("overall_coverage_pct", 0),
     )
+
+
+def _gaps(request: Request) -> GapsResponse:
+    return _gaps_from_result(_gap_result(request))
 
 
 def _documents_response(request: Request) -> DocumentsResponse:
@@ -239,6 +260,24 @@ async def get_gaps(request: Request, severity: Optional[str] = None, framework: 
         items=items,
         overall_coverage_pct=data.overall_coverage_pct,
     )
+
+
+@router.get("/gaps/pdf")
+async def export_gaps_pdf(request: Request):
+    auth = getattr(request.state, "auth_context", {}) or {}
+    org = auth.get("organization_name") or "Your Organization"
+    watermark = "TRIAL" if (auth.get("plan_type") or "").lower() == "trial" else None
+    result = _gap_result(request)
+    pdf = build_gap_analysis_pdf(
+        organization_name=org,
+        frameworks=result.get("frameworks_checked", []) if result else [],
+        coverage_by_framework=result.get("coverage_by_framework", {}) if result else {},
+        gaps=result.get("gaps", []) if result else [],
+        overall_coverage_pct=result.get("overall_coverage_pct", 0) if result else 0,
+        watermark=watermark,
+    )
+    headers = {"Content-Disposition": 'attachment; filename="midnight-gap-analysis.pdf"'}
+    return Response(content=pdf, media_type="application/pdf", headers=headers)
 
 
 @router.get("/documents", response_model=DocumentsResponse)

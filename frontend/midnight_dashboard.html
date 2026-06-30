@@ -1986,7 +1986,7 @@
       <div class="build-header"><div class="build-title">Gap Analysis</div><div class="build-sub">Framework coverage and identified gaps across your compliance program.</div></div>
       <div class="main-grid">
         <div class="panel">
-          <div class="panel-header"><div class="panel-title">All Gaps</div><div style="display:flex;align-items:center;gap:10px;"><span class="be-powered-tag">Bird Eye</span></div></div>
+          <div class="panel-header"><div class="panel-title">All Gaps</div><div style="display:flex;align-items:center;gap:10px;"><button class="run-btn" style="padding:6px 14px;font-size:11px;" onclick="downloadPdf('/dashboard/gaps/pdf','midnight-gap-analysis.pdf')">Export PDF</button><span class="be-powered-tag">Bird Eye</span></div></div>
           <div id="gaps-list">
             <div class="gap-item"><div class="gap-top"><span class="gap-control">No gap data yet</span><span class="critical-badge med">Info</span></div><div class="gap-desc">Run a policy analysis or migration to populate this view.</div><div class="gap-meta">Live dashboard connected</div></div>
           </div>
@@ -2286,6 +2286,7 @@
           <div style="display:flex;gap:10px;align-items:center;">
             <span id="be-last-run" style="font-family:var(--font-mono);font-size:11px;color:var(--text3);"></span>
             <button class="run-btn" style="padding:6px 14px;font-size:11px;" onclick="runBirdEye()" id="be-run-btn">Run Bird Eye Review</button>
+            <button class="run-btn" style="padding:6px 14px;font-size:11px;" onclick="downloadPdf('/bird-eye/findings/pdf','midnight-bird-eye-findings.pdf')">Export PDF</button>
           </div>
         </div>
 
@@ -5059,6 +5060,20 @@ function renderGapList(targetId, items) {
       ? item.affected_frameworks.join(' · ') : (item.framework || 'Framework');
     return `<div class="gap-item"><div class="gap-top"><span class="gap-control">${escHtml(item.control_id || item.id || 'Gap')}</span><span class="${badge}">${escHtml(sev)}</span></div><div class="gap-desc">${escHtml(item.description || 'Gap detected')}</div><div class="gap-meta">${escHtml(fw)} · ${escHtml(item.suggested_action || 'Review')}</div></div>`;
   }).join('');
+}
+
+async function downloadPdf(path, filename) {
+  // Authed PDF download — fetch with the session cookie, then save the blob.
+  try {
+    const res = await fetch(API + path, { credentials: 'include' });
+    if (!res.ok) { console.error('PDF export failed', res.status); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename || 'midnight.pdf';
+    document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  } catch (e) { console.error('PDF export error', e); }
 }
 
 async function apiFetch(path) {

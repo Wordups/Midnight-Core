@@ -1,0 +1,932 @@
+[
+  {
+    "id": "ISO-A.5.1",
+    "framework": "ISO 27001",
+    "name": "Policies for information security",
+    "description": "Defines and maintains a set of information security policies, approved by management, published and communicated to relevant parties.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Establish a top-level information security policy plus supporting topic-specific policies, obtain management approval, and review them at planned intervals."
+  },
+  {
+    "id": "ISO-A.5.2",
+    "framework": "ISO 27001",
+    "name": "Information security roles and responsibilities",
+    "description": "Defines and allocates information security responsibilities according to organizational needs.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Document and assign security roles and responsibilities in a RACI matrix and reflect them in job descriptions."
+  },
+  {
+    "id": "ISO-A.5.3",
+    "framework": "ISO 27001",
+    "name": "Segregation of duties",
+    "description": "Separates conflicting duties and areas of responsibility to reduce the risk of fraud, error and bypassing of controls.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Identify conflicting duties, separate them across individuals, and add compensating controls where full segregation is impractical."
+  },
+  {
+    "id": "ISO-A.5.4",
+    "framework": "ISO 27001",
+    "name": "Management responsibilities",
+    "description": "Requires management to ensure all personnel apply information security in accordance with established policies and procedures.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Have management formally endorse security expectations and verify staff adherence to policies and procedures."
+  },
+  {
+    "id": "ISO-A.5.5",
+    "framework": "ISO 27001",
+    "name": "Contact with authorities",
+    "description": "Establishes and maintains contact with relevant authorities.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Maintain a documented contact list and procedure for engaging regulators, law enforcement and other authorities."
+  },
+  {
+    "id": "ISO-A.5.6",
+    "framework": "ISO 27001",
+    "name": "Contact with special interest groups",
+    "description": "Establishes and maintains contact with special interest groups, security forums and professional associations.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Join relevant security forums and threat-sharing communities and document the engagement process."
+  },
+  {
+    "id": "ISO-A.5.7",
+    "framework": "ISO 27001",
+    "name": "Threat intelligence",
+    "description": "Collects and analyzes information relating to information security threats to produce actionable threat intelligence.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Subscribe to credible threat feeds, analyze strategic/tactical/operational intelligence, and feed findings into risk and control decisions."
+  },
+  {
+    "id": "ISO-A.5.8",
+    "framework": "ISO 27001",
+    "name": "Information security in project management",
+    "description": "Integrates information security into project management regardless of project type.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Embed security risk assessment and requirements into the project lifecycle and gate reviews."
+  },
+  {
+    "id": "ISO-A.5.9",
+    "framework": "ISO 27001",
+    "name": "Inventory of information and other associated assets",
+    "description": "Develops and maintains an inventory of information and other associated assets, including owners.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Maintain an accurate asset inventory with assigned owners and keep it current via automated discovery where possible."
+  },
+  {
+    "id": "ISO-A.5.10",
+    "framework": "ISO 27001",
+    "name": "Acceptable use of information and other associated assets",
+    "description": "Identifies, documents and implements rules for the acceptable use and handling of information and associated assets.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Publish an acceptable use policy covering handling rules and require acknowledgement by all users."
+  },
+  {
+    "id": "ISO-A.5.11",
+    "framework": "ISO 27001",
+    "name": "Return of assets",
+    "description": "Requires personnel and other interested parties to return organizational assets upon change or termination of employment, contract or agreement.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Implement an offboarding checklist that tracks and confirms return of all assets and revocation of access."
+  },
+  {
+    "id": "ISO-A.5.12",
+    "framework": "ISO 27001",
+    "name": "Classification of information",
+    "description": "Classifies information according to the information security needs of the organization based on confidentiality, integrity, availability and stakeholder requirements.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Define a classification scheme and classify information assets against it consistently."
+  },
+  {
+    "id": "ISO-A.5.13",
+    "framework": "ISO 27001",
+    "name": "Labelling of information",
+    "description": "Develops and implements an appropriate set of procedures for information labelling in accordance with the classification scheme.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Apply consistent labels (physical and electronic) that reflect each information classification level."
+  },
+  {
+    "id": "ISO-A.5.14",
+    "framework": "ISO 27001",
+    "name": "Information transfer",
+    "description": "Establishes information transfer rules, procedures and agreements for all types of transfer facilities within and outside the organization.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Define secure transfer rules and agreements covering electronic, physical and verbal information exchange."
+  },
+  {
+    "id": "ISO-A.5.15",
+    "framework": "ISO 27001",
+    "name": "Access control",
+    "description": "Establishes and implements rules to control physical and logical access to information and associated assets based on business and security requirements.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Define an access control policy enforcing least privilege and need-to-know across physical and logical access."
+  },
+  {
+    "id": "ISO-A.5.16",
+    "framework": "ISO 27001",
+    "name": "Identity management",
+    "description": "Manages the full life cycle of identities.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Implement identity lifecycle management with unique identities and governed provisioning/deprovisioning."
+  },
+  {
+    "id": "ISO-A.5.17",
+    "framework": "ISO 27001",
+    "name": "Authentication information",
+    "description": "Controls the allocation and management of authentication information through a management process, including advising personnel on appropriate handling.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Govern secure issuance, storage and handling of authentication information and enforce strong credential practices."
+  },
+  {
+    "id": "ISO-A.5.18",
+    "framework": "ISO 27001",
+    "name": "Access rights",
+    "description": "Provisions, reviews, modifies and removes access rights to information and associated assets in accordance with the access control policy.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Operate a formal access request, approval, periodic review and revocation process for all access rights."
+  },
+  {
+    "id": "ISO-A.5.19",
+    "framework": "ISO 27001",
+    "name": "Information security in supplier relationships",
+    "description": "Defines and implements processes and procedures to manage the information security risks associated with the use of suppliers' products or services.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Establish a supplier security management process covering risk assessment and ongoing oversight."
+  },
+  {
+    "id": "ISO-A.5.20",
+    "framework": "ISO 27001",
+    "name": "Addressing information security within supplier agreements",
+    "description": "Establishes and agrees relevant information security requirements with each supplier based on the type of supplier relationship.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Include defined security requirements, responsibilities and right-to-audit clauses in supplier contracts."
+  },
+  {
+    "id": "ISO-A.5.21",
+    "framework": "ISO 27001",
+    "name": "Managing information security in the ICT supply chain",
+    "description": "Defines and implements processes and procedures to manage information security risks associated with the ICT products and services supply chain.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Assess and require security assurances across the ICT supply chain, including sub-suppliers and component provenance."
+  },
+  {
+    "id": "ISO-A.5.22",
+    "framework": "ISO 27001",
+    "name": "Monitoring, review and change management of supplier services",
+    "description": "Regularly monitors, reviews, evaluates and manages change in suppliers' information security practices and service delivery.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Schedule supplier service reviews and manage changes to supplier security posture and deliverables."
+  },
+  {
+    "id": "ISO-A.5.23",
+    "framework": "ISO 27001",
+    "name": "Information security for use of cloud services",
+    "description": "Establishes processes for acquisition, use, management and exit from cloud services in accordance with information security requirements.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Define cloud security requirements, shared-responsibility expectations and a documented cloud exit strategy."
+  },
+  {
+    "id": "ISO-A.5.24",
+    "framework": "ISO 27001",
+    "name": "Information security incident management planning and preparation",
+    "description": "Plans and prepares for managing information security incidents by defining, establishing and communicating processes, roles and responsibilities.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["PLAN", "PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Establish an incident management plan defining roles, escalation paths and response procedures, and test it."
+  },
+  {
+    "id": "ISO-A.5.25",
+    "framework": "ISO 27001",
+    "name": "Assessment and decision on information security events",
+    "description": "Assesses information security events and decides whether they are to be categorized as information security incidents.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Define triage criteria to assess events and consistently classify which events constitute incidents."
+  },
+  {
+    "id": "ISO-A.5.26",
+    "framework": "ISO 27001",
+    "name": "Response to information security incidents",
+    "description": "Responds to information security incidents in accordance with documented procedures.",
+    "category": "Organizational",
+    "severity": "critical",
+    "doc_types": ["PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Execute incident response per documented playbooks, containing, eradicating and recovering from incidents."
+  },
+  {
+    "id": "ISO-A.5.27",
+    "framework": "ISO 27001",
+    "name": "Learning from information security incidents",
+    "description": "Uses knowledge gained from information security incidents to strengthen and improve information security controls.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Conduct post-incident reviews and feed lessons learned into control and process improvements."
+  },
+  {
+    "id": "ISO-A.5.28",
+    "framework": "ISO 27001",
+    "name": "Collection of evidence",
+    "description": "Establishes and implements procedures for the identification, collection, acquisition and preservation of evidence related to information security events.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Define forensically sound evidence handling and chain-of-custody procedures for security events."
+  },
+  {
+    "id": "ISO-A.5.29",
+    "framework": "ISO 27001",
+    "name": "Information security during disruption",
+    "description": "Plans how to maintain information security at an appropriate level during disruption.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PLAN", "PROCEDURE"],
+    "suggested_action": "Document how security controls are maintained during disruptions and integrate with business continuity planning."
+  },
+  {
+    "id": "ISO-A.5.30",
+    "framework": "ISO 27001",
+    "name": "ICT readiness for business continuity",
+    "description": "Plans, implements, maintains and tests ICT readiness based on business continuity objectives and ICT continuity requirements.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PLAN", "PROCEDURE"],
+    "suggested_action": "Derive ICT continuity requirements from BIA, implement recovery capabilities and test them regularly."
+  },
+  {
+    "id": "ISO-A.5.31",
+    "framework": "ISO 27001",
+    "name": "Legal, statutory, regulatory and contractual requirements",
+    "description": "Identifies, documents and keeps up to date the legal, statutory, regulatory and contractual requirements relevant to information security and the approach to meeting them.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Maintain a compliance register of applicable legal and contractual obligations and the controls that satisfy them."
+  },
+  {
+    "id": "ISO-A.5.32",
+    "framework": "ISO 27001",
+    "name": "Intellectual property rights",
+    "description": "Implements appropriate procedures to protect intellectual property rights.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Establish procedures to protect IP and ensure compliance with software licensing and copyright."
+  },
+  {
+    "id": "ISO-A.5.33",
+    "framework": "ISO 27001",
+    "name": "Protection of records",
+    "description": "Protects records from loss, destruction, falsification, unauthorized access and unauthorized release.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Define records retention and protection controls aligned to legal, regulatory and business needs."
+  },
+  {
+    "id": "ISO-A.5.34",
+    "framework": "ISO 27001",
+    "name": "Privacy and protection of personal identifiable information (PII)",
+    "description": "Identifies and meets requirements regarding the preservation of privacy and protection of personal identifiable information according to applicable laws and regulations.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Implement a privacy program addressing PII handling obligations under applicable data protection laws."
+  },
+  {
+    "id": "ISO-A.5.35",
+    "framework": "ISO 27001",
+    "name": "Independent review of information security",
+    "description": "Reviews the organization's approach to managing information security and its implementation independently at planned intervals or when significant changes occur.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["PROCEDURE", "PLAN"],
+    "suggested_action": "Schedule independent reviews or audits of the ISMS and act on findings."
+  },
+  {
+    "id": "ISO-A.5.36",
+    "framework": "ISO 27001",
+    "name": "Compliance with policies, rules and standards for information security",
+    "description": "Regularly reviews compliance with the organization's information security policy, topic-specific policies, rules and standards.",
+    "category": "Organizational",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Perform periodic compliance checks against policies and standards and remediate deviations."
+  },
+  {
+    "id": "ISO-A.5.37",
+    "framework": "ISO 27001",
+    "name": "Documented operating procedures",
+    "description": "Documents operating procedures for information processing facilities and makes them available to personnel who need them.",
+    "category": "Organizational",
+    "severity": "low",
+    "doc_types": ["PROCEDURE", "SOP"],
+    "suggested_action": "Document and maintain operating procedures (SOPs) for information processing activities and make them accessible."
+  },
+  {
+    "id": "ISO-A.6.1",
+    "framework": "ISO 27001",
+    "name": "Screening",
+    "description": "Carries out background verification checks on candidates to become personnel prior to and on an ongoing basis, proportionate to business requirements and risk.",
+    "category": "People",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Conduct risk-proportionate background screening of candidates in line with laws and ethics."
+  },
+  {
+    "id": "ISO-A.6.2",
+    "framework": "ISO 27001",
+    "name": "Terms and conditions of employment",
+    "description": "States the personnel's and the organization's information security responsibilities in the employment contractual agreements.",
+    "category": "People",
+    "severity": "low",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Include information security responsibilities in employment terms and confidentiality agreements."
+  },
+  {
+    "id": "ISO-A.6.3",
+    "framework": "ISO 27001",
+    "name": "Information security awareness, education and training",
+    "description": "Provides personnel and relevant interested parties with appropriate information security awareness, education and training and regular updates of policies relevant to their job function.",
+    "category": "People",
+    "severity": "low",
+    "doc_types": ["PROCEDURE", "PLAN"],
+    "suggested_action": "Deliver role-relevant security awareness and training on a recurring schedule and track completion."
+  },
+  {
+    "id": "ISO-A.6.4",
+    "framework": "ISO 27001",
+    "name": "Disciplinary process",
+    "description": "Formalizes and communicates a disciplinary process to take actions against personnel and other relevant interested parties who have committed an information security policy violation.",
+    "category": "People",
+    "severity": "low",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Establish and communicate a fair, consistent disciplinary process for security violations."
+  },
+  {
+    "id": "ISO-A.6.5",
+    "framework": "ISO 27001",
+    "name": "Responsibilities after termination or change of employment",
+    "description": "Defines, enforces and communicates information security responsibilities and duties that remain valid after termination or change of employment.",
+    "category": "People",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Document and communicate ongoing post-employment obligations such as confidentiality and enforce them at offboarding."
+  },
+  {
+    "id": "ISO-A.6.6",
+    "framework": "ISO 27001",
+    "name": "Confidentiality or non-disclosure agreements",
+    "description": "Identifies, documents, regularly reviews and signs confidentiality or non-disclosure agreements reflecting the organization's needs for the protection of information.",
+    "category": "People",
+    "severity": "medium",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Maintain and obtain signed NDAs/confidentiality agreements from personnel and third parties, reviewed periodically."
+  },
+  {
+    "id": "ISO-A.6.7",
+    "framework": "ISO 27001",
+    "name": "Remote working",
+    "description": "Implements security measures when personnel are working remotely to protect information accessed, processed or stored outside the organization's premises.",
+    "category": "People",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Define a remote working policy with secure connectivity, device and home-environment controls."
+  },
+  {
+    "id": "ISO-A.6.8",
+    "framework": "ISO 27001",
+    "name": "Information security event reporting",
+    "description": "Provides a mechanism for personnel to report observed or suspected information security events through appropriate channels in a timely manner.",
+    "category": "People",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Provide and publicize easy reporting channels for security events with clear timeliness expectations."
+  },
+  {
+    "id": "ISO-A.7.1",
+    "framework": "ISO 27001",
+    "name": "Physical security perimeters",
+    "description": "Defines and uses security perimeters to protect areas that contain information and other associated assets.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Establish defined physical perimeters with barriers around areas holding sensitive assets."
+  },
+  {
+    "id": "ISO-A.7.2",
+    "framework": "ISO 27001",
+    "name": "Physical entry",
+    "description": "Protects secure areas by appropriate entry controls and access points.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Implement authenticated entry controls, visitor management and logging at access points to secure areas."
+  },
+  {
+    "id": "ISO-A.7.3",
+    "framework": "ISO 27001",
+    "name": "Securing offices, rooms and facilities",
+    "description": "Designs and implements physical security for offices, rooms and facilities.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Apply physical security design measures to offices, rooms and facilities holding sensitive operations."
+  },
+  {
+    "id": "ISO-A.7.4",
+    "framework": "ISO 27001",
+    "name": "Physical security monitoring",
+    "description": "Continuously monitors premises for unauthorized physical access.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Deploy surveillance, alarms and monitoring to detect and alert on unauthorized physical access."
+  },
+  {
+    "id": "ISO-A.7.5",
+    "framework": "ISO 27001",
+    "name": "Protecting against physical and environmental threats",
+    "description": "Designs and implements protection against physical and environmental threats, such as natural disasters and other intentional or unintentional threats to infrastructure.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PLAN"],
+    "suggested_action": "Assess and mitigate environmental and physical threats (fire, flood, power, etc.) to facilities."
+  },
+  {
+    "id": "ISO-A.7.6",
+    "framework": "ISO 27001",
+    "name": "Working in secure areas",
+    "description": "Designs and implements security measures for working in secure areas.",
+    "category": "Physical",
+    "severity": "low",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Define rules and controls governing personnel activity and devices within secure areas."
+  },
+  {
+    "id": "ISO-A.7.7",
+    "framework": "ISO 27001",
+    "name": "Clear desk and clear screen",
+    "description": "Defines and enforces clear desk rules for papers and removable storage media and clear screen rules for information processing facilities.",
+    "category": "Physical",
+    "severity": "low",
+    "doc_types": ["POLICY"],
+    "suggested_action": "Implement and enforce a clear desk and clear screen policy with automatic screen locking."
+  },
+  {
+    "id": "ISO-A.7.8",
+    "framework": "ISO 27001",
+    "name": "Equipment siting and protection",
+    "description": "Sites and protects equipment securely.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Position and protect equipment to reduce environmental, access and tampering risks."
+  },
+  {
+    "id": "ISO-A.7.9",
+    "framework": "ISO 27001",
+    "name": "Security of assets off-premises",
+    "description": "Protects off-site assets.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Define controls for protecting assets used or stored off-premises, including in transit and at home."
+  },
+  {
+    "id": "ISO-A.7.10",
+    "framework": "ISO 27001",
+    "name": "Storage media",
+    "description": "Manages storage media through its life cycle of acquisition, use, transportation and disposal in accordance with the classification scheme and handling requirements.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Govern the full lifecycle of storage media, including secure handling, transport and sanitized disposal."
+  },
+  {
+    "id": "ISO-A.7.11",
+    "framework": "ISO 27001",
+    "name": "Supporting utilities",
+    "description": "Protects information processing facilities from power failures and other disruptions caused by failures in supporting utilities.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Provide redundant/UPS power and protect against utility failures affecting processing facilities."
+  },
+  {
+    "id": "ISO-A.7.12",
+    "framework": "ISO 27001",
+    "name": "Cabling security",
+    "description": "Protects cables carrying power, data or supporting information services from interception, interference or damage.",
+    "category": "Physical",
+    "severity": "low",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Protect and segregate power and data cabling against interception, interference and physical damage."
+  },
+  {
+    "id": "ISO-A.7.13",
+    "framework": "ISO 27001",
+    "name": "Equipment maintenance",
+    "description": "Maintains equipment correctly to ensure availability, integrity and confidentiality of information.",
+    "category": "Physical",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Maintain equipment per recommended schedules using authorized personnel and protect data during servicing."
+  },
+  {
+    "id": "ISO-A.7.14",
+    "framework": "ISO 27001",
+    "name": "Secure disposal or re-use of equipment",
+    "description": "Verifies equipment containing storage media to ensure any sensitive data and licensed software is removed or securely overwritten prior to disposal or re-use.",
+    "category": "Physical",
+    "severity": "critical",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Sanitize or destroy storage media and verify data removal before equipment disposal or reuse."
+  },
+  {
+    "id": "ISO-A.8.1",
+    "framework": "ISO 27001",
+    "name": "User endpoint devices",
+    "description": "Protects information stored on, processed by or accessible via user endpoint devices.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Harden, encrypt and manage endpoint devices and enforce endpoint security configuration baselines."
+  },
+  {
+    "id": "ISO-A.8.2",
+    "framework": "ISO 27001",
+    "name": "Privileged access rights",
+    "description": "Restricts and manages the allocation and use of privileged access rights.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Restrict, monitor and time-bound privileged access and review privileged accounts regularly."
+  },
+  {
+    "id": "ISO-A.8.3",
+    "framework": "ISO 27001",
+    "name": "Information access restriction",
+    "description": "Restricts access to information and other associated assets in accordance with the established access control policy.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Enforce technical access restrictions to information consistent with classification and least privilege."
+  },
+  {
+    "id": "ISO-A.8.4",
+    "framework": "ISO 27001",
+    "name": "Access to source code",
+    "description": "Appropriately manages read and write access to source code, development tools and software libraries.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Control and audit access to source code repositories, build tools and libraries."
+  },
+  {
+    "id": "ISO-A.8.5",
+    "framework": "ISO 27001",
+    "name": "Secure authentication",
+    "description": "Implements secure authentication technologies and procedures based on information access restrictions and the access control policy.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Enforce strong, risk-based authentication including multi-factor authentication for sensitive access."
+  },
+  {
+    "id": "ISO-A.8.6",
+    "framework": "ISO 27001",
+    "name": "Capacity management",
+    "description": "Monitors and adjusts the use of resources in line with current and expected capacity requirements.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Monitor resource utilization and forecast and provision capacity to maintain performance and availability."
+  },
+  {
+    "id": "ISO-A.8.7",
+    "framework": "ISO 27001",
+    "name": "Protection against malware",
+    "description": "Implements protection against malware and supports it with appropriate user awareness.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Deploy and maintain anti-malware controls across systems and reinforce with user awareness."
+  },
+  {
+    "id": "ISO-A.8.8",
+    "framework": "ISO 27001",
+    "name": "Management of technical vulnerabilities",
+    "description": "Obtains information about technical vulnerabilities of information systems in use, evaluates the organization's exposure and takes appropriate measures.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Run continuous vulnerability scanning, prioritize by risk and remediate or patch within defined SLAs."
+  },
+  {
+    "id": "ISO-A.8.9",
+    "framework": "ISO 27001",
+    "name": "Configuration management",
+    "description": "Establishes, documents, implements, monitors and reviews configurations, including security configurations, of hardware, software, services and networks.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Define secure configuration baselines and continuously monitor and enforce configuration compliance."
+  },
+  {
+    "id": "ISO-A.8.10",
+    "framework": "ISO 27001",
+    "name": "Information deletion",
+    "description": "Deletes information stored in information systems, devices or in any other storage media when no longer required.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Implement secure information deletion aligned to retention requirements across systems and media."
+  },
+  {
+    "id": "ISO-A.8.11",
+    "framework": "ISO 27001",
+    "name": "Data masking",
+    "description": "Uses data masking in accordance with the access control policy and other related policies and business requirements, taking applicable legislation into consideration.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Apply data masking, pseudonymization or anonymization to limit exposure of sensitive data."
+  },
+  {
+    "id": "ISO-A.8.12",
+    "framework": "ISO 27001",
+    "name": "Data leakage prevention",
+    "description": "Applies data leakage prevention measures to systems, networks and any other devices that process, store or transmit sensitive information.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Deploy DLP controls to detect and prevent unauthorized exfiltration of sensitive data."
+  },
+  {
+    "id": "ISO-A.8.13",
+    "framework": "ISO 27001",
+    "name": "Information backup",
+    "description": "Maintains and regularly tests backup copies of information, software and systems in accordance with the agreed topic-specific policy on backup.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["POLICY", "PROCEDURE"],
+    "suggested_action": "Perform regular backups per policy, store them securely/offsite and test restoration regularly."
+  },
+  {
+    "id": "ISO-A.8.14",
+    "framework": "ISO 27001",
+    "name": "Redundancy of information processing facilities",
+    "description": "Implements information processing facilities with redundancy sufficient to meet availability requirements.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PLAN"],
+    "suggested_action": "Provision redundant processing facilities and failover to meet availability requirements."
+  },
+  {
+    "id": "ISO-A.8.15",
+    "framework": "ISO 27001",
+    "name": "Logging",
+    "description": "Produces, stores, protects and analyzes logs that record activities, exceptions, faults and other relevant events.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Generate, protect and retain comprehensive security logs and centralize them for analysis."
+  },
+  {
+    "id": "ISO-A.8.16",
+    "framework": "ISO 27001",
+    "name": "Monitoring activities",
+    "description": "Monitors networks, systems and applications for anomalous behaviour and takes appropriate actions to evaluate potential information security incidents.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["PROCEDURE", "PLAYBOOK"],
+    "suggested_action": "Implement continuous monitoring and alerting for anomalies across networks, systems and applications."
+  },
+  {
+    "id": "ISO-A.8.17",
+    "framework": "ISO 27001",
+    "name": "Clock synchronization",
+    "description": "Synchronizes the clocks of information processing systems used by the organization to approved time sources.",
+    "category": "Technological",
+    "severity": "low",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Synchronize all system clocks to an approved, reliable time source to ensure accurate logging."
+  },
+  {
+    "id": "ISO-A.8.18",
+    "framework": "ISO 27001",
+    "name": "Use of privileged utility programs",
+    "description": "Restricts and tightly controls the use of utility programs that can be capable of overriding system and application controls.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Restrict, log and approve use of privileged utility programs that can bypass controls."
+  },
+  {
+    "id": "ISO-A.8.19",
+    "framework": "ISO 27001",
+    "name": "Installation of software on operational systems",
+    "description": "Implements procedures and measures to securely manage software installation on operational systems.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Control software installation on production systems via approved, governed change processes."
+  },
+  {
+    "id": "ISO-A.8.20",
+    "framework": "ISO 27001",
+    "name": "Networks security",
+    "description": "Secures, manages and controls networks and network devices to protect information in systems and applications.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Secure and manage network devices and traffic with hardening, controls and ongoing oversight."
+  },
+  {
+    "id": "ISO-A.8.21",
+    "framework": "ISO 27001",
+    "name": "Security of network services",
+    "description": "Identifies, implements and monitors security mechanisms, service levels and service requirements of network services.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Define and monitor security mechanisms and service levels for all network services, including third-party ones."
+  },
+  {
+    "id": "ISO-A.8.22",
+    "framework": "ISO 27001",
+    "name": "Segregation of networks",
+    "description": "Segregates groups of information services, users and information systems in the organization's networks.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Segment networks to isolate sensitive systems, users and services and limit lateral movement."
+  },
+  {
+    "id": "ISO-A.8.23",
+    "framework": "ISO 27001",
+    "name": "Web filtering",
+    "description": "Manages access to external websites to reduce exposure to malicious content.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Deploy web filtering to block access to known-malicious and inappropriate external sites."
+  },
+  {
+    "id": "ISO-A.8.24",
+    "framework": "ISO 27001",
+    "name": "Use of cryptography",
+    "description": "Defines and implements rules for the effective use of cryptography, including cryptographic key management.",
+    "category": "Technological",
+    "severity": "critical",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Establish a cryptography policy and key management lifecycle covering algorithms, strength and key handling."
+  },
+  {
+    "id": "ISO-A.8.25",
+    "framework": "ISO 27001",
+    "name": "Secure development life cycle",
+    "description": "Establishes and applies rules for the secure development of software and systems.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["POLICY", "STANDARD"],
+    "suggested_action": "Define and enforce a secure SDLC integrating security requirements and reviews across development."
+  },
+  {
+    "id": "ISO-A.8.26",
+    "framework": "ISO 27001",
+    "name": "Application security requirements",
+    "description": "Identifies, specifies and approves information security requirements when developing or acquiring applications.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Define and approve security requirements for applications during development and acquisition."
+  },
+  {
+    "id": "ISO-A.8.27",
+    "framework": "ISO 27001",
+    "name": "Secure system architecture and engineering principles",
+    "description": "Establishes, documents, maintains and applies principles for engineering secure systems to any information system development activities.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "POLICY"],
+    "suggested_action": "Adopt and apply secure architecture and engineering principles (e.g., defense in depth, zero trust) across systems."
+  },
+  {
+    "id": "ISO-A.8.28",
+    "framework": "ISO 27001",
+    "name": "Secure coding",
+    "description": "Applies secure coding principles to software development.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Adopt secure coding standards, code review and SAST tooling to prevent common code vulnerabilities."
+  },
+  {
+    "id": "ISO-A.8.29",
+    "framework": "ISO 27001",
+    "name": "Security testing in development and acceptance",
+    "description": "Defines and implements security testing processes in the development life cycle.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Integrate security testing (SAST/DAST/pen testing) into development and acceptance gates."
+  },
+  {
+    "id": "ISO-A.8.30",
+    "framework": "ISO 27001",
+    "name": "Outsourced development",
+    "description": "Directs, monitors and reviews the activities related to outsourced system development.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Set security requirements for and oversee outsourced development, including code review and testing."
+  },
+  {
+    "id": "ISO-A.8.31",
+    "framework": "ISO 27001",
+    "name": "Separation of development, test and production environments",
+    "description": "Separates and secures development, testing and production environments.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["STANDARD", "PROCEDURE"],
+    "suggested_action": "Isolate development, test and production environments and control promotion between them."
+  },
+  {
+    "id": "ISO-A.8.32",
+    "framework": "ISO 27001",
+    "name": "Change management",
+    "description": "Subjects changes to information processing facilities and information systems to change management procedures.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Operate a formal change management process with risk assessment, approval, testing and rollback plans."
+  },
+  {
+    "id": "ISO-A.8.33",
+    "framework": "ISO 27001",
+    "name": "Test information",
+    "description": "Selects, protects and manages test information appropriately.",
+    "category": "Technological",
+    "severity": "medium",
+    "doc_types": ["PROCEDURE", "STANDARD"],
+    "suggested_action": "Protect test data, avoiding use of production sensitive data unless masked and controlled."
+  },
+  {
+    "id": "ISO-A.8.34",
+    "framework": "ISO 27001",
+    "name": "Protection of information systems during audit testing",
+    "description": "Plans and agrees audit tests and other assurance activities involving assessment of operational systems between the tester and appropriate management.",
+    "category": "Technological",
+    "severity": "low",
+    "doc_types": ["PROCEDURE"],
+    "suggested_action": "Plan and agree audit and assurance testing scope and access to minimize impact on operational systems."
+  }
+]
