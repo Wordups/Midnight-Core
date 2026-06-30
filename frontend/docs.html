@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Midnight — Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#070b12;--card:#0d141f;--border:#1b2433;--text:#e7ecf4;--text2:#9aa6b8;--text3:#5f6b7d;
+        --accent:#00d4f5;--mono:'JetBrains Mono',monospace}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.7}
+  .layout{display:grid;grid-template-columns:240px 1fr;max-width:1080px;margin:0 auto;gap:40px;padding:40px 24px}
+  .brand{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.12em;margin-bottom:24px}
+  nav{position:sticky;top:40px;align-self:start}
+  nav a{display:block;color:var(--text2);text-decoration:none;font-size:13.5px;padding:7px 0;border-left:2px solid transparent;padding-left:12px}
+  nav a:hover{color:var(--text)}
+  main{max-width:680px}
+  h1{font-size:30px;font-weight:700;margin-bottom:6px}
+  .lead{color:var(--text2);font-size:15px;margin-bottom:36px}
+  section{margin-bottom:40px;scroll-margin-top:24px}
+  h2{font-size:20px;font-weight:600;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  p{color:var(--text2);font-size:14.5px;margin:10px 0}
+  ol,ul{color:var(--text2);font-size:14.5px;margin:10px 0 10px 22px}
+  li{margin:6px 0}
+  code{font-family:var(--mono);font-size:12.5px;background:var(--card);border:1px solid var(--border);
+       border-radius:5px;padding:1px 6px;color:var(--accent)}
+  .tip{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);
+       border-radius:8px;padding:12px 16px;font-size:13.5px;color:var(--text2);margin:14px 0}
+  strong{color:var(--text)}
+  .foot{grid-column:1/-1;border-top:1px solid var(--border);padding-top:18px;margin-top:10px;
+        font-size:12px;color:var(--text3);font-family:var(--mono)}
+  a{color:var(--accent)}
+  @media(max-width:720px){.layout{grid-template-columns:1fr}nav{position:static}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <div class="brand">MIDNIGHT</div>
+    <a href="#start">Getting started</a>
+    <a href="#upload">Uploading documents</a>
+    <a href="#review">Running a Bird Eye review</a>
+    <a href="#create">Creating a policy</a>
+    <a href="#invite">Inviting a team member</a>
+    <a href="/midnight_dashboard.html">← Open dashboard</a>
+  </nav>
+  <main>
+    <h1>Documentation</h1>
+    <div class="lead">Everything you need to go from signup to your first finding. Each guide reflects the current product.</div>
+
+    <section id="start">
+      <h2>Getting started</h2>
+      <p>Midnight turns scattered compliance inputs — policies, framework requirements, findings, and drafts — into a working program.</p>
+      <ol>
+        <li>Sign up with your work email and company name on the login page.</li>
+        <li>Complete the short <strong>onboarding wizard</strong>: choose your frameworks (SOC 2, HIPAA, ISO 27001, and more), your primary objective, and how you want to build.</li>
+        <li>You land on the <strong>dashboard</strong>. The overview shows policies processed, open gaps, framework coverage, and recent activity — all live for your workspace.</li>
+      </ol>
+      <div class="tip">Your workspace is tenant-isolated. Only members of your organization can see your documents and findings.</div>
+    </section>
+
+    <section id="upload">
+      <h2>Uploading documents to Bird Eye</h2>
+      <p>Bird Eye is Midnight's autonomous document review. Give it your existing policies and it indexes and analyzes them.</p>
+      <ol>
+        <li>Open the <strong>Migrate Document</strong> or <strong>Bird Eye</strong> surface from the sidebar.</li>
+        <li>Upload a <code>.docx</code>, <code>.txt</code>, or <code>.md</code> policy document.</li>
+        <li>Midnight extracts the structure (sections, controls, revision history) and adds it to your policy library.</li>
+      </ol>
+    </section>
+
+    <section id="review">
+      <h2>Running a Bird Eye analysis</h2>
+      <p>Bird Eye scans your library for duplicates, conflicts, stale governance, orphaned procedures, and framework gaps.</p>
+      <ol>
+        <li>Go to the <strong>Overview</strong> and find the <strong>Bird Eye Review</strong> panel.</li>
+        <li>Click <strong>Run Bird Eye Review</strong>. Midnight reviews every document in your library.</li>
+        <li>Findings appear by severity. Use <strong>Export PDF</strong> to download a findings report with the Midnight header and date.</li>
+      </ol>
+      <div class="tip">Gap Analysis (sidebar) shows framework coverage and open control gaps, also exportable as a PDF.</div>
+    </section>
+
+    <section id="create">
+      <h2>Creating a policy</h2>
+      <p>When a gap needs a new document, Midnight drafts one mapped to the relevant control.</p>
+      <ol>
+        <li>Open <strong>Create Policy</strong> from the sidebar, or chat with <strong>Bird Talk</strong>, the policy assistant.</li>
+        <li>Provide the basics — document type, frameworks, and what you know. Midnight handles structure, formatting, and framework mapping.</li>
+        <li>Review the draft, then download it. Every output is a draft for your review — Midnight prepares, it does not certify.</li>
+      </ol>
+    </section>
+
+    <section id="invite">
+      <h2>Inviting a team member</h2>
+      <p>Bring a colleague into your workspace so they can collaborate on your program.</p>
+      <ol>
+        <li>Open <strong>Profile &amp; Settings</strong>.</li>
+        <li>Enter your teammate's email in the invite field and send the invitation.</li>
+        <li>They receive an email link; accepting it provisions their account inside your organization.</li>
+      </ol>
+      <div class="tip">Expanded role-based collaboration (analyst / SME task assignment) is rolling out — see the dashboard for the latest.</div>
+    </section>
+
+    <div class="foot">
+      Midnight · Documentation · <a href="/status.html">System status</a> · <a href="/index.html">Home</a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

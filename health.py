@@ -37,6 +37,29 @@ async def _check_supabase_reachable() -> bool:
         return False
 
 
+@router.get("/status")
+async def status():
+    """Public service-health snapshot for the status page. No auth required."""
+    anthropic_ok, supabase_ok = await asyncio.gather(
+        _check_anthropic_ready(),
+        _check_supabase_reachable(),
+    )
+    components = [
+        {"name": "API", "status": "operational", "detail": "Request handling"},
+        {"name": "Database", "status": "operational" if supabase_ok else "outage",
+         "detail": "Supabase auth + data"},
+        {"name": "AI Engine", "status": "operational" if anthropic_ok else "degraded",
+         "detail": "Policy generation & analysis"},
+        {"name": "Bird Eye", "status": "operational" if (supabase_ok and anthropic_ok) else "degraded",
+         "detail": "Autonomous document review"},
+        {"name": "Email delivery", "status": "not_configured",
+         "detail": "Transactional email (pending provider)"},
+    ]
+    healthy = {"operational", "not_configured"}
+    overall = "operational" if all(c["status"] in healthy for c in components) else "degraded"
+    return {"overall": overall, "components": components}
+
+
 @router.get("/ready")
 async def ready():
     anthropic_ok, supabase_ok = await asyncio.gather(
