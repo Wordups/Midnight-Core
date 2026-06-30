@@ -32,7 +32,12 @@ from backend.core.beta_access import (
     normalize_email,
 )
 from backend.storage.supabase_client import supabase, supabase_admin
-from backend.storage.file_store import create_signal_activity_event, update_profile_membership
+from backend.storage.file_store import (
+    create_signal_activity_event,
+    get_onboarding_session,
+    update_onboarding_session,
+    update_profile_membership,
+)
 from errors import register_exception_handlers
 from health import router as health_router
 from middleware.request_id import RequestIdMiddleware
@@ -96,7 +101,22 @@ class ManualTesterJoinRequest(BaseModel):
     email: str
 
 
+class OnboardingSessionRequest(BaseModel):
+    frameworks: list[str] = Field(min_length=1)
+    primary_objective: str = Field(min_length=2)
+    build_method: str = Field(min_length=2)
+
+
 POST_AUTH_REDIRECT = "/midnight_dashboard.html"
+ONBOARDING_ALLOWED_FRAMEWORKS = {"soc2", "hipaa", "iso27001", "nist_csf", "ai_governance"}
+ONBOARDING_ALLOWED_OBJECTIVES = {
+    "audit_prep",
+    "policy_cleanup",
+    "evidence_organization",
+    "ai_governance_readiness",
+    "grc_program_build",
+}
+ONBOARDING_ALLOWED_BUILD_METHODS = {"upload_existing_docs", "start_from_templates", "guided_review"}
 
 
 def _is_secure_cookie() -> bool:
@@ -836,18 +856,81 @@ async def manual_join_beta_tester(request: Request, payload: ManualTesterJoinReq
 
 @app.get("/onboarding/plan")
 async def onboarding_plan_entry(request: Request):
+    return FileResponse("frontend/onboarding_plan.html")
+
+
+def _onboarding_auth_context(request: Request) -> tuple[dict[str, Any], dict[str, Any], Any]:
     access_token = request.cookies.get(session_cookie_name, "").strip()
     if not access_token:
-        return RedirectResponse(url="/login.html?mode=signup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
+    return _authenticate_token(access_token)
 
-    try:
-        _authenticate_token(access_token)
-    except HTTPException as exc:
-        if exc.status_code in {status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN}:
-            return RedirectResponse(url="/login.html?mode=signup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
-        raise
 
-    return FileResponse("frontend/onboarding_plan.html")
+def _normalize_onboarding_payload(payload: OnboardingSessionRequest) -> dict[str, Any]:
+    frameworks = []
+    for item in payload.frameworks:
+        value = str(item or "").strip().lower()
+        if value and value not in frameworks:
+            frameworks.append(value)
+
+    if not frameworks or any(item not in ONBOARDING_ALLOWED_FRAMEWORKS for item in frameworks):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Select at least one supported framework.")
+
+    primary_objective = payload.primary_objective.strip().lower()
+    if primary_objective not in ONBOARDING_ALLOWED_OBJECTIVES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Select a supported primary objective.")
+
+    build_method = payload.build_method.strip().lower()
+    if build_method not in ONBOARDING_ALLOWED_BUILD_METHODS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Select a supported build method.")
+
+    return {
+        "frameworks": frameworks,
+        "primary_objective": primary_objective,
+        "build_method": build_method,
+        "current_step": "complete",
+        "progress": 100,
+        "completed": True,
+    }
+
+
+@app.get("/onboarding/session")
+async def get_current_onboarding_session(request: Request):
+    user_record, organization, auth_user = _onboarding_auth_context(request)
+    session = get_onboarding_session(str(user_record["tenant_id"])) or {}
+    return {
+        **_build_session_payload(
+            authenticated=True,
+            user_record=user_record,
+            organization=organization,
+            auth_user=auth_user,
+        ),
+        "onboarding_session": {
+            "frameworks": session.get("frameworks") or [],
+            "primary_objective": session.get("primary_objective"),
+            "build_method": session.get("build_method"),
+            "current_step": session.get("current_step") or "plan",
+            "progress": session.get("progress") or 0,
+            "completed": bool(session.get("completed")),
+        },
+    }
+
+
+@app.post("/onboarding/session")
+async def save_current_onboarding_session(request: Request, payload: OnboardingSessionRequest):
+    user_record, organization, auth_user = _onboarding_auth_context(request)
+    updates = _normalize_onboarding_payload(payload)
+    session = update_onboarding_session(str(user_record["tenant_id"]), updates)
+    return {
+        **_build_session_payload(
+            authenticated=True,
+            user_record=user_record,
+            organization=organization,
+            auth_user=auth_user,
+        ),
+        "onboarding_session": session,
+        "redirect_to": POST_AUTH_REDIRECT,
+    }
 
 
 @app.get("/auth/session")
@@ -908,6 +991,7 @@ from backend.bird_eye.api import router as bird_eye_router
 from backend.api.agent_ops import agent_ops_router
 from backend.api.admin_ops import admin_router
 from backend.api.stripe_router import billing_router, billing_webhook_router
+from backend.api.pm import router as pm_router
 
 app.include_router(assessments_router)
 app.include_router(pipeline_router, dependencies=[Depends(verify_access)])
@@ -918,6 +1002,7 @@ app.include_router(agent_ops_router, dependencies=[Depends(verify_access)])
 app.include_router(admin_router, dependencies=[Depends(verify_access)])
 app.include_router(billing_router, dependencies=[Depends(verify_access)])
 app.include_router(billing_webhook_router)
+app.include_router(pm_router, dependencies=[Depends(verify_access)])
 
 
 @app.get("/")
