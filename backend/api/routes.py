@@ -366,14 +366,13 @@ def _get_workspace_id(request: Request) -> str:
 
 
 def _get_anthropic_client():
-    if anthropic is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Anthropic dependency is not installed on the server.",
-        )
-    if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured.")
-    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    # Routes through the LLM provider layer: Anthropic by default, Ollama when
+    # LLM_PROVIDER=ollama (local dev/testing). Call sites use .messages.create.
+    from backend.llm.provider import get_client
+    try:
+        return get_client(anthropic_api_key=ANTHROPIC_API_KEY)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 def _require_supported_file(upload: UploadFile, field_name: str = "file") -> None:

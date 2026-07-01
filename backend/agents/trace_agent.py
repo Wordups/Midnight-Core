@@ -135,13 +135,9 @@ def _insert_activity_log_row(
 # ─── Anthropic helpers ───────────────────────────────────────────────────────
 
 def _anthropic_client():
-    try:
-        import anthropic
-    except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("anthropic package not installed") from exc
-    if not settings.ANTHROPIC_API_KEY:
-        raise RuntimeError("ANTHROPIC_API_KEY is not configured")
-    return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    # Anthropic by default; Ollama when LLM_PROVIDER=ollama (local dev/testing).
+    from backend.llm.provider import get_client
+    return get_client(anthropic_api_key=settings.ANTHROPIC_API_KEY)
 
 
 def _call_claude(*, system: str, user: str, max_tokens: int = 4000) -> str:
