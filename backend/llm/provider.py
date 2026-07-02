@@ -31,6 +31,23 @@ def provider() -> str:
     return os.getenv("LLM_PROVIDER", "anthropic").strip().lower()
 
 
+def _llm_timeout() -> float:
+    try:
+        return float(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
+    except ValueError:
+        return 120.0
+
+
+def _llm_max_retries() -> int:
+    # The Anthropic SDK retries 429/500/503/529/overloaded with exponential
+    # backoff automatically. Bumping the count hardens the multi-call pipeline
+    # against transient overloads (H1).
+    try:
+        return int(os.getenv("LLM_MAX_RETRIES", "4"))
+    except ValueError:
+        return 4
+
+
 def _ollama_url() -> str:
     return os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
 
@@ -97,4 +114,10 @@ def get_client(*, anthropic_api_key: str | None = None):
         raise RuntimeError("Anthropic dependency is not installed on the server.") from exc
     if not anthropic_api_key:
         raise RuntimeError("ANTHROPIC_API_KEY is not configured.")
-    return anthropic.Anthropic(api_key=anthropic_api_key)
+    # Explicit per-call timeout (H2) + retry count (H1) so a single call can't
+    # hang the SDK default (~600s) and transient overloads are retried.
+    return anthropic.Anthropic(
+        api_key=anthropic_api_key,
+        timeout=_llm_timeout(),
+        max_retries=_llm_max_retries(),
+    )
