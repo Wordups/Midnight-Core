@@ -497,7 +497,7 @@ async function runPolicyGenerate() {
   try {
     const response = await workflowApi('/pipeline/create/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ policy_data: workflowState.previewData }),
     });
     if (!response.ok) {

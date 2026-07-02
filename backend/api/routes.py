@@ -1284,7 +1284,10 @@ def _write_temp_docx(docx_bytes: bytes) -> str:
     return output_path
 
 
-def _file_docx_response(
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def _render_and_store_docx(
     *,
     tenant_id: str,
     policy_data: dict,
@@ -1295,8 +1298,9 @@ def _file_docx_response(
     source_name: str,
     policy_id: str | None = None,
     watermark_exports: bool = False,
-    extra_headers: dict | None = None,
-) -> FileResponse:
+) -> tuple[dict, bytes, str]:
+    """Build the .docx, validate it, persist it to storage. Returns
+    (record, docx_bytes, preview_text). Shared by the binary and JSON responses."""
     try:
         docx_bytes = _build_docx(policy_data, template_name)
     except Exception as exc:  # pragma: no cover
@@ -1316,7 +1320,7 @@ def _file_docx_response(
             document_name=document_name,
             doc_type=doc_type,
             preview=preview_text,
-            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            content_type=DOCX_MIME,
             file_bytes=docx_bytes,
             source_name=source_name,
             policy_number=policy_data.get("policy_number"),
@@ -1325,6 +1329,34 @@ def _file_docx_response(
         )
     except SupabaseStoreError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return record, docx_bytes, preview_text
+
+
+def _file_docx_response(
+    *,
+    tenant_id: str,
+    policy_data: dict,
+    template_name: str,
+    output_name: str,
+    document_name: str,
+    doc_type: str,
+    source_name: str,
+    policy_id: str | None = None,
+    watermark_exports: bool = False,
+    extra_headers: dict | None = None,
+) -> FileResponse:
+    record, docx_bytes, preview_text = _render_and_store_docx(
+        tenant_id=tenant_id,
+        policy_data=policy_data,
+        template_name=template_name,
+        output_name=output_name,
+        document_name=document_name,
+        doc_type=doc_type,
+        source_name=source_name,
+        policy_id=policy_id,
+        watermark_exports=watermark_exports,
+    )
 
     temp_path = _write_temp_docx(docx_bytes)
 
@@ -1336,9 +1368,15 @@ def _file_docx_response(
     return FileResponse(
         path=temp_path,
         filename=output_name,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        media_type=DOCX_MIME,
         headers=headers,
     )
+
+
+def _wants_json(request: Request) -> bool:
+    """True when the caller asked for a JSON response (Create Policy Studio),
+    False for the binary-download callers (dashboard / migrate)."""
+    return "application/json" in (request.headers.get("accept") or "").lower()
 
 
 class BirdsongRequest(BaseModel):
@@ -2531,6 +2569,31 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
         policy_id=session.get("policy_id"),
         metadata={"doc_type": doc_type, "frameworks": session.get("frameworks", [])},
     )
+
+    # Create Policy Studio sends Accept: application/json and expects a JSON body
+    # with a download URL. The dashboard/migrate callers read the binary blob.
+    if _wants_json(request):
+        record, _docx_bytes, preview_text = _render_and_store_docx(
+            tenant_id=tenant["id"],
+            policy_data=policy_data,
+            template_name=str(doc_type).lower(),
+            output_name=output_name,
+            document_name=policy_name,
+            doc_type=doc_type,
+            source_name=session.get("source_name", policy_name),
+            policy_id=session.get("policy_id"),
+            watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        )
+        return JSONResponse({
+            "document_id": record["id"],
+            "download": {
+                "url": f"/dashboard/documents/{record['id']}/download",
+                "filename": output_name,
+            },
+            "policy_data": {"policy_name": policy_name},
+            "preview": preview_text,
+            "evidence_count": evidence_count,
+        })
 
     return _file_docx_response(
         tenant_id=tenant["id"],
