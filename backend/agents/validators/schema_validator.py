@@ -39,19 +39,14 @@ class SchemaValidationResult:
         }
 
 
-def validate_schema(docx_path: str | Path) -> SchemaValidationResult:
-    """Open the .docx as a zip, confirm required parts exist, parse the
-    main document XML, count body paragraphs. Returns a result object
-    rather than raising — TraceAgent's repair loop wants the failure
-    reason as text."""
-    docx_path = Path(docx_path)
-    if not docx_path.exists():
-        return SchemaValidationResult(False, f"File does not exist: {docx_path}")
-    if docx_path.stat().st_size == 0:
+def validate_schema_bytes(data: bytes) -> SchemaValidationResult:
+    """Validate an in-memory .docx (same checks as validate_schema, no temp
+    file). Used to gate the customer export path before storing/serving."""
+    if not data:
         return SchemaValidationResult(False, "File is zero bytes")
 
     try:
-        with zipfile.ZipFile(docx_path) as zf:
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
             names = set(zf.namelist())
             missing = [p for p in REQUIRED_PARTS if p not in names]
             if missing:
@@ -59,8 +54,7 @@ def validate_schema(docx_path: str | Path) -> SchemaValidationResult:
                     False,
                     f"Missing required OOXML parts: {', '.join(missing)}",
                 )
-            with zf.open("word/document.xml") as f:
-                document_xml = f.read()
+            document_xml = zf.read("word/document.xml")
     except zipfile.BadZipFile as exc:
         return SchemaValidationResult(False, f"Not a valid .docx (zip parse failed): {exc}")
     except KeyError as exc:
@@ -80,3 +74,16 @@ def validate_schema(docx_path: str | Path) -> SchemaValidationResult:
         return SchemaValidationResult(False, "document.xml body has zero paragraphs")
 
     return SchemaValidationResult(True, None, body_paragraphs=len(paragraphs))
+
+
+def validate_schema(docx_path: str | Path) -> SchemaValidationResult:
+    """Open the .docx as a zip, confirm required parts exist, parse the
+    main document XML, count body paragraphs. Returns a result object
+    rather than raising — TraceAgent's repair loop wants the failure
+    reason as text."""
+    docx_path = Path(docx_path)
+    if not docx_path.exists():
+        return SchemaValidationResult(False, f"File does not exist: {docx_path}")
+    if docx_path.stat().st_size == 0:
+        return SchemaValidationResult(False, "File is zero bytes")
+    return validate_schema_bytes(docx_path.read_bytes())

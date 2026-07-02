@@ -1286,6 +1286,40 @@ def _write_temp_docx(docx_bytes: bytes) -> str:
 
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
+# Sentinel that _build_docx inserts when a section has no content. Shipping a
+# policy that still contains this is an incomplete document, not "ready".
+_SECTION_HOLE_MARKER = b"[Section not found"
+
+
+def _missing_section_count(docx_bytes: bytes) -> int:
+    """Count section-hole placeholders in the rendered document. Reads the
+    OOXML document part directly (the marker is a literal run of text)."""
+    import io as _io
+    import zipfile as _zip
+    try:
+        with _zip.ZipFile(_io.BytesIO(docx_bytes)) as zf:
+            xml = zf.read("word/document.xml")
+    except Exception:
+        return 0
+    return xml.count(_SECTION_HOLE_MARKER)
+
+
+def _assert_export_docx_ok(docx_bytes: bytes) -> None:
+    """Gate before a generated .docx is stored/served: it must be a structurally
+    valid OOXML document AND must not contain silent section holes. Raises
+    HTTPException so a broken/incomplete policy is never handed to the customer."""
+    from backend.agents.validators.schema_validator import validate_schema_bytes
+    result = validate_schema_bytes(docx_bytes)
+    if not result.ok:
+        raise HTTPException(status_code=500, detail=f"Generated document failed validation: {result.error}")
+    holes = _missing_section_count(docx_bytes)
+    if holes:
+        raise HTTPException(
+            status_code=422,
+            detail=(f"Generated policy is incomplete — {holes} section(s) have no content. "
+                    "Regenerate the document before exporting."),
+        )
+
 
 def _render_and_store_docx(
     *,
@@ -1311,6 +1345,8 @@ def _render_and_store_docx(
 
     if watermark_exports:
         docx_bytes = _watermark_docx_bytes(docx_bytes)
+
+    _assert_export_docx_ok(docx_bytes)
 
     preview_text = _build_preview_text(policy_data)
     try:
