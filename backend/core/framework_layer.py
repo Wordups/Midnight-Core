@@ -12,6 +12,7 @@ PUBLIC_FRAMEWORK_FILES = {
     "NIST CSF": "nist.json",
     "PCI DSS": "pci.json",
     "SOC 2": "soc2.json",
+    "ISO 27001": "iso27001.json",
 }
 
 FRAMEWORK_ALIASES = {
@@ -23,6 +24,11 @@ FRAMEWORK_ALIASES = {
     "SOC2": "SOC 2",
     "SOC 2": "SOC 2",
     "SOC 2 TYPE II": "SOC 2",
+    "ISO": "ISO 27001",
+    "ISO 27001": "ISO 27001",
+    "ISO27001": "ISO 27001",
+    "ISO/IEC 27001": "ISO 27001",
+    "ISO 27001:2022": "ISO 27001",
     "HITRUST": "HITRUST",
     "HITRUST DOMAINS": "HITRUST",
     "HITRUST-ALIGNED DOMAINS": "HITRUST",

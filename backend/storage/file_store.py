@@ -486,9 +486,15 @@ def download_generated_document(workspace_id: str, document_id: str) -> tuple[di
     record = get_generated_document(workspace_id, document_id)
     if record is None:
         raise SupabaseStoreError("Document not found.")
-    if not record.get("storage_url"):
-        raise SupabaseStoreError("Document is missing a signed storage URL.")
-    return record, _download_storage_object(record["storage_url"])
+    # H3: download by storage path via the service-role key (never expires).
+    # The previous path reused a 1-hour signed URL, so any document older than
+    # an hour failed with a 503. Fall back to a signed URL only if no path.
+    stored_path = record.get("stored_path")
+    if stored_path:
+        return record, _download_storage_object_by_path(stored_path)
+    if record.get("storage_url"):
+        return record, _download_storage_object(record["storage_url"])
+    raise SupabaseStoreError("Document is missing storage information.")
 
 
 def get_document_record_by_id(document_id: str) -> dict[str, Any] | None:

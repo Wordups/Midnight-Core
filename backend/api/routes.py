@@ -1650,6 +1650,20 @@ def _anthropic_text_response(message: Any) -> tuple[str, str]:
 
 
 _REGISTRY_ID_SET: frozenset[str] = frozenset(c.id for c in CONTROL_REGISTRY)
+_CONTROL_BY_ID: dict[str, Any] = {c.id: c for c in CONTROL_REGISTRY}
+
+
+def _grounded_framework_mappings(control_ids: list[str]) -> dict[str, list[str]]:
+    """Build the document's Framework Mappings section from registry-validated
+    control IDs only. Anything not in the control registry is dropped, so a
+    hallucinated citation can never render into the customer's policy."""
+    grouped: dict[str, list[str]] = {}
+    for cid in control_ids:
+        ctrl = _CONTROL_BY_ID.get(cid)
+        if not ctrl:
+            continue
+        grouped.setdefault(ctrl.framework, []).append(f"{ctrl.id} — {ctrl.name}")
+    return grouped
 
 
 def _identify_covered_controls(
@@ -2579,6 +2593,11 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
                 frameworks=active_frameworks,
             )
             update_policy_covered_controls(saved_policy_id, covered_ids)
+            # H4: render the Framework Mappings section from registry-validated
+            # controls only, so no hallucinated citation reaches the document.
+            grounded = _grounded_framework_mappings(covered_ids)
+            if grounded:
+                policy_data["framework_mappings"] = grounded
         except Exception:
             pass
         try:
