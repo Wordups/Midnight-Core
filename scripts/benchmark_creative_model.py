@@ -60,6 +60,11 @@ def main() -> int:
     ap.add_argument("--runs", type=int, default=2)
     args = ap.parse_args()
 
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except Exception:
+        pass
     key = os.getenv("ANTHROPIC_API_KEY", "")
     if not key:
         print("ANTHROPIC_API_KEY not set — cannot benchmark.", file=sys.stderr)
