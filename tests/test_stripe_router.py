@@ -21,6 +21,7 @@ os.environ["STRIPE_PRICE_GROWTH"] = "price_test_growth"
 os.environ["STRIPE_PRICE_ENTERPRISE"] = "price_test_enterprise"
 os.environ["FRONTEND_BASE_URL"] = "http://localhost:8000"
 
+from fastapi import Request  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from backend.api.main import app, verify_access  # noqa: E402
@@ -37,7 +38,13 @@ _MOCK_AUTH = {
 }
 
 
-def _mock_verify_access():
+def _mock_verify_access(request: Request):
+    # Mirror the real verify_access: populate request.state so downstream
+    # endpoints (checkout reads request.state.tenant_id) work under test.
+    request.state.tenant_id = _MOCK_AUTH["tenant_id"]
+    request.state.user_id = _MOCK_AUTH["user_id"]
+    request.state.user_email = _MOCK_AUTH["email"]
+    request.state.auth_context = _MOCK_AUTH
     return _MOCK_AUTH
 
 
@@ -160,35 +167,77 @@ class TestCheckoutInvalidTier(unittest.TestCase):
 
 
 class TestWebhook(unittest.TestCase):
-    """Webhook must accept any input and return 200 with no auth."""
+    """Webhook must verify the Stripe signature and activate plans. Unsigned /
+    forged payloads are rejected; a valid checkout.session.completed activates
+    the tenant's plan. (Before C2 the webhook was a no-op stub that 200'd
+    anything and never activated a plan — every paying customer stayed on trial.)"""
 
     def setUp(self):
-        # No dependency override — webhook must work without any session cookie.
+        os.environ["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
         self.client = TestClient(app)
 
-    def test_webhook_returns_200_with_stripe_event_payload(self):
+    def tearDown(self):
+        os.environ.pop("STRIPE_WEBHOOK_SECRET", None)
+
+    def test_forged_payload_rejected_with_400(self):
+        # No mock: construct_event runs for real and rejects the bad signature.
         response = self.client.post(
             "/billing/webhook",
-            json={"type": "checkout.session.completed", "id": "evt_test_123"},
+            content=b'{"type":"checkout.session.completed","id":"evt_forged"}',
+            headers={"stripe-signature": "t=1,v1=deadbeef"},
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
 
-    def test_webhook_returns_200_with_empty_body(self):
-        response = self.client.post("/billing/webhook", content=b"")
-        self.assertEqual(response.status_code, 200)
+    def test_missing_secret_returns_500(self):
+        os.environ.pop("STRIPE_WEBHOOK_SECRET", None)
+        response = self.client.post("/billing/webhook", content=b"{}",
+                                    headers={"stripe-signature": "x"})
+        self.assertEqual(response.status_code, 500)
 
-    def test_webhook_returns_200_with_arbitrary_bytes(self):
-        response = self.client.post("/billing/webhook", content=b"not-json-at-all")
+    @patch("backend.api.stripe_router._mark_processed")
+    @patch("backend.api.stripe_router._already_processed", return_value=False)
+    @patch("backend.api.stripe_router._activate_plan")
+    @patch("backend.api.stripe_router.stripe.Webhook.construct_event")
+    def test_checkout_completed_activates_plan(self, mock_construct, mock_activate, *_):
+        mock_construct.return_value = {
+            "id": "evt_ok_1",
+            "type": "checkout.session.completed",
+            "data": {"object": {"client_reference_id": "tenant-test-001",
+                                 "metadata": {"tenant_id": "tenant-test-001", "tier": "growth"}}},
+        }
+        response = self.client.post("/billing/webhook", content=b"{}",
+                                    headers={"stripe-signature": "valid"})
         self.assertEqual(response.status_code, 200)
+        mock_activate.assert_called_once_with("tenant-test-001", "growth")
 
-    def test_webhook_no_auth_cookie_required(self):
-        """Stripe has no session cookie — endpoint must not demand one."""
-        response = self.client.post(
-            "/billing/webhook",
-            json={"type": "payment_intent.succeeded"},
-            headers={},  # no Cookie header
-        )
+    @patch("backend.api.stripe_router._mark_processed")
+    @patch("backend.api.stripe_router._already_processed", return_value=False)
+    @patch("backend.api.stripe_router._activate_plan")
+    @patch("backend.api.stripe_router.stripe.Webhook.construct_event")
+    def test_subscription_deleted_downgrades_to_trial(self, mock_construct, mock_activate, *_):
+        mock_construct.return_value = {
+            "id": "evt_del_1",
+            "type": "customer.subscription.deleted",
+            "data": {"object": {"metadata": {"tenant_id": "tenant-test-001"}}},
+        }
+        response = self.client.post("/billing/webhook", content=b"{}",
+                                    headers={"stripe-signature": "valid"})
         self.assertEqual(response.status_code, 200)
+        mock_activate.assert_called_once_with("tenant-test-001", "trial")
+
+    @patch("backend.api.stripe_router._activate_plan")
+    @patch("backend.api.stripe_router._already_processed", return_value=True)
+    @patch("backend.api.stripe_router.stripe.Webhook.construct_event")
+    def test_replayed_event_is_skipped(self, mock_construct, mock_seen, mock_activate):
+        mock_construct.return_value = {
+            "id": "evt_dupe",
+            "type": "checkout.session.completed",
+            "data": {"object": {"metadata": {"tenant_id": "t", "tier": "starter"}}},
+        }
+        response = self.client.post("/billing/webhook", content=b"{}",
+                                    headers={"stripe-signature": "valid"})
+        self.assertEqual(response.status_code, 200)
+        mock_activate.assert_not_called()
 
 
 class TestWebhookSecurityBoundary(unittest.TestCase):
