@@ -32,3 +32,16 @@ def resolve_model(env_var: str = "ANTHROPIC_MODEL", default: str = DEFAULT_MODEL
     An unknown/stale override falls back to the default rather than 404-ing."""
     candidate = os.getenv(env_var, default)
     return candidate if candidate in VALID_MODELS else default
+
+
+def resolve_structural_model() -> str:
+    """Model for structural sections (metadata, definitions, roles, approvals).
+    Cheaper/faster tier — override with STRUCTURAL_MODEL."""
+    return resolve_model("STRUCTURAL_MODEL", STRUCTURAL_MODEL)
+
+
+def resolve_creative_model() -> str:
+    """Model for creative/narrative sections (purpose, scope, policy statement,
+    procedures). Override with CREATIVE_MODEL — e.g. set to 'claude-fable-5' to
+    A/B the creative tier without touching structural spend."""
+    return resolve_model("CREATIVE_MODEL", DEFAULT_MODEL)

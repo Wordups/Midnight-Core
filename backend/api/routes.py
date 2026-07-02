@@ -302,8 +302,21 @@ async def smoke_docx():
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-from backend.llm.models import resolve_model as _resolve_model
+from backend.llm.models import (
+    resolve_model as _resolve_model,
+    resolve_structural_model as _resolve_structural_model,
+    resolve_creative_model as _resolve_creative_model,
+)
 ANTHROPIC_MODEL = _resolve_model()  # valid current model id; stale ids 404
+# Model routing (Wave C): structural sections on the cheaper/faster tier,
+# creative/narrative prose on the stronger tier. Both env-overridable.
+STRUCTURAL_MODEL = _resolve_structural_model()
+CREATIVE_MODEL = _resolve_creative_model()
+_CREATIVE_SLOT_IDS = {"purpose", "scope", "policy_statement", "procedures", "exceptions"}
+
+
+def _model_for_slot(slot_id: str) -> str:
+    return CREATIVE_MODEL if slot_id in _CREATIVE_SLOT_IDS else STRUCTURAL_MODEL
 SUPPORTED_EXTENSIONS = {".docx", ".txt", ".md"}
 SUPPORTED_TEMPLATE_EXTENSIONS = {
     ".png",
@@ -1735,15 +1748,17 @@ def _call_model_json_object(
     flow: str,
     context: dict[str, object] | None = None,
     max_tokens: int = 1200,
+    model: str | None = None,
 ) -> dict[str, Any]:
     client = _get_anthropic_client()
+    chosen_model = model or ANTHROPIC_MODEL
     last_error: Exception | None = None
     last_raw_text = ""
     prompt = user_prompt
 
     for attempt in range(2):
         message = client.messages.create(
-            model=ANTHROPIC_MODEL,
+            model=chosen_model,
             max_tokens=max_tokens,
             system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
@@ -2019,6 +2034,7 @@ async def _generate_policy_data(
         flow="create_policy_metadata",
         context={"policy_name": request.policy_name, "doc_type": request.doc_type},
         max_tokens=700,
+        model=STRUCTURAL_MODEL,
     )
     metadata = _validate_policy_metadata(
         metadata_raw,
@@ -2061,6 +2077,7 @@ async def _generate_policy_data(
                 flow=f"create_policy_section_{slot_spec['slot_id']}",
                 context={"policy_name": request.policy_name, "slot_id": slot_spec["slot_id"]},
                 max_tokens=1100,
+                model=_model_for_slot(slot_spec["slot_id"]),
             )
             section = _validate_generated_section(raw_section, slot_spec=slot_spec)
             sections.append(section)
