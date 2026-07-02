@@ -80,6 +80,37 @@ let workflowState = {
   exporting: false,
 };
 
+// H6: persist the reviewed preview so a refresh/tab-close doesn't discard it
+// and force an expensive full regeneration. Keyed per lane.
+function _wfPreviewKey() { return `midnight_wf_preview_${workflowState.lane || 'POLICY'}`; }
+function persistPreview() {
+  try {
+    if (workflowState.previewData) {
+      localStorage.setItem(_wfPreviewKey(), JSON.stringify({
+        previewData: workflowState.previewData,
+        previewText: workflowState.previewText,
+        draft: workflowState.draft,
+      }));
+    }
+  } catch (_) {}
+}
+function restorePreview() {
+  try {
+    const raw = localStorage.getItem(_wfPreviewKey());
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved && saved.previewData) {
+      workflowState.previewData = saved.previewData;
+      workflowState.previewText = saved.previewText || '';
+      if (saved.draft) workflowState.draft = saved.draft;
+      workflowState.activeStep = 'review';
+    }
+  } catch (_) {}
+}
+function clearPreview() {
+  try { localStorage.removeItem(_wfPreviewKey()); } catch (_) {}
+}
+
 function workflowToast(message, isError = false) {
   const toast = document.getElementById('wf-toast');
   if (!toast) return;
@@ -472,6 +503,7 @@ async function runPolicyPreview() {
     workflowState.previewData = data.policy_data;
     workflowState.previewText = buildPolicyPreviewText(data.policy_data);
     workflowState.draft = { ...workflowCollectDraft() };
+    persistPreview();
     document.getElementById('wf-breadcrumb-state').textContent = 'Preview Ready';
     setWorkflowStep('review');
     workflowToast('Policy preview ready.');
@@ -508,6 +540,7 @@ async function runPolicyGenerate() {
     if (data?.download?.url) {
       window.open(data.download.url, '_blank', 'noopener');
     }
+    clearPreview();  // H6: consumed — drop the persisted preview
     workflowToast(`Policy generated — ${data?.policy_data?.policy_name || getFieldValue('policy_name') || 'policy'}`);
   } catch (error) {
     workflowToast(error.message || 'Document generation failed.', true);
@@ -591,6 +624,7 @@ async function bootWorkflowPage() {
   }
 
   loadWorkflowDraft();
+  restorePreview();  // H6: bring back a reviewed preview after a reload
   renderWorkflowApp();
 }
 
