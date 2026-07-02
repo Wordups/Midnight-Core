@@ -284,12 +284,15 @@ def _require_admin_role(request: Request) -> dict[str, Any]:
 
 
 def _ensure_seat_available_for_join(tenant_id: str, plan_type: str | None) -> None:
-    if str(plan_type or "").lower() != "trial":
-        return
-    if _count_profiles_for_tenant(tenant_id) >= TRIAL_MAX_USERS:
+    from backend.billing_plans import limits_for
+    plan = str(plan_type or "trial").lower()
+    max_users = limits_for(plan)["max_users"]
+    if max_users is None:
+        return  # unlimited (e.g. enterprise)
+    if _count_profiles_for_tenant(tenant_id) >= max_users:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Trial plans support only {TRIAL_MAX_USERS} user. Upgrade to add more seats.",
+            detail=f"The {plan} plan supports up to {max_users} user(s). Upgrade to add more seats.",
         )
 
 
@@ -386,13 +389,17 @@ def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] 
         raise _database_setup_error(exc) from exc
 
     organization = _first_row(org_response.data)
-    if organization and str(organization.get("plan_type") or "").lower() == "trial":
-        profile_count = _count_profiles_for_tenant(str(tenant_id))
-        if profile_count > TRIAL_MAX_USERS:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Trial plans support only {TRIAL_MAX_USERS} user. Upgrade to add more seats.",
-            )
+    if organization:
+        from backend.billing_plans import limits_for
+        plan = str(organization.get("plan_type") or "trial").lower()
+        max_users = limits_for(plan)["max_users"]
+        if max_users is not None:
+            profile_count = _count_profiles_for_tenant(str(tenant_id))
+            if profile_count > max_users:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"The {plan} plan supports up to {max_users} user(s). Upgrade to add more seats.",
+                )
     return user_record, organization
 
 

@@ -40,6 +40,7 @@ from backend.core.json_parser import (
 from backend.renderers.docx_renderer import render_markdown_bullet, render_markdown_into
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
 from backend.core.gap_engine import CONTROL_REGISTRY, get_required_controls, run_program_gap_analysis
+from backend.billing_plans import limits_for
 from backend.storage.file_store import (
     SupabaseStoreError,
     count_activity_for_tenant,
@@ -204,24 +205,26 @@ def _enforce_trial_limits(
     upload_action: str | None = None,
 ) -> dict:
     tenant = _tenant_context_from_request(request)
-    if str(tenant.get("plan_type") or "").lower() != "trial":
-        return tenant
+    plan = str(tenant.get("plan_type") or "trial").lower()
+    limits = limits_for(plan)
 
-    if frameworks is not None and len([fw for fw in frameworks if fw]) > TRIAL_MAX_FRAMEWORKS:
+    max_frameworks = limits["max_frameworks"]
+    if max_frameworks is not None and frameworks is not None and len([fw for fw in frameworks if fw]) > max_frameworks:
         raise HTTPException(
             status_code=403,
-            detail=f"Trial plans support only {TRIAL_MAX_FRAMEWORKS} framework at a time. Upgrade to continue.",
+            detail=f"The {plan} plan supports up to {max_frameworks} framework(s) at a time. Upgrade to add more.",
         )
 
-    if upload_action:
+    max_uploads = limits["max_uploads"]
+    if upload_action and max_uploads is not None:
         try:
             upload_count = count_activity_for_tenant(tenant["id"], action=upload_action)
         except SupabaseStoreError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
-        if upload_count >= TRIAL_MAX_UPLOADS:
+        if upload_count >= max_uploads:
             raise HTTPException(
                 status_code=403,
-                detail=f"Trial plans are limited to {TRIAL_MAX_UPLOADS} uploads. Upgrade to continue.",
+                detail=f"The {plan} plan is limited to {max_uploads} uploads. Upgrade to continue.",
             )
     return tenant
 
