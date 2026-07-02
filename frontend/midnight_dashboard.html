@@ -18,12 +18,12 @@
     --text: #ffffff;
     --text2: rgba(255,255,255,0.88);
     --text3: rgba(188,209,234,0.62);
-    --green: #00e89a;
-    --green-bg: rgba(0,232,154,0.08);
+    --green: #19cf8c;
+    --green-bg: rgba(25,207,140,0.08);
     --amber: #faaa28;
     --amber-bg: rgba(250,170,40,0.1);
-    --red: #ff6b35;
-    --red-bg: rgba(255,107,53,0.08);
+    --red: #ef5350;
+    --red-bg: rgba(239,83,80,0.09);
     --blue: #00d4f5;
     --blue-bg: rgba(0,212,245,0.07);
     --accent: #00d4f5;
@@ -42,18 +42,15 @@
     --text: #091524;
     --text2: rgba(9, 21, 36, 0.86);
     --text3: rgba(39, 72, 110, 0.62);
-    --green-bg: rgba(0,232,154,0.12);
+    --green-bg: rgba(25,207,140,0.12);
     --amber-bg: rgba(250,170,40,0.14);
-    --red-bg: rgba(255,107,53,0.12);
+    --red-bg: rgba(239,83,80,0.12);
     --blue-bg: rgba(0,212,245,0.12);
     --shadow-card: 0 18px 38px rgba(13, 40, 73, 0.08);
   }
   body[data-theme="light"] {
     background-image:
-      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(11,92,255,0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,212,245,0.05) 0%, transparent 60%),
-      linear-gradient(rgba(9,21,36,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(9,21,36,0.035) 1px, transparent 1px);
+      radial-gradient(ellipse 100% 55% at 50% -25%, rgba(11,92,255,0.06) 0%, transparent 68%);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -64,11 +61,8 @@
     min-height: 100vh;
     overflow-x: hidden;
     background-image:
-      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(0,212,245,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,212,245,0.03) 0%, transparent 60%),
-      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+      radial-gradient(ellipse 100% 55% at 50% -25%, rgba(0,212,245,0.045) 0%, transparent 68%);
+    background-attachment: fixed;
     transition: background-color 0.28s ease, color 0.28s ease;
   }
   body,
