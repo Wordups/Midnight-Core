@@ -43,7 +43,8 @@ logger = logging.getLogger("midnight.trace_agent")
 
 OUTLINE_DIR = Path(__file__).resolve().parent / "templates" / "outlines"
 MAX_REPAIR_ATTEMPTS = 3
-ANTHROPIC_MODEL = "claude-opus-4-5"
+from backend.llm.models import resolve_model as _resolve_model
+ANTHROPIC_MODEL = _resolve_model()  # valid current model id; stale ids 404
 
 # Each step's metadata. The 16 steps are FIXED; reordering changes the
 # trace contract callers (and auditors) rely on.

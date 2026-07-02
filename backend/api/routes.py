@@ -299,7 +299,8 @@ async def smoke_docx():
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = "claude-opus-4-5"
+from backend.llm.models import resolve_model as _resolve_model
+ANTHROPIC_MODEL = _resolve_model()  # valid current model id; stale ids 404
 SUPPORTED_EXTENSIONS = {".docx", ".txt", ".md"}
 SUPPORTED_TEMPLATE_EXTENSIONS = {
     ".png",
