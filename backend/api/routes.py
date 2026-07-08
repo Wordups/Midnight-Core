@@ -162,6 +162,162 @@ POLICY_SLOT_SPECS = [
         "instruction": "Describe the approval authority, approval workflow, and what constitutes policy approval.",
     },
 ]
+SOP_SLOT_SPECS = [
+    {
+        "slot_id": "purpose",
+        "heading": "Purpose",
+        "instruction": "State the operational outcome this procedure produces and why it exists.",
+    },
+    {
+        "slot_id": "scope",
+        "heading": "Scope",
+        "instruction": "Define which teams, systems, and situations this procedure applies to, and what is out of scope.",
+    },
+    {
+        "slot_id": "roles_responsibilities",
+        "heading": "Roles and Responsibilities",
+        "instruction": "Identify who performs each part of the procedure, who reviews, and who approves deviations.",
+    },
+    {
+        "slot_id": "prerequisites",
+        "heading": "Prerequisites",
+        "instruction": "List the access, tools, inputs, and preconditions required before starting the procedure.",
+    },
+    {
+        "slot_id": "procedure_steps",
+        "heading": "Procedure Steps",
+        "instruction": "Write the numbered step-by-step instructions. Each step states the action, who performs it, and the expected result before moving on.",
+    },
+    {
+        "slot_id": "escalation",
+        "heading": "Escalation",
+        "instruction": "Describe what to do when a step fails or an unexpected condition occurs, including who to contact and when.",
+    },
+    {
+        "slot_id": "records_evidence",
+        "heading": "Records and Evidence",
+        "instruction": "State which records, logs, or artifacts must be retained as evidence the procedure was performed, and where they are kept.",
+    },
+    {
+        "slot_id": "review_cycle",
+        "heading": "Review Cycle",
+        "instruction": "Describe how often this procedure must be reviewed, tested, and updated.",
+    },
+]
+STANDARD_SLOT_SPECS = [
+    {
+        "slot_id": "purpose",
+        "heading": "Purpose",
+        "instruction": "State what this standard establishes and the risk or compliance objective it serves.",
+    },
+    {
+        "slot_id": "scope",
+        "heading": "Scope",
+        "instruction": "Define the systems, technologies, environments, and teams the standard applies to.",
+    },
+    {
+        "slot_id": "definitions",
+        "heading": "Definitions",
+        "instruction": "List and explain the technical terms and concepts needed to understand the requirements.",
+    },
+    {
+        "slot_id": "requirements",
+        "heading": "Requirements",
+        "instruction": "Write the numbered mandatory technical requirements in direct, testable language. Each requirement states what must be configured, enforced, or maintained.",
+    },
+    {
+        "slot_id": "control_mapping",
+        "heading": "Control Mapping and Evidence",
+        "instruction": "Describe how the requirements map to the selected framework controls and what evidence demonstrates each requirement is met.",
+    },
+    {
+        "slot_id": "exceptions",
+        "heading": "Exceptions",
+        "instruction": "Explain how exceptions to the standard are requested, risk-assessed, approved, and time-boxed.",
+    },
+    {
+        "slot_id": "enforcement",
+        "heading": "Enforcement and Verification",
+        "instruction": "Describe how compliance with the standard is verified and what happens when a system or team is found non-compliant.",
+    },
+    {
+        "slot_id": "review_cycle",
+        "heading": "Review Cycle",
+        "instruction": "Describe how often this standard must be reviewed and updated in response to technology and threat changes.",
+    },
+]
+INCIDENT_RUNBOOK_SLOT_SPECS = [
+    {
+        "slot_id": "purpose",
+        "heading": "Purpose",
+        "instruction": "State what incident class this runbook covers and the outcome of executing it.",
+    },
+    {
+        "slot_id": "activation_triggers",
+        "heading": "Activation Triggers",
+        "instruction": "Define the specific observable conditions that activate this runbook and who has authority to declare an incident.",
+    },
+    {
+        "slot_id": "roles_responsibilities",
+        "heading": "Roles and Responsibilities",
+        "instruction": "Identify the incident response roles (commander, communications, technical leads) and each role's responsibilities during activation.",
+    },
+    {
+        "slot_id": "response_steps",
+        "heading": "Response Steps",
+        "instruction": "Write the time-phased response actions: immediate containment, investigation, and remediation. Each step states the action, owner, and target timeframe.",
+    },
+    {
+        "slot_id": "escalation_paths",
+        "heading": "Escalation Paths",
+        "instruction": "Define the thresholds that trigger escalation, who is engaged at each level, and the maximum time before escalating.",
+    },
+    {
+        "slot_id": "communications",
+        "heading": "Communications",
+        "instruction": "Describe internal notification, customer communication, and regulatory or contractual reporting expectations, including timing.",
+    },
+    {
+        "slot_id": "recovery_verification",
+        "heading": "Recovery and Verification",
+        "instruction": "Describe how containment and recovery are confirmed and who authorizes stand-down.",
+    },
+    {
+        "slot_id": "post_incident",
+        "heading": "Post-Incident Review",
+        "instruction": "Describe the post-incident review, lessons-learned capture, and evidence retention requirements.",
+    },
+]
+
+# Doc-type-aware generation: lanes listed here are live end to end.
+# Slot specs for other Studio lanes don't exist yet — per CLAUDE.md,
+# ask the owner before inventing them.
+DOC_TYPE_SLOT_SPECS: dict[str, list[dict[str, str]]] = {
+    "POLICY": POLICY_SLOT_SPECS,
+    "SOP": SOP_SLOT_SPECS,
+    "PROCEDURE": SOP_SLOT_SPECS,
+    "STANDARD": STANDARD_SLOT_SPECS,
+    "INCIDENT_RUNBOOK": INCIDENT_RUNBOOK_SLOT_SPECS,
+}
+
+# The gap engine's control doc_types vocabulary (frameworks/*.json) uses
+# PLAYBOOK for incident-response documents.
+GAP_DOC_TYPE_ALIAS = {"INCIDENT_RUNBOOK": "PLAYBOOK"}
+
+
+def _normalize_doc_type(doc_type: str | None) -> str:
+    normalized = re.sub(r"[\s/-]+", "_", str(doc_type or "POLICY").strip().upper())
+    return normalized or "POLICY"
+
+
+def _slot_specs_for(doc_type: str | None) -> list[dict[str, str]]:
+    return DOC_TYPE_SLOT_SPECS.get(_normalize_doc_type(doc_type), POLICY_SLOT_SPECS)
+
+
+def _required_slots_for(doc_type: str | None) -> list[str]:
+    return [spec["slot_id"] for spec in _slot_specs_for(doc_type)]
+
+
 SECTION_CONTENT_LIMIT = 12000
 
 
@@ -312,7 +468,12 @@ ANTHROPIC_MODEL = _resolve_model()  # valid current model id; stale ids 404
 # creative/narrative prose on the stronger tier. Both env-overridable.
 STRUCTURAL_MODEL = _resolve_structural_model()
 CREATIVE_MODEL = _resolve_creative_model()
-_CREATIVE_SLOT_IDS = {"purpose", "scope", "policy_statement", "procedures", "exceptions"}
+_CREATIVE_SLOT_IDS = {
+    "purpose", "scope", "policy_statement", "procedures", "exceptions",
+    # long-form slots in the SOP / Standard / Incident Runbook lanes
+    "procedure_steps", "escalation", "requirements",
+    "activation_triggers", "response_steps", "escalation_paths",
+}
 
 
 def _model_for_slot(slot_id: str) -> str:
@@ -1705,7 +1866,8 @@ def _identify_covered_controls(
     a returned ID is only kept if it is in the candidate set for this
     doc_type + frameworks combination.
     """
-    candidates = get_required_controls(frameworks, doc_type)
+    normalized_type = _normalize_doc_type(doc_type)
+    candidates = get_required_controls(frameworks, GAP_DOC_TYPE_ALIAS.get(normalized_type, normalized_type))
     if not candidates:
         return []
 
@@ -1854,7 +2016,9 @@ def _validate_policy_metadata(
     }
 
 
-def _validate_generated_section(section: dict[str, Any], *, slot_spec: dict[str, str]) -> dict[str, Any]:
+def _validate_generated_section(
+    section: dict[str, Any], *, slot_spec: dict[str, str], sort_order: int
+) -> dict[str, Any]:
     slot_id = str(section.get("slot_id") or slot_spec["slot_id"]).strip()
     heading = str(section.get("heading") or section.get("title") or slot_spec["heading"]).strip()
     content = str(section.get("content") or section.get("body") or "").strip()
@@ -1872,7 +2036,7 @@ def _validate_generated_section(section: dict[str, Any], *, slot_spec: dict[str,
         "slot_id": slot_id,
         "heading": heading,
         "content": content,
-        "sort_order": POLICY_REQUIRED_SLOTS.index(slot_id) + 1,
+        "sort_order": sort_order,
         "source_origin": "ai_generated",
     }
 
@@ -1928,15 +2092,21 @@ def _build_policy_payload_from_sections(
         "section_errors": section_errors or [],
     }
 
-    for slot_spec in POLICY_SLOT_SPECS:
+    for slot_spec in _slot_specs_for(metadata.get("document_type")):
         payload[slot_spec["slot_id"]] = section_map.get(slot_spec["slot_id"], {}).get("content", "")
     return payload
+
+
+def _doc_type_from_policy_data(policy_data: dict[str, Any]) -> str:
+    meta = policy_data.get("metadata") if isinstance(policy_data.get("metadata"), dict) else {}
+    return str(policy_data.get("doc_type") or meta.get("document_type") or "POLICY")
 
 
 def _ensure_required_slots(policy_data: dict[str, Any]) -> list[str]:
     sections = policy_data.get("sections") if isinstance(policy_data.get("sections"), list) else []
     present = {str(section.get("slot_id") or "").strip() for section in sections if isinstance(section, dict)}
-    missing = [slot for slot in POLICY_REQUIRED_SLOTS if slot not in present]
+    required = _required_slots_for(_doc_type_from_policy_data(policy_data))
+    missing = [slot for slot in required if slot not in present]
     return missing
 
 
@@ -1958,7 +2128,8 @@ def _merge_sections_from_top_level(policy_data: dict[str, Any]) -> dict[str, Any
             if slot_id:
                 section_map[slot_id] = dict(section)
 
-    for index, spec in enumerate(POLICY_SLOT_SPECS, start=1):
+    doc_specs = _slot_specs_for(_doc_type_from_policy_data(policy_data))
+    for index, spec in enumerate(doc_specs, start=1):
         top_level_value = policy_data.get(spec["slot_id"])
         if isinstance(top_level_value, str) and top_level_value.strip():
             section_map[spec["slot_id"]] = {
@@ -1973,7 +2144,7 @@ def _merge_sections_from_top_level(policy_data: dict[str, Any]) -> dict[str, Any
 
     ordered_sections = [
         section_map[spec["slot_id"]]
-        for spec in POLICY_SLOT_SPECS
+        for spec in doc_specs
         if spec["slot_id"] in section_map
     ]
     merged = dict(policy_data)
@@ -2052,6 +2223,8 @@ async def _generate_policy_data(
         organization_hint=organization_hint,
         normalized_frameworks=normalized_frameworks,
     )
+    # The requested lane decides slot structure — never the model's guess.
+    metadata["document_type"] = _normalize_doc_type(request.doc_type)
 
     draft_record = save_policy_draft(
         tenant_id=tenant_id,
@@ -2072,7 +2245,8 @@ async def _generate_policy_data(
     sections: list[dict[str, Any]] = []
     section_errors: list[dict[str, str]] = []
 
-    for slot_spec in POLICY_SLOT_SPECS:
+    doc_slot_specs = _slot_specs_for(request.doc_type)
+    for slot_index, slot_spec in enumerate(doc_slot_specs, start=1):
         try:
             slot_id = slot_spec["slot_id"]
             raw_section = None
@@ -2080,7 +2254,7 @@ async def _generate_policy_data(
             for attempt_max_tokens in (_section_token_budget(slot_id), _SECTION_RETRY_MAX_TOKENS):
                 try:
                     raw_section = _call_model_json_object(
-                        system_prompt="You are Midnight's policy section generator. Return JSON only for one section.",
+                        system_prompt="You are Midnight's compliance document section generator. Return JSON only for one section.",
                         user_prompt=_build_section_prompt(
                             request,
                             metadata=metadata,
@@ -2101,7 +2275,7 @@ async def _generate_policy_data(
                     truncation_exc = exc
             if raw_section is None:
                 raise truncation_exc
-            section = _validate_generated_section(raw_section, slot_spec=slot_spec)
+            section = _validate_generated_section(raw_section, slot_spec=slot_spec, sort_order=slot_index)
             sections.append(section)
             save_policy_draft(
                 tenant_id=tenant_id,

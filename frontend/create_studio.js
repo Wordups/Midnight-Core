@@ -70,6 +70,11 @@ const QUERY_TYPE_TO_LANE = Object.fromEntries(
   Object.entries(WORKFLOW_CONFIG).map(([lane, config]) => [config.queryType, lane]),
 );
 
+// Lanes wired to the backend generation pipeline end to end. Everything
+// else is visibly in development — no dead-end flows shown to buyers.
+const LIVE_LANES = new Set(['POLICY', 'SOP', 'STANDARD', 'INCIDENT_RUNBOOK']);
+const IN_DEV_MESSAGE = 'This lane is in development. Policy, SOP, Standard, and Incident Runbook generate documents today.';
+
 let workflowSession = null;
 let workflowState = {
   lane: 'POLICY',
@@ -274,7 +279,11 @@ function renderRightPanel() {
 
 function renderMainStep() {
   const main = document.getElementById('wf-main-content');
+  const devBanner = LIVE_LANES.has(workflowState.lane)
+    ? ''
+    : `<div class="wf-card" style="border-color:#7a5b1f;background:rgba(232,163,61,0.08);margin-bottom:16px;"><strong>In development.</strong> ${IN_DEV_MESSAGE}</div>`;
   main.innerHTML = `
+    ${devBanner}
     ${renderMetadataStep()}
     ${renderContentStep()}
     ${renderFrameworksStep()}
@@ -393,16 +402,19 @@ function renderExportStep() {
           <div class="wf-panel-kicker">Step 6 · Export</div>
           <h3>Export path</h3>
           <div class="wf-export-grid">
-            ${config.exportOptions.map((name) => `
+            ${config.exportOptions.map((name) => {
+              const live = LIVE_LANES.has(workflowState.lane) && name === 'Word (.docx)';
+              return `
               <div class="wf-card wf-export-card">
                 <div>
-                  <div class="wf-export-badge">${workflowState.previewData ? 'Ready path' : 'Queued path'}</div>
+                  <div class="wf-export-badge">${live ? (workflowState.previewData ? 'Ready path' : 'Queued path') : 'In development'}</div>
                   <h4 style="margin-top:16px;">${name}</h4>
-                  <p>${workflowState.lane === 'POLICY' ? 'This export will be rendered from the tenant-owned draft after preview/generation completes.' : 'This lane now has a dedicated export workspace shell and will stay on this route as export capabilities deepen.'}</p>
+                  <p>${live ? 'This export will be rendered from the tenant-owned draft after preview/generation completes.' : 'This export format is in development and does not generate output yet.'}</p>
                 </div>
-                <button type="button" class="wf-btn${workflowState.lane === 'POLICY' ? ' wf-btn-primary' : ''}" ${workflowState.lane === 'POLICY' ? 'onclick="runPolicyGenerate()"' : 'onclick="workflowToast(\'Export flow for this lane is staged in the standalone workspace.\')"'} ${workflowState.lane === 'POLICY' && !workflowState.previewData ? 'disabled' : ''}>${workflowState.lane === 'POLICY' ? 'Generate Export' : 'Export Path'}</button>
+                <button type="button" class="wf-btn${live ? ' wf-btn-primary' : ''}" ${live ? 'onclick="runPolicyGenerate()"' : `onclick="workflowToast('${IN_DEV_MESSAGE.replace(/'/g, "\\'")}')"`} ${live && !workflowState.previewData ? 'disabled' : ''}>${live ? 'Generate Export' : 'In Development'}</button>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
         </div>
       </div>
@@ -460,8 +472,8 @@ function buildPolicyPreviewText(policyData) {
 }
 
 async function runPolicyPreview() {
-  if (workflowState.lane !== 'POLICY') {
-    workflowToast('Preview generation is currently active for the Policy lane first.', true);
+  if (!LIVE_LANES.has(workflowState.lane)) {
+    workflowToast(IN_DEV_MESSAGE, true);
     return;
   }
 
@@ -479,7 +491,7 @@ async function runPolicyPreview() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         policy_name: name,
-        doc_type: 'POLICY',
+        doc_type: workflowState.lane,
         industry: getFieldValue('industry') || 'Healthcare',
         frameworks: getSelectedFrameworks(),
         owner: getFieldValue('owner') || workflowSession.display_name || 'Compliance Team',
@@ -515,8 +527,8 @@ async function runPolicyPreview() {
 }
 
 async function runPolicyGenerate() {
-  if (workflowState.lane !== 'POLICY') {
-    workflowToast('Export generation is currently staged for non-policy lanes.', true);
+  if (!LIVE_LANES.has(workflowState.lane)) {
+    workflowToast(IN_DEV_MESSAGE, true);
     return;
   }
   if (!workflowState.previewData) {

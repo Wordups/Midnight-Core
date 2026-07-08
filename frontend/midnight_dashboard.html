@@ -3358,19 +3358,27 @@ function handleCreateLaneNavigation(event, key) {
   openCreateWorkflowRoute(key);
 }
 
+// Lanes wired to the backend generation pipeline end to end. Must match
+// LIVE_LANES in create_studio.js.
+const LIVE_CREATE_LANES = new Set(['POLICY', 'SOP', 'STANDARD', 'INCIDENT_RUNBOOK']);
+
 function renderCreateDocTypeSelector() {
   const selector = document.getElementById('cp-type-selector');
   if (!selector) return;
-  selector.innerHTML = CREATE_DOC_TYPES.map(type => `
-    <a class="studio-type-card${selectedCreateDocType === type.key ? ' active' : ''}" href="${type.route}" onclick="handleCreateLaneNavigation(event, '${type.key}')">
+  selector.innerHTML = CREATE_DOC_TYPES.map(type => {
+    const live = LIVE_CREATE_LANES.has(type.key);
+    const devBadge = live ? '' : '<span class="studio-type-tag" style="background:rgba(232,163,61,0.14);color:#e8a33d;border:1px solid rgba(232,163,61,0.35);">In development</span>';
+    return `
+    <a class="studio-type-card${selectedCreateDocType === type.key ? ' active' : ''}${live ? '' : ' in-dev'}" href="${type.route}" onclick="handleCreateLaneNavigation(event, '${type.key}')"${live ? '' : ' style="opacity:0.72;"'}>
       <div class="studio-type-head">
         <span class="studio-type-icon">${type.icon}</span>
-        <span class="studio-type-tag">${type.tag}</span>
+        ${devBadge || `<span class="studio-type-tag">${type.tag}</span>`}
       </div>
       <div class="studio-type-name">${type.name}</div>
       <div class="studio-type-desc">${type.description}</div>
     </a>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function resetCreateStudio() {

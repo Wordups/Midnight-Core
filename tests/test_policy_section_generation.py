@@ -24,6 +24,7 @@ class PolicySectionGenerationTests(unittest.TestCase):
                 "heading": "Purpose",
                 "instruction": "Explain the purpose.",
             },
+            sort_order=1,
         )
         self.assertEqual(section["slot_id"], "purpose")
         self.assertEqual(section["sort_order"], 1)
@@ -41,6 +42,7 @@ class PolicySectionGenerationTests(unittest.TestCase):
                     "heading": "Purpose",
                     "instruction": "Explain the purpose.",
                 },
+                sort_order=1,
             )
 
     def test_build_policy_payload_marks_missing_required_slots(self):
