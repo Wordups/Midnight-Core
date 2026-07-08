@@ -6,13 +6,20 @@ from __future__ import annotations
 
 from typing import Any
 
+# Load .env before ANY backend module import: several modules (e.g.
+# backend/storage/file_store.py) read os.getenv at import time. In prod
+# (ECS) this is a no-op — real env vars are injected and load_dotenv
+# does not override existing values.
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from config import settings
 from logging_config import configure_logging
 import logging
 
 configure_logging(level=settings.LOG_LEVEL)
 
-from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
@@ -41,8 +48,6 @@ from backend.storage.file_store import (
 from errors import register_exception_handlers
 from health import router as health_router
 from middleware.request_id import RequestIdMiddleware
-
-load_dotenv()
 
 app = FastAPI(title="Midnight Core", version="2.0.0")
 

@@ -24,8 +24,10 @@ except ImportError:  # pragma: no cover - handled at runtime when dependency is 
 load_dotenv()
 
 
+from backend.llm.models import resolve_model
+
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL   = "claude-opus-4-5"
+ANTHROPIC_MODEL   = resolve_model()
 
 
 def _get_anthropic_client():

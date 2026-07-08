@@ -31,14 +31,14 @@ def _filter_covered_ids(raw_ids, candidate_ids):
 class TestCoveredIdValidation(unittest.TestCase):
 
     def test_valid_ids_pass_through(self):
-        candidates = ["HIPAA-164.308(a)(1)", "HIPAA-164.312(a)(1)", "PCI-7.1"]
-        raw = ["HIPAA-164.308(a)(1)", "PCI-7.1"]
+        candidates = ["HIPAA-164.308(a)(1)", "HIPAA-164.312(a)(1)", "PCI-7.2"]
+        raw = ["HIPAA-164.308(a)(1)", "PCI-7.2"]
         result = _filter_covered_ids(raw, candidates)
-        self.assertEqual(sorted(result), sorted(["HIPAA-164.308(a)(1)", "PCI-7.1"]))
+        self.assertEqual(sorted(result), sorted(["HIPAA-164.308(a)(1)", "PCI-7.2"]))
 
     def test_unknown_ids_are_dropped(self):
-        candidates = ["HIPAA-164.308(a)(1)", "PCI-7.1"]
-        raw = ["HIPAA-164.308(a)(1)", "FAKE-999", "NOT-A-CONTROL", "PCI-7.1"]
+        candidates = ["HIPAA-164.308(a)(1)", "PCI-7.2"]
+        raw = ["HIPAA-164.308(a)(1)", "FAKE-999", "NOT-A-CONTROL", "PCI-7.2"]
         result = _filter_covered_ids(raw, candidates)
         self.assertNotIn("FAKE-999", result)
         self.assertNotIn("NOT-A-CONTROL", result)

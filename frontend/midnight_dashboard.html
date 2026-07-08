@@ -2544,6 +2544,30 @@ function handleTopbarBtn() {
 function setTab(el) {
   el.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+  const view = el.closest('.view');
+  const list = view ? view.querySelector('#overview-doc-list, #library-doc-list') : null;
+  if (!list || !Array.isArray(window._docItems)) return;
+  const label = el.textContent.trim().toLowerCase();
+  let items = window._docItems;
+  if (label === 'ready') items = items.filter(i => String(i.status || '').toLowerCase() === 'ready');
+  else if (label === 'in progress') items = items.filter(i => String(i.status || '').toLowerCase() !== 'ready');
+  renderDocList(list.id, items);
+}
+
+// Export Studio interactive preview: backend not wired yet — honest stubs so
+// the buttons don't throw ReferenceError.
+function openInteractivePreview() {
+  showToast('Interactive preview is staged — not wired to a backend yet.', true);
+}
+function openInteractivePublicLink() {
+  showToast('Public share links are staged — not wired to a backend yet.', true);
+}
+function copyInteractivePublicLink() {
+  showToast('Public share links are staged — not wired to a backend yet.', true);
+}
+function closeInteractivePreview() {
+  const m = document.getElementById('interactive-preview-modal');
+  if (m) m.style.display = 'none';
 }
 
 // ── BIRD EYE REVIEW ─────────────────────────────────────────────────────────
@@ -5071,9 +5095,11 @@ async function downloadPdf(path, filename) {
 }
 
 async function apiFetch(path) {
-  // Silent fetch — don't redirect on 401, just return null (used for background dashboard loads)
+  // Background dashboard loads: tolerate errors, but an expired session
+  // should send the user to login instead of silently blanking the app.
   try {
     const res = await fetch(API + path, { credentials: 'include' });
+    if (res.status === 401) { window.location.href = '/login.html'; return null; }
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -5113,8 +5139,9 @@ async function loadSummary() {
 async function loadDocuments() {
   const data = await apiFetch('/dashboard/documents');
   if (!data) return;
-  renderDocList('overview-doc-list', data.items || []);
-  renderDocList('library-doc-list', data.items || []);
+  window._docItems = data.items || [];
+  renderDocList('overview-doc-list', window._docItems);
+  renderDocList('library-doc-list', window._docItems);
 }
 
 async function loadActivity() {

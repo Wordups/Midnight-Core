@@ -16,6 +16,7 @@ import logging
 import mimetypes
 import os
 import re
+import uuid
 
 import requests
 
@@ -398,7 +399,8 @@ def save_generated_document(
         )
         policy_id = policy["id"]
 
-    document_id = os.urandom(6).hex()
+    # documents.id is uuid in Postgres; a short hex id fails with 22P02.
+    document_id = str(uuid.uuid4())
     stored_name = f"{document_id}-{_slugify(filename)}"
     storage_path = f"{tenant_id}/{policy_id}/{stored_name}"
     _upload_storage_object(storage_path=storage_path, file_bytes=file_bytes, content_type=content_type)

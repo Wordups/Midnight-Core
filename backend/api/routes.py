@@ -317,6 +317,16 @@ _CREATIVE_SLOT_IDS = {"purpose", "scope", "policy_statement", "procedures", "exc
 
 def _model_for_slot(slot_id: str) -> str:
     return CREATIVE_MODEL if slot_id in _CREATIVE_SLOT_IDS else STRUCTURAL_MODEL
+
+
+# Creative slots produce long-form prose (procedures especially) and
+# truncate at the old flat 1100 cap, which invalidates the JSON and
+# leaves the draft missing a required section.
+_SECTION_RETRY_MAX_TOKENS = 3200
+
+
+def _section_token_budget(slot_id: str) -> int:
+    return 2400 if slot_id in _CREATIVE_SLOT_IDS else 1100
 SUPPORTED_EXTENSIONS = {".docx", ".txt", ".md"}
 SUPPORTED_TEMPLATE_EXTENSIONS = {
     ".png",
@@ -2064,21 +2074,33 @@ async def _generate_policy_data(
 
     for slot_spec in POLICY_SLOT_SPECS:
         try:
-            raw_section = _call_model_json_object(
-                system_prompt="You are Midnight's policy section generator. Return JSON only for one section.",
-                user_prompt=_build_section_prompt(
-                    request,
-                    metadata=metadata,
-                    slot_spec=slot_spec,
-                    normalized_frameworks=normalized_frameworks,
-                    fw_context=fw_context,
-                    mapping_rules=mapping_rules,
-                ),
-                flow=f"create_policy_section_{slot_spec['slot_id']}",
-                context={"policy_name": request.policy_name, "slot_id": slot_spec["slot_id"]},
-                max_tokens=1100,
-                model=_model_for_slot(slot_spec["slot_id"]),
-            )
+            slot_id = slot_spec["slot_id"]
+            raw_section = None
+            truncation_exc: HTTPException | None = None
+            for attempt_max_tokens in (_section_token_budget(slot_id), _SECTION_RETRY_MAX_TOKENS):
+                try:
+                    raw_section = _call_model_json_object(
+                        system_prompt="You are Midnight's policy section generator. Return JSON only for one section.",
+                        user_prompt=_build_section_prompt(
+                            request,
+                            metadata=metadata,
+                            slot_spec=slot_spec,
+                            normalized_frameworks=normalized_frameworks,
+                            fw_context=fw_context,
+                            mapping_rules=mapping_rules,
+                        ),
+                        flow=f"create_policy_section_{slot_id}",
+                        context={"policy_name": request.policy_name, "slot_id": slot_id},
+                        max_tokens=attempt_max_tokens,
+                        model=_model_for_slot(slot_id),
+                    )
+                    break
+                except HTTPException as exc:
+                    if "truncated" not in str(exc.detail).lower():
+                        raise
+                    truncation_exc = exc
+            if raw_section is None:
+                raise truncation_exc
             section = _validate_generated_section(raw_section, slot_spec=slot_spec)
             sections.append(section)
             save_policy_draft(
