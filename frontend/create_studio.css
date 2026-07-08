@@ -1,20 +1,21 @@
+/* White/blue system (2026-07-08 owner redesign) — matches the landing tokens. */
 :root {
-  color-scheme: dark;
-  --wf-bg: #071019;
-  --wf-surface: #0d1722;
-  --wf-surface-alt: #101d2b;
-  --wf-surface-elevated: #122131;
-  --wf-border: rgba(85, 214, 255, 0.14);
-  --wf-border-strong: rgba(85, 214, 255, 0.24);
-  --wf-text: rgba(255, 255, 255, 0.94);
-  --wf-text-soft: rgba(255, 255, 255, 0.78);
-  --wf-text-faint: rgba(255, 255, 255, 0.54);
-  --wf-accent: #00d4f5;
-  --wf-accent-strong: #1de7ff;
-  --wf-success: #3be28e;
-  --wf-warning: #ffbd4a;
-  --wf-danger: #ff6b6b;
-  --wf-shadow: 0 30px 80px rgba(0, 0, 0, 0.32);
+  color-scheme: light;
+  --wf-bg: #F6F8FB;
+  --wf-surface: #FFFFFF;
+  --wf-surface-alt: #F1F5FA;
+  --wf-surface-elevated: #FFFFFF;
+  --wf-border: rgba(16, 40, 80, 0.12);
+  --wf-border-strong: rgba(37, 99, 235, 0.35);
+  --wf-text: #101828;
+  --wf-text-soft: rgba(16, 24, 40, 0.76);
+  --wf-text-faint: rgba(16, 24, 40, 0.52);
+  --wf-accent: #2563EB;
+  --wf-accent-strong: #1D4ED8;
+  --wf-success: #12805C;
+  --wf-warning: #B45309;
+  --wf-danger: #B42318;
+  --wf-shadow: 0 24px 60px rgba(16, 40, 80, 0.10);
   --wf-radius-lg: 22px;
   --wf-radius-md: 16px;
   --wf-radius-sm: 12px;
@@ -26,8 +27,7 @@ html, body { margin: 0; min-height: 100%; background: var(--wf-bg); color: var(-
 body {
   font-family: Inter, Arial, sans-serif;
   background:
-    radial-gradient(circle at top, rgba(0, 212, 245, 0.07), transparent 26%),
-    linear-gradient(180deg, rgba(255,255,255,0.015), transparent 20%),
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.06), transparent 26%),
     var(--wf-bg);
 }
 
@@ -47,7 +47,7 @@ body {
   gap: 20px;
   padding: 18px 28px;
   border-bottom: 1px solid var(--wf-border);
-  background: rgba(7, 16, 25, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(18px);
 }
 
@@ -86,7 +86,7 @@ body {
   border-radius: 999px;
   padding: 0 14px;
   border: 1px solid var(--wf-border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(16, 40, 80, 0.02);
   color: var(--wf-text-soft);
   font-size: 13px;
 }
@@ -104,7 +104,7 @@ body {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--wf-accent), #0973ff);
-  color: #031018;
+  color: #FFFFFF;
   font-weight: 700;
   font-size: 12px;
 }
@@ -114,7 +114,7 @@ body {
   padding: 0 16px;
   border-radius: 12px;
   border: 1px solid var(--wf-border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(16, 40, 80, 0.02);
   color: var(--wf-text);
   font-weight: 600;
   font-size: 14px;
@@ -124,7 +124,7 @@ body {
 
 .wf-btn:hover {
   border-color: var(--wf-border-strong);
-  background: rgba(255,255,255,0.04);
+  background: rgba(16, 40, 80, 0.04);
 }
 
 .wf-btn:disabled {
@@ -135,7 +135,7 @@ body {
 .wf-btn-primary {
   border-color: transparent;
   background: linear-gradient(135deg, var(--wf-accent), var(--wf-accent-strong));
-  color: #031019;
+  color: #FFFFFF;
 }
 
 .wf-shell {
@@ -149,7 +149,7 @@ body {
 .wf-sidebar,
 .wf-main-card,
 .wf-right-panel {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 22%), var(--wf-surface);
+  background: linear-gradient(180deg, rgba(16, 40, 80, 0.02), transparent 22%), var(--wf-surface);
   border: 1px solid var(--wf-border);
   border-radius: var(--wf-radius-lg);
   box-shadow: var(--wf-shadow);
@@ -210,7 +210,7 @@ body {
 
 .wf-step-btn:hover,
 .wf-step-btn.active {
-  background: rgba(255,255,255,0.04);
+  background: rgba(16, 40, 80, 0.04);
   border-color: var(--wf-border);
   color: var(--wf-text);
 }
@@ -331,7 +331,7 @@ body {
   width: 100%;
   border: 1px solid var(--wf-border);
   border-radius: 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgba(16, 40, 80, 0.02);
   color: var(--wf-text);
   font: inherit;
   padding: 13px 14px;
@@ -343,7 +343,7 @@ body {
 .wf-select:focus,
 .wf-textarea:focus {
   border-color: var(--wf-border-strong);
-  background: rgba(255,255,255,0.03);
+  background: rgba(16, 40, 80, 0.03);
 }
 
 .wf-textarea {
@@ -362,7 +362,7 @@ body {
   padding: 0 16px;
   border-radius: 999px;
   border: 1px solid var(--wf-border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(16, 40, 80, 0.02);
   color: var(--wf-text-soft);
   cursor: pointer;
   font: inherit;
@@ -370,7 +370,7 @@ body {
 }
 
 .wf-pill.active {
-  color: #031019;
+  color: #FFFFFF;
   background: linear-gradient(135deg, var(--wf-accent), var(--wf-accent-strong));
   border-color: transparent;
 }
@@ -386,7 +386,7 @@ body {
 .wf-review-surface {
   min-height: 320px;
   white-space: pre-wrap;
-  background: rgba(255,255,255,0.02);
+  background: rgba(16, 40, 80, 0.02);
   border: 1px solid var(--wf-border);
   border-radius: var(--wf-radius-md);
   padding: 22px;
@@ -420,7 +420,7 @@ body {
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(16, 40, 80, 0.04);
   border: 1px solid var(--wf-border);
   color: var(--wf-text-soft);
   font-size: 12px;
@@ -435,7 +435,7 @@ body {
 .wf-status-item,
 .wf-stat-card {
   border: 1px solid var(--wf-border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(16, 40, 80, 0.02);
   border-radius: var(--wf-radius-md);
   padding: 14px 16px;
 }
@@ -475,7 +475,7 @@ body {
   border-radius: 22px;
   padding: 30px 32px;
   border: 1px solid var(--wf-border);
-  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 28%), var(--wf-surface);
+  background: linear-gradient(180deg, rgba(16, 40, 80, 0.04), transparent 28%), var(--wf-surface);
   box-shadow: var(--wf-shadow);
 }
 
@@ -515,7 +515,7 @@ body {
 }
 
 .wf-toast.error {
-  border-color: rgba(255, 107, 107, 0.4);
+  border-color: rgba(180, 35, 24, 0.4);
 }
 
 @media (max-width: 1280px) {
