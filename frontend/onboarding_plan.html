@@ -5,188 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Midnight Onboarding</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #05070d;
-      --panel: rgba(14, 20, 33, 0.88);
-      --panel-strong: rgba(21, 31, 51, 0.96);
-      --line: rgba(148, 163, 184, 0.20);
-      --text: #eef4ff;
-      --muted: #9aa8bd;
-      --accent: #8bd3ff;
-      --accent-2: #8fffcb;
-      --warn: #ffd166;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at 20% 0%, rgba(53, 108, 190, 0.22), transparent 34rem),
-        radial-gradient(circle at 84% 12%, rgba(55, 188, 139, 0.16), transparent 32rem),
-        var(--bg);
-      color: var(--text);
-    }
-    main {
-      width: min(1120px, calc(100% - 40px));
-      margin: 0 auto;
-      padding: 56px 0;
-    }
-    .eyebrow {
-      color: var(--accent-2);
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      font-size: 12px;
-      font-weight: 800;
-    }
-    h1 {
-      margin: 14px 0 12px;
-      font-size: clamp(38px, 6vw, 76px);
-      line-height: 0.94;
-      letter-spacing: -0.06em;
-    }
-    .subhead {
-      max-width: 760px;
-      color: var(--muted);
-      font-size: 18px;
-      line-height: 1.7;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 22px;
-      margin-top: 34px;
-    }
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background: var(--panel);
-      box-shadow: 0 24px 80px rgba(0,0,0,0.36);
-      padding: 26px;
-    }
-    .card strong { color: var(--text); }
-    .steps {
-      display: grid;
-      gap: 14px;
-      margin-top: 18px;
-    }
-    .step {
-      display: grid;
-      grid-template-columns: 42px 1fr;
-      gap: 14px;
-      padding: 16px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255,255,255,0.035);
-    }
-    .num {
-      display: grid;
-      place-items: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      background: rgba(139,211,255,0.12);
-      color: var(--accent);
-      font-weight: 900;
-    }
-    .step h2 { margin: 0 0 6px; font-size: 17px; }
-    .step p { margin: 0; color: var(--muted); line-height: 1.55; }
-    .workspace {
-      background: var(--panel-strong);
-      position: sticky;
-      top: 24px;
-    }
-    .badge {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,209,102,0.35);
-      color: var(--warn);
-      background: rgba(255,209,102,0.08);
-      font-weight: 800;
-      font-size: 12px;
-      letter-spacing: 0.08em;
-    }
-    .meta {
-      display: grid;
-      gap: 12px;
-      margin: 22px 0;
-      color: var(--muted);
-    }
-    .meta div {
-      display: flex;
-      justify-content: space-between;
-      gap: 18px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--line);
-    }
-    .actions { display: grid; gap: 12px; margin-top: 20px; }
-    button, a.button {
-      width: 100%;
-      border: 0;
-      border-radius: 16px;
-      padding: 14px 18px;
-      font-weight: 900;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-    }
-    .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #021018; }
-    .secondary { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--line); }
-    .error { color: #ff9aa8; margin-top: 12px; min-height: 20px; }
-    @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } .workspace { position: static; } }
+    :root { color-scheme: light; --bg:#F6F8FB; --panel:#FFFFFF; --panel2:#F1F5FA; --line:rgba(16,40,80,.12); --text:#101828; --muted:#5A6577; --accent:#2563EB; --accent2:#12805C; --danger:#B42318; }
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 50% 0%,rgba(37,99,235,.06),transparent 34rem),var(--bg);color:var(--text)}
+    main{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:52px 0}.eyebrow{color:var(--accent2);letter-spacing:.18em;text-transform:uppercase;font-size:12px;font-weight:900}h1{margin:14px 0 12px;font-size:clamp(38px,6vw,72px);line-height:.94;letter-spacing:-.06em}.subhead{max-width:780px;color:var(--muted);font-size:18px;line-height:1.7}.grid{display:grid;grid-template-columns:1.08fr .92fr;gap:22px;margin-top:32px}.card{border:1px solid var(--line);border-radius:24px;background:var(--panel);box-shadow:0 24px 60px rgba(16,40,80,.10);padding:26px}.workspace{background:var(--panel2);position:sticky;top:24px}.question{margin-top:22px;padding-top:22px;border-top:1px solid var(--line)}.question h2{margin:0 0 12px;font-size:18px}.choices{display:grid;gap:10px}.choice{display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid var(--line);border-radius:16px;background:rgba(16,40,80,.03);cursor:pointer;color:var(--text)}.choice input{accent-color:#2563EB}.choice:hover{border-color:rgba(37,99,235,.45)}.account{display:none;margin-top:18px;padding:18px;border:1px solid rgba(37,99,235,.3);border-radius:18px;background:rgba(37,99,235,.06)}.account.active{display:block}.field{display:grid;gap:6px;margin-top:12px}.field label{font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.08em}.field input{width:100%;border:1px solid var(--line);border-radius:14px;background:#FFFFFF;color:var(--text);padding:13px 14px;font:inherit}.meta{display:grid;gap:12px;margin:20px 0;color:var(--muted)}.meta div{display:flex;justify-content:space-between;gap:18px;padding-bottom:12px;border-bottom:1px solid var(--line)}.meta strong{color:var(--text);text-align:right}.badge{display:inline-flex;padding:8px 12px;border-radius:999px;border:1px solid rgba(18,128,92,.35);color:var(--accent2);background:rgba(18,128,92,.08);font-weight:900;font-size:12px;letter-spacing:.08em}.actions{display:grid;gap:12px;margin-top:20px}button{width:100%;border:0;border-radius:16px;padding:14px 18px;font-weight:900;cursor:pointer}.primary{background:var(--accent);color:#fff}.secondary{background:rgba(16,40,80,.04);color:var(--text);border:1px solid var(--line)}.error{color:var(--danger);margin-top:12px;min-height:20px;line-height:1.5}.success{color:var(--accent2)}@media(max-width:840px){.grid{grid-template-columns:1fr}.workspace{position:static}}
   </style>
 </head>
 <body>
   <main>
     <div class="eyebrow">Start onboarding</div>
     <h1>Shape your Midnight workspace.</h1>
-    <p class="subhead">
-      Your trial tenant exists. This step should come before throwing you into the dashboard:
-      choose the starting package, confirm the workspace profile, then continue with a clean setup path.
-    </p>
+    <p class="subhead">Start Now goes here — not to a separate signup page. Pick your launch path, create or confirm your workspace, and enter the dashboard with onboarding state already set.</p>
 
     <section class="grid">
-      <div class="card">
-        <div class="eyebrow">Setup path</div>
-        <div class="steps">
-          <div class="step">
-            <div class="num">1</div>
-            <div>
-              <h2>Confirm trial workspace</h2>
-              <p>We created your tenant and owner profile. Confirm the org details before loading dashboard modules.</p>
-            </div>
+      <form class="card" id="onboarding-form">
+        <div class="eyebrow">3-question launch setup</div>
+
+        <section class="question">
+          <h2>1. What framework are you starting with?</h2>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" name="frameworks" value="soc2"> SOC 2</label>
+            <label class="choice"><input type="checkbox" name="frameworks" value="hipaa"> HIPAA</label>
+            <label class="choice"><input type="checkbox" name="frameworks" value="iso27001"> ISO 27001</label>
+            <label class="choice"><input type="checkbox" name="frameworks" value="nist_csf"> NIST CSF</label>
+            <label class="choice"><input type="checkbox" name="frameworks" value="ai_governance"> AI Governance readiness</label>
           </div>
-          <div class="step">
-            <div class="num">2</div>
-            <div>
-              <h2>Select your launch motion</h2>
-              <p>Start with GRC analyst mode, AI governance readiness, or evidence/upload review. Full guided choices come next.</p>
-            </div>
+        </section>
+
+        <section class="question">
+          <h2>2. What are you trying to accomplish first?</h2>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="primary_objective" value="audit_prep"> Audit prep</label>
+            <label class="choice"><input type="radio" name="primary_objective" value="policy_cleanup"> Policy cleanup</label>
+            <label class="choice"><input type="radio" name="primary_objective" value="evidence_organization"> Evidence organization</label>
+            <label class="choice"><input type="radio" name="primary_objective" value="ai_governance_readiness"> AI governance readiness</label>
+            <label class="choice"><input type="radio" name="primary_objective" value="grc_program_build"> Build a GRC program from scratch</label>
           </div>
-          <div class="step">
-            <div class="num">3</div>
-            <div>
-              <h2>Enter the dashboard intentionally</h2>
-              <p>No surprise drop-in. Dashboard access should happen after onboarding state is explicit.</p>
-            </div>
+        </section>
+
+        <section class="question">
+          <h2>3. How do you want to start?</h2>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="build_method" value="upload_existing_docs"> Upload existing documents</label>
+            <label class="choice"><input type="radio" name="build_method" value="start_from_templates"> Start from templates</label>
+            <label class="choice"><input type="radio" name="build_method" value="guided_review"> Guided review</label>
           </div>
-        </div>
-      </div>
+        </section>
+
+        <section class="account" id="account-fields">
+          <div class="eyebrow">Create your workspace</div>
+          <div class="field"><label for="signup-name">Name</label><input id="signup-name" autocomplete="name" placeholder="Your name"></div>
+          <div class="field"><label for="signup-email">Email</label><input id="signup-email" autocomplete="email" type="email" placeholder="you@company.com"></div>
+          <div class="field"><label for="signup-password">Password</label><input id="signup-password" autocomplete="new-password" type="password" placeholder="Minimum 8 characters"></div>
+          <div class="field"><label for="signup-company">Company</label><input id="signup-company" autocomplete="organization" placeholder="Organization name"></div>
+        </section>
+      </form>
 
       <aside class="card workspace">
-        <span class="badge">TRIAL</span>
+        <span class="badge" id="auth-badge">CHECKING SESSION</span>
         <div class="meta">
           <div><span>Workspace</span><strong id="org-name">Loading…</strong></div>
           <div><span>Email</span><strong id="user-email">Loading…</strong></div>
           <div><span>Status</span><strong id="access-state">Checking…</strong></div>
         </div>
+        <p class="subhead" style="font-size:14px;line-height:1.6">Authenticated users save directly. New users create the workspace inline after answering the same onboarding questions.</p>
         <div class="actions">
-          <button class="primary" type="button" id="continue-btn">Continue to dashboard →</button>
-          <a class="button secondary" href="/login.html?mode=signup">Back to signup</a>
+          <button class="primary" type="submit" form="onboarding-form" id="continue-btn">Complete onboarding →</button>
+          <button class="secondary" type="button" onclick="window.location.assign('/')">Back to site</button>
         </div>
         <div class="error" id="error"></div>
       </aside>
@@ -196,26 +80,99 @@
   <script>
     const API = window.location.origin;
     const errorEl = document.getElementById('error');
+    let authenticated = false;
 
-    async function loadSession() {
-      const res = await fetch(API + '/auth/session', { credentials: 'include' });
-      const session = await res.json().catch(() => ({}));
-      if (!res.ok || !session.authenticated) {
-        window.location.replace('/login.html?mode=signup');
-        return;
-      }
-      document.getElementById('org-name').textContent = session.organization_name || 'Midnight Workspace';
-      document.getElementById('user-email').textContent = session.email || 'Unknown user';
-      document.getElementById('access-state').textContent = String(session.access_state || 'authorized').replaceAll('_', ' ');
+    function setError(message, ok = false) {
+      errorEl.textContent = message || '';
+      errorEl.classList.toggle('success', ok);
     }
 
-    document.getElementById('continue-btn')?.addEventListener('click', () => {
-      window.location.assign('/midnight_dashboard.html');
+    function selectedPayload() {
+      return {
+        frameworks: [...document.querySelectorAll('input[name="frameworks"]:checked')].map(el => el.value),
+        primary_objective: document.querySelector('input[name="primary_objective"]:checked')?.value || '',
+        build_method: document.querySelector('input[name="build_method"]:checked')?.value || '',
+      };
+    }
+
+    function validateChoices(payload) {
+      if (!payload.frameworks.length) throw new Error('Pick at least one framework.');
+      if (!payload.primary_objective) throw new Error('Pick your first objective.');
+      if (!payload.build_method) throw new Error('Pick how you want to start.');
+    }
+
+    async function loadSession() {
+      try {
+        const res = await fetch(API + '/auth/session', { credentials: 'include' });
+        const session = await res.json().catch(() => ({}));
+        authenticated = !!(res.ok && session.authenticated);
+        document.getElementById('auth-badge').textContent = authenticated ? 'TRIAL' : 'NEW WORKSPACE';
+        document.getElementById('org-name').textContent = authenticated ? (session.organization_name || 'Midnight Workspace') : 'Create your workspace';
+        document.getElementById('user-email').textContent = authenticated ? (session.email || 'Unknown user') : 'Add email below';
+        document.getElementById('access-state').textContent = authenticated ? String(session.access_state || 'authorized').replaceAll('_', ' ') : 'onboarding first';
+        document.getElementById('account-fields').classList.toggle('active', !authenticated);
+      } catch (_) {
+        authenticated = false;
+        document.getElementById('account-fields').classList.add('active');
+        document.getElementById('auth-badge').textContent = 'NEW WORKSPACE';
+        document.getElementById('org-name').textContent = 'Create your workspace';
+        document.getElementById('user-email').textContent = 'Add email below';
+        document.getElementById('access-state').textContent = 'onboarding first';
+      }
+    }
+
+    async function createWorkspaceInline() {
+      const signup = {
+        name: document.getElementById('signup-name').value.trim(),
+        email: document.getElementById('signup-email').value.trim(),
+        password: document.getElementById('signup-password').value,
+        company_name: document.getElementById('signup-company').value.trim(),
+        industry: '',
+        region: '',
+        employee_count: '',
+      };
+      if (!signup.email) throw new Error('Email is required to create your workspace.');
+      if (signup.password.length < 8) throw new Error('Password must be at least 8 characters.');
+      if (!signup.company_name) throw new Error('Company name is required to create your workspace.');
+      const res = await fetch(API + '/auth/signup', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(signup),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || 'Workspace creation failed.');
+      if (body.awaiting_confirmation) throw new Error('Check your email to confirm the account, then return to onboarding.');
+      authenticated = true;
+      return body;
+    }
+
+    async function saveOnboarding(payload) {
+      const res = await fetch(API + '/onboarding/session', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || 'Could not save onboarding.');
+      return body;
+    }
+
+    document.getElementById('onboarding-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const btn = document.getElementById('continue-btn');
+      btn.disabled = true;
+      setError('');
+      try {
+        const payload = selectedPayload();
+        validateChoices(payload);
+        if (!authenticated) await createWorkspaceInline();
+        const saved = await saveOnboarding(payload);
+        setError('Onboarding saved. Opening dashboard…', true);
+        window.location.assign(saved.redirect_to || '/midnight_dashboard.html');
+      } catch (err) {
+        setError(err?.message || 'Could not complete onboarding.');
+      } finally {
+        btn.disabled = false;
+      }
     });
 
-    loadSession().catch((err) => {
-      errorEl.textContent = err?.message || 'Could not load onboarding session.';
-    });
+    loadSession();
   </script>
 </body>
 </html>

@@ -281,7 +281,7 @@ function renderMainStep() {
   const main = document.getElementById('wf-main-content');
   const devBanner = LIVE_LANES.has(workflowState.lane)
     ? ''
-    : `<div class="wf-card" style="border-color:#7a5b1f;background:rgba(232,163,61,0.08);margin-bottom:16px;"><strong>In development.</strong> ${IN_DEV_MESSAGE}</div>`;
+    : `<div class="wf-card" style="border-color:rgba(180,83,9,0.35);background:rgba(180,83,9,0.06);margin-bottom:16px;"><strong>In development.</strong> ${IN_DEV_MESSAGE}</div>`;
   main.innerHTML = `
     ${devBanner}
     ${renderMetadataStep()}
