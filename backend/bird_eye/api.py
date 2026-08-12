@@ -10,6 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 from .db import (
+    TABLE_CHUNKS,
     TABLE_DOCUMENTS,
     TABLE_FINDINGS,
     TABLE_RUNS,
@@ -39,6 +40,44 @@ class PatchFindingBody(BaseModel):
     status: Literal["open", "dismissed", "resolved"]
 
 
+# Registry doc_type per metadata artifact_type; unknowns get the broad
+# POLICY candidate set rather than silently skipping the mapping.
+_INGEST_DOC_TYPE = {
+    "policy": "POLICY",
+    "procedure": "PROCEDURE",
+    "standard": "STANDARD",
+    "runbook": "INCIDENT_RUNBOOK",
+}
+
+
+def _map_controls_at_ingest(tenant_id: str, ingest_result: dict[str, Any]) -> list[str]:
+    """Identify + persist covered controls for a just-ingested document."""
+    # Late imports: routes is a heavy module and importing it at module load
+    # would create an import cycle through main.py's registration order.
+    from backend.api.routes import _identify_covered_controls
+    from backend.core.gap_engine import load_control_registry
+    from backend.storage.file_store import update_policy_covered_controls
+
+    policy_id = ingest_result.get("policy_id")
+    if not policy_id:
+        return []
+    sections = db_select(
+        TABLE_CHUNKS,
+        tenant_id=tenant_id,
+        columns="heading,content",
+        filters={"policy_id": f"eq.{policy_id}"},
+    )
+    if not sections:
+        return []
+    metadata = ingest_result.get("metadata") or {}
+    frameworks = metadata.get("frameworks") or sorted({c.framework for c in load_control_registry()})
+    doc_type = _INGEST_DOC_TYPE.get((ingest_result.get("artifact_type") or "").lower(), "POLICY")
+    covered = _identify_covered_controls(sections=sections, doc_type=doc_type, frameworks=frameworks)
+    if covered:
+        update_policy_covered_controls(policy_id, covered)
+    return covered
+
+
 @router.post("/ingest")
 async def ingest_endpoint(
     request: Request,
@@ -60,6 +99,15 @@ async def ingest_endpoint(
     except Exception as exc:
         logger.exception("Bird Eye ingest failed")
         raise HTTPException(status_code=400, detail=str(exc))
+
+    # Control mapping at ingest, fire-and-forget. Without this, uploaded
+    # documents land with covered_control_ids=[] and stay invisible to gap
+    # analysis and the corpus index until a generation pass touches them.
+    try:
+        result["covered_control_ids"] = _map_controls_at_ingest(tenant_id, result)
+    except Exception:
+        logger.exception("control mapping at ingest failed (non-fatal)")
+        result["covered_control_ids"] = []
 
     run_summary: dict[str, Any] | None = None
     if auto_run:

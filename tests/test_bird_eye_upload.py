@@ -51,3 +51,43 @@ def test_findings_requires_auth(client):
     """GET /bird-eye/findings without a session cookie → 401."""
     response = client.get("/bird-eye/findings")
     assert response.status_code == 401
+
+
+def test_map_controls_at_ingest_persists_ids(monkeypatch):
+    """Uploaded docs get control mapping at ingest (previously always [])."""
+    from backend.bird_eye import api as be_api
+
+    monkeypatch.setattr(
+        be_api, "db_select",
+        lambda *a, **k: [{"heading": "Authentication", "content": "MFA required"}],
+    )
+    captured = {}
+
+    def fake_identify(*, sections, doc_type, frameworks):
+        captured["doc_type"] = doc_type
+        captured["frameworks"] = frameworks
+        return ["SOC2-CC6.1"]
+
+    def fake_update(policy_id, covered):
+        captured["persisted"] = (policy_id, covered)
+
+    import backend.api.routes as routes
+    import backend.storage.file_store as fs
+    monkeypatch.setattr(routes, "_identify_covered_controls", fake_identify)
+    monkeypatch.setattr(fs, "update_policy_covered_controls", fake_update)
+
+    covered = be_api._map_controls_at_ingest(
+        "tenant-1",
+        {"policy_id": "pol-9", "artifact_type": "runbook", "metadata": {"frameworks": ["SOC 2"]}},
+    )
+    assert covered == ["SOC2-CC6.1"]
+    assert captured["doc_type"] == "INCIDENT_RUNBOOK"
+    assert captured["frameworks"] == ["SOC 2"]
+    assert captured["persisted"] == ("pol-9", ["SOC2-CC6.1"])
+
+
+def test_map_controls_at_ingest_no_sections_noop(monkeypatch):
+    from backend.bird_eye import api as be_api
+
+    monkeypatch.setattr(be_api, "db_select", lambda *a, **k: [])
+    assert be_api._map_controls_at_ingest("tenant-1", {"policy_id": "pol-9"}) == []
