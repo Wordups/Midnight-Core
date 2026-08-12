@@ -15,6 +15,7 @@ from __future__ import annotations
 
 PLAN_LIMITS: dict[str, dict[str, int | bool | None]] = {
     "free": {
+        "corpus_runs_per_month": 2,
         "max_uploads": 3,
         "max_frameworks": 1,
         "max_users": 1,
@@ -26,6 +27,7 @@ PLAN_LIMITS: dict[str, dict[str, int | bool | None]] = {
         "watermark": True,
     },
     "starter": {
+        "corpus_runs_per_month": 20,
         "max_uploads": 50,
         "max_frameworks": 1,
         "max_users": 1,
@@ -37,6 +39,7 @@ PLAN_LIMITS: dict[str, dict[str, int | bool | None]] = {
         "watermark": False,
     },
     "pro": {
+        "corpus_runs_per_month": None,
         "max_uploads": None,
         "max_frameworks": None,
         "max_users": 3,
@@ -48,6 +51,7 @@ PLAN_LIMITS: dict[str, dict[str, int | bool | None]] = {
         "watermark": False,
     },
     "enterprise": {
+        "corpus_runs_per_month": None,
         "max_uploads": None,
         "max_frameworks": None,
         "max_users": None,

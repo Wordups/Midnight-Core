@@ -1115,6 +1115,43 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+  /* ── Compliance Corpus view ── */
+  .corpus-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .corpus-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .corpus-stat-num { font-size: 24px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .corpus-stat-label { font-size: 11.5px; color: var(--text3); margin-top: 2px; }
+  .corpus-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+  .corpus-panel-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  .corpus-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .corpus-table th { text-align: left; color: var(--text3); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .corpus-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+  .corpus-table tr:last-child td { border-bottom: none; }
+  .corpus-table-wrap { overflow-x: auto; }
+  .corpus-badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .corpus-badge.fresh { background: var(--green-bg); color: var(--green); }
+  .corpus-badge.stale { background: var(--amber-bg); color: var(--amber); }
+  .corpus-badge.satisfied { background: var(--green-bg); color: var(--green); }
+  .corpus-badge.partially_satisfied { background: var(--amber-bg); color: var(--amber); }
+  .corpus-badge.not_satisfied { background: var(--red-bg); color: var(--red); }
+  .corpus-badge.insufficient_evidence { background: var(--amber-bg); color: var(--amber); }
+  .corpus-badge.not_applicable { background: var(--bg3); color: var(--text3); }
+  .corpus-cov-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .corpus-cov-name { width: 90px; font-size: 12px; color: var(--text2); flex-shrink: 0; }
+  .corpus-cov-bar { flex: 1; height: 8px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+  .corpus-cov-fill { height: 100%; background: var(--accent); border-radius: 99px; }
+  .corpus-cov-pct { width: 80px; font-size: 11.5px; color: var(--text3); text-align: right; font-variant-numeric: tabular-nums; }
+  .corpus-run-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .corpus-run-controls select { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }
+  #corpus-questions { width: 100%; min-height: 110px; background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 10px; padding: 12px; font-size: 13px; font-family: inherit; resize: vertical; }
+  #corpus-questions:focus { outline: none; border-color: var(--accent); }
+  .corpus-answer-q { color: var(--text); font-weight: 500; }
+  .corpus-cite { margin-top: 6px; }
+  .corpus-cite summary { cursor: pointer; color: var(--text3); font-size: 11.5px; }
+  .corpus-cite-quote { background: var(--bg3); border-left: 2px solid var(--accent); border-radius: 0 6px 6px 0; padding: 8px 10px; margin: 6px 0; font-size: 12px; color: var(--text2); }
+  .corpus-cite-src { color: var(--text3); font-size: 11px; margin-top: 2px; }
+  .corpus-followup { margin-top: 6px; font-size: 12px; color: var(--amber); }
+  .corpus-followup::before { content: "↳ follow-up: "; color: var(--text3); }
+  @media (max-width: 900px) { .corpus-stats { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body data-theme="light">
@@ -1163,6 +1200,10 @@
     <div class="nav-item" id="nav-coverage" data-label="Framework Coverage" title="Framework Coverage" onclick="showView('coverage', this, 'Framework Coverage')">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 11l3-3 2.5 2.5L11 6l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
       <span class="nav-item-label">Framework Coverage</span>
+    </div>
+    <div class="nav-item" id="nav-corpus" data-label="Compliance Corpus" title="Compliance Corpus" onclick="showView('corpus', this, 'Compliance Corpus')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1l6 3v4c0 3.5-2.5 6-6 7-3.5-1-6-3.5-6-7V4l6-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5.5 8l1.8 1.8L10.8 6.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="nav-item-label">Compliance Corpus</span>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-label">Reports</div>
@@ -2290,6 +2331,64 @@
   </div>
 
   <!-- ── LIBRARY ────────────────────────────────────────────────────────────── -->
+  <div class="view" id="view-corpus">
+    <div class="content">
+      <div class="build-header">
+        <div class="build-title">Compliance Corpus</div>
+        <div class="build-sub">Every document, its control mapping, and freshness — plus a runner that answers audits, security questionnaires, vendor assessments, and internal requests from your own policies, with citations.</div>
+      </div>
+
+      <div class="corpus-stats">
+        <div class="corpus-stat"><div class="corpus-stat-num" id="corpus-stat-docs">—</div><div class="corpus-stat-label">Documents in corpus</div></div>
+        <div class="corpus-stat"><div class="corpus-stat-num" id="corpus-stat-controls">—</div><div class="corpus-stat-label">Controls covered</div></div>
+        <div class="corpus-stat"><div class="corpus-stat-num" id="corpus-stat-stale">—</div><div class="corpus-stat-label">Stale documents (&gt;1 yr)</div></div>
+        <div class="corpus-stat"><div class="corpus-stat-num" id="corpus-stat-unmapped">—</div><div class="corpus-stat-label">Unmapped documents</div></div>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title">Framework coverage</div>
+        <div id="corpus-coverage-bars"><span style="color:var(--text3);font-size:12.5px">Loading…</span></div>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title">Documents</div>
+        <div class="corpus-table-wrap">
+          <table class="corpus-table">
+            <thead><tr><th>Document</th><th>Type</th><th>Frameworks</th><th>Controls</th><th>Last reviewed</th><th>Freshness</th></tr></thead>
+            <tbody id="corpus-doc-rows"><tr><td colspan="6" style="color:var(--text3)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title">Questionnaire runner</div>
+        <div class="corpus-run-controls">
+          <select id="corpus-use-case" aria-label="Use case">
+            <option value="questionnaire">Security questionnaire</option>
+            <option value="audit">Audit request</option>
+            <option value="vendor_assessment">Vendor assessment</option>
+            <option value="internal">Internal security request</option>
+          </select>
+          <select id="corpus-run-history" aria-label="Run history" onchange="loadCorpusRun(this.value)">
+            <option value="">Run history…</option>
+          </select>
+          <button type="button" class="run-btn" id="corpus-export-btn" style="display:none" onclick="exportCorpusRun()">Export CSV</button>
+        </div>
+        <textarea id="corpus-questions" placeholder="Paste a questionnaire — numbered, bulleted, or one question per line.&#10;&#10;1. Do you require MFA for all privileged access?&#10;2. Is customer data encrypted at rest?&#10;3. Do you have a tested incident response plan?"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+          <span style="font-size:11.5px;color:var(--text3)">Answers come only from your corpus. Unresolved questions fail closed to “insufficient evidence” and get a suggested follow-up — nothing is guessed.</span>
+          <button type="button" class="run-btn" id="corpus-run-btn" onclick="runCorpusAnswer()">Answer from corpus</button>
+        </div>
+        <div class="corpus-table-wrap" id="corpus-results-wrap" style="display:none;margin-top:16px">
+          <table class="corpus-table">
+            <thead><tr><th style="width:28px">#</th><th style="width:34%">Question</th><th>Status</th><th>Answer</th><th>Confidence</th></tr></thead>
+            <tbody id="corpus-answer-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="view" id="view-billing">
     <div class="content">
       <div class="build-header">
@@ -2630,6 +2729,7 @@ function showView(viewId, navEl, title) {
     birdtalk: null,
     gaps: null,
     coverage: null,
+    corpus: null,
     grc: 'Generate Summary',
     profile: null,
     library: null,
@@ -2644,6 +2744,7 @@ function showView(viewId, navEl, title) {
   if (viewId === 'birdtalk' && !window.btStarted) { window.btStarted = true; btGreet(); }
   if (viewId === 'birdtalk') { try { btLoadPulse(); } catch (_) {} }
   if (viewId === 'library') { try { loadBirdEye(); } catch (_) {} }
+  if (viewId === 'corpus') { try { loadCorpusView(); } catch (_) {} }
   if (viewId === 'billing') { try { renderBillingView(); } catch (_) {} }
   if (isMobileSidebarLayout()) closeSidebarDrawer();
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2668,6 +2769,140 @@ function setTab(el) {
   if (label === 'ready') items = items.filter(i => String(i.status || '').toLowerCase() === 'ready');
   else if (label === 'in progress') items = items.filter(i => String(i.status || '').toLowerCase() !== 'ready');
   renderDocList(list.id, items);
+}
+
+// ── Compliance Corpus ─────────────────────────────────────────────────
+const CORPUS_STATUS_LABELS = {
+  satisfied: 'Satisfied',
+  partially_satisfied: 'Partially satisfied',
+  not_satisfied: 'Not satisfied',
+  insufficient_evidence: 'Insufficient evidence',
+  not_applicable: 'Not applicable',
+};
+let corpusCurrentRunId = null;
+
+async function loadCorpusView() {
+  loadCorpusIndex();
+  loadCorpusRuns();
+}
+
+async function loadCorpusIndex() {
+  try {
+    const r = await fetch(`${API}/api/v1/corpus`, { credentials: 'include' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const idx = await r.json();
+    document.getElementById('corpus-stat-docs').textContent = idx.document_count;
+    document.getElementById('corpus-stat-controls').textContent = `${idx.controls_covered_total} / ${idx.controls_total}`;
+    document.getElementById('corpus-stat-stale').textContent = idx.stale_count;
+    document.getElementById('corpus-stat-unmapped').textContent = (idx.unmapped_documents || []).length;
+
+    const bars = document.getElementById('corpus-coverage-bars');
+    bars.innerHTML = (idx.frameworks || []).map(f => `
+      <div class="corpus-cov-row">
+        <div class="corpus-cov-name">${escHtml(f.framework)}</div>
+        <div class="corpus-cov-bar"><div class="corpus-cov-fill" style="width:${f.coverage_pct}%"></div></div>
+        <div class="corpus-cov-pct">${f.covered_controls}/${f.total_controls} · ${f.coverage_pct}%</div>
+      </div>`).join('') || '<span style="color:var(--text3);font-size:12.5px">No frameworks mapped yet.</span>';
+
+    const rows = document.getElementById('corpus-doc-rows');
+    if (!(idx.documents || []).length) {
+      rows.innerHTML = '<tr><td colspan="6" style="color:var(--text3)">The corpus is empty — ingest or generate a document first.</td></tr>';
+      return;
+    }
+    rows.innerHTML = idx.documents.map(d => `
+      <tr>
+        <td class="corpus-answer-q">${escHtml(d.name || 'Untitled')}</td>
+        <td>${escHtml(d.document_type || '—')}</td>
+        <td>${(d.frameworks || []).map(escHtml).join(', ') || '—'}</td>
+        <td>${d.controls_covered}</td>
+        <td>${d.last_reviewed_at ? escHtml(String(d.last_reviewed_at).slice(0, 10)) : '—'}</td>
+        <td><span class="corpus-badge ${d.stale ? 'stale' : 'fresh'}">${d.stale ? 'Stale' : 'Fresh'}</span></td>
+      </tr>`).join('');
+  } catch (e) {
+    document.getElementById('corpus-doc-rows').innerHTML = '<tr><td colspan="6" style="color:var(--text3)">Corpus unavailable right now.</td></tr>';
+  }
+}
+
+async function loadCorpusRuns() {
+  try {
+    const r = await fetch(`${API}/api/v1/corpus/runs`, { credentials: 'include' });
+    if (!r.ok) return;
+    const data = await r.json();
+    const sel = document.getElementById('corpus-run-history');
+    sel.innerHTML = '<option value="">Run history…</option>' + (data.runs || []).map(run => {
+      const when = String(run.created_at || '').slice(0, 16).replace('T', ' ');
+      return `<option value="${escHtml(run.id)}">${when} · ${escHtml(run.use_case)} · ${run.question_count} q</option>`;
+    }).join('');
+  } catch (_) {}
+}
+
+function renderCorpusAnswers(answers) {
+  const wrap = document.getElementById('corpus-results-wrap');
+  const rows = document.getElementById('corpus-answer-rows');
+  rows.innerHTML = answers.map((a, i) => {
+    const cites = (a.citations || []).map(c => `
+      <div class="corpus-cite-quote">“${escHtml(c.quote)}”
+        <div class="corpus-cite-src">${escHtml(c.policy_name || '')} — ${escHtml(c.section_heading || '')}</div>
+      </div>`).join('');
+    const citeBlock = cites ? `<details class="corpus-cite"><summary>${(a.citations || []).length} citation(s)</summary>${cites}</details>` : '';
+    const followup = a.followup_question ? `<div class="corpus-followup">${escHtml(a.followup_question)}</div>` : '';
+    const controls = (a.control_ids || []).length ? `<div class="corpus-cite-src">Controls: ${(a.control_ids || []).map(escHtml).join(', ')}</div>` : '';
+    return `
+      <tr>
+        <td>${(a.position ?? i) + 1}</td>
+        <td class="corpus-answer-q">${escHtml(a.question)}</td>
+        <td><span class="corpus-badge ${escHtml(a.status)}">${CORPUS_STATUS_LABELS[a.status] || escHtml(a.status)}</span></td>
+        <td>${escHtml(a.answer_text || '')}${citeBlock}${controls}${followup}</td>
+        <td>${escHtml(a.confidence || '—')}</td>
+      </tr>`;
+  }).join('');
+  wrap.style.display = 'block';
+  document.getElementById('corpus-export-btn').style.display = corpusCurrentRunId ? 'inline-block' : 'none';
+}
+
+async function runCorpusAnswer() {
+  const btn = document.getElementById('corpus-run-btn');
+  const raw = document.getElementById('corpus-questions').value.trim();
+  if (!raw) { showToast('Paste at least one question first.', true); return; }
+  btn.disabled = true; btn.textContent = 'Answering…';
+  try {
+    const r = await fetch(`${API}/api/v1/corpus/answer`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw_text: raw, use_case: document.getElementById('corpus-use-case').value }),
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      const detail = data && data.detail;
+      const msg = (detail && detail.message) || detail || 'Run failed.';
+      showToast(typeof msg === 'string' ? msg : 'Run failed.', true);
+      return;
+    }
+    corpusCurrentRunId = data.run_id;
+    renderCorpusAnswers(data.answers || []);
+    loadCorpusRuns();
+  } catch (e) {
+    showToast('The corpus runner is unavailable right now.', true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Answer from corpus';
+  }
+}
+
+async function loadCorpusRun(runId) {
+  if (!runId) return;
+  try {
+    const r = await fetch(`${API}/api/v1/corpus/runs/${encodeURIComponent(runId)}`, { credentials: 'include' });
+    if (!r.ok) { showToast('Could not load that run.', true); return; }
+    const data = await r.json();
+    corpusCurrentRunId = runId;
+    renderCorpusAnswers(data.answers || []);
+  } catch (_) { showToast('Could not load that run.', true); }
+}
+
+function exportCorpusRun() {
+  if (!corpusCurrentRunId) return;
+  window.open(`${API}/api/v1/corpus/runs/${encodeURIComponent(corpusCurrentRunId)}/export`, '_blank');
 }
 
 // Export Studio interactive preview: backend not wired yet — honest stubs so

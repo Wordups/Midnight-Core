@@ -1005,8 +1005,10 @@ from backend.api.agent_ops import agent_ops_router
 from backend.api.admin_ops import admin_router
 from backend.api.stripe_router import billing_router, billing_webhook_router
 from backend.api.pm import router as pm_router
+from backend.api.corpus import router as corpus_router
 
 app.include_router(assessments_router, dependencies=[Depends(verify_access)])
+app.include_router(corpus_router, dependencies=[Depends(verify_access)])
 app.include_router(pipeline_router, dependencies=[Depends(verify_access)])
 app.include_router(dashboard_router, dependencies=[Depends(verify_access)])
 app.include_router(smart_scan_router, dependencies=[Depends(verify_access)])
