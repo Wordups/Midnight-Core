@@ -1373,6 +1373,18 @@ def _strip_json_fences(raw: str) -> str:
     return raw.replace("```json", "").replace("```", "").strip()
 
 
+# Attribute names logging.LogRecord claims for itself; `extra` keys that
+# collide raise KeyError inside logging.makeRecord.
+_RESERVED_LOGRECORD_KEYS = frozenset(
+    {
+        "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
+        "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
+        "created", "msecs", "relativeCreated", "thread", "threadName",
+        "processName", "process", "message", "asctime", "taskName",
+    }
+)
+
+
 def _log_model_output_failure(
     *,
     flow: str,
@@ -1387,7 +1399,14 @@ def _log_model_output_failure(
     }
     if context:
         payload.update(context)
-    logger.warning("model_json_parse_failed", extra=payload)
+    # LogRecord reserves attribute names (filename, module, name, ...); an
+    # extra dict that collides raises KeyError inside logging itself, turning
+    # a recoverable parse failure into a 500. Prefix any colliding key.
+    safe_payload = {
+        (f"ctx_{key}" if key in _RESERVED_LOGRECORD_KEYS else key): value
+        for key, value in payload.items()
+    }
+    logger.warning("model_json_parse_failed", extra=safe_payload)
 
 
 def _parse_policy_model_output(

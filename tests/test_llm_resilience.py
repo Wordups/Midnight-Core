@@ -31,3 +31,19 @@ def test_anthropic_client_configured(monkeypatch):
     monkeypatch.setenv("LLM_MAX_RETRIES", "4")
     client = provider.get_client(anthropic_api_key="sk-ant-test")
     assert getattr(client, "max_retries", None) == 4
+
+
+def test_model_output_failure_logging_survives_reserved_keys():
+    """context={'filename': ...} must not crash the logger (LogRecord reserves it).
+
+    Regression: this KeyError inside logging converted a recoverable parse
+    failure into a 500 'Extraction error' during live uploads.
+    """
+    from backend.api.routes import _log_model_output_failure
+
+    _log_model_output_failure(
+        flow="migrate_extraction",
+        raw_text="not json",
+        error=ValueError("bad"),
+        context={"filename": "upload.md", "module": "x", "template_name": "generic"},
+    )
