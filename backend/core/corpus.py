@@ -272,10 +272,12 @@ def retrieve_sections(
     *,
     top_k: int = TOP_K,
     floor: float = SIMILARITY_FLOOR,
+    qvec: list[float] | None = None,
 ) -> list[dict[str, Any]]:
     if not sections:
         return []
-    qvec = embed_chunks([question], input_type="query")[0]
+    if qvec is None:
+        qvec = embed_chunks([question], input_type="query")[0]
     scored = []
     for sec in sections:
         sim = cosine(qvec, sec["vector"])
@@ -401,6 +403,7 @@ def answer_question(
     *,
     llm: Callable[[str], dict[str, Any]],
     sections: list[dict[str, Any]] | None = None,
+    qvec: list[float] | None = None,
 ) -> dict[str, Any]:
     """Answer one question from the corpus. Fail-closed at every step.
 
@@ -409,7 +412,7 @@ def answer_question(
     """
     if sections is None:
         sections = load_corpus_sections(tenant_id)
-    retrieved = retrieve_sections(question, sections)
+    retrieved = retrieve_sections(question, sections, qvec=qvec)
     if not retrieved:
         answer = _insufficient(
             question,
@@ -457,12 +460,23 @@ def answer_batch(
             logger.error("corpus section load failed: %s", exc)
             sections = []
 
+    # One batched embedding call per run: per-question calls trip free-tier
+    # rate limits (Voyage 429) and fail questions that have perfectly good
+    # corpus coverage.
+    qvecs: list[list[float]] | None = None
+    if sections and questions:
+        try:
+            qvecs = embed_chunks(questions, input_type="query")
+        except Exception as exc:
+            logger.warning("batch query embedding failed; falling back per-question: %s", exc)
+
     answers: list[dict[str, Any]] = []
     input_tokens = 0
     output_tokens = 0
-    for question in questions:
+    for idx, question in enumerate(questions):
+        qvec = qvecs[idx] if qvecs and idx < len(qvecs) else None
         try:
-            answer = answer_question(tenant_id, question, llm=llm, sections=sections)
+            answer = answer_question(tenant_id, question, llm=llm, sections=sections, qvec=qvec)
         except Exception as exc:  # outage mid-run: degrade, don't 500
             logger.error("corpus answer failed hard for %r: %s", question[:80], exc)
             answer = _insufficient(

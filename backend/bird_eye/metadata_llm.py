@@ -22,7 +22,9 @@ from config import settings
 
 logger = logging.getLogger("midnight.bird_eye.metadata_llm")
 
-CLAUDE_MODEL = "claude-opus-4-5"
+from backend.llm.models import resolve_model as _resolve_model
+
+CLAUDE_MODEL = _resolve_model()
 MAX_TEXT_CHARS = 60_000
 
 FRAMEWORK_CANONICAL = {
