@@ -44,14 +44,22 @@ of v1.
   1. Embed question with voyage `input_type="query"`.
   2. Cosine over the tenant's `policy_sections` in Python; top-k = 6,
      similarity floor 0.35.
-  3. **Zero retrieved sections → status `unanswerable`, no LLM call.**
+  3. **Zero retrieved sections → status `insufficient_evidence`, no LLM call.**
   4. One constrained Claude call: question + retrieved sections + candidate
      control IDs in; strict JSON out:
-     `{status: yes|partial|no|unanswerable, answer_text,
+     `{status: satisfied|partially_satisfied|not_satisfied|
+       insufficient_evidence|not_applicable, answer_text,
        citations: [{policy_id, policy_name, section_heading, quote}],
-       control_ids: [...], confidence: high|medium|low}`
+       control_ids: [...], confidence: high|medium|low,
+       followup_question: str|null}`
+     Status vocabulary follows the assessment-outcome states in
+     `knowledge/vendor_risk_process_spec.md`; `followup_question` is the
+     targeted follow-up the model recommends when evidence is insufficient
+     or partial ("challenge vague responses"). System prompt embeds the
+     spec's core instruction: assess against requirements, cite evidence,
+     never fabricate, defer consequential judgment to humans.
   5. Parse via `parse_model_json`; any parse/validation failure →
-     `unanswerable` (fail-closed).
+     `insufficient_evidence` (fail-closed).
   6. Citation validation: `quote` must be a substring of a retrieved section's
      text (whitespace-normalized). Invalid citations are stripped; if any were
      stripped, confidence is downgraded one level.
