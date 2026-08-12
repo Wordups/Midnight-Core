@@ -66,11 +66,66 @@ class TestOnboardingPlanEntry(unittest.TestCase):
         self.assertIn("Start onboarding", response.text)
         self.assertIn("TRIAL", response.text)
 
-    def test_logged_out_onboarding_plan_redirects_to_signup(self):
+    def test_logged_out_start_now_serves_onboarding_not_signup(self):
         response = self.client.get("/onboarding/plan", follow_redirects=False)
 
-        self.assertEqual(response.status_code, 307)
-        self.assertEqual(response.headers["location"], "/login.html?mode=signup")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Start onboarding", response.text)
+        self.assertIn("Create your workspace", response.text)
+        self.assertNotIn("Back to signup", response.text)
+
+    def test_authenticated_user_can_save_onboarding_session(self):
+        with (
+            patch(
+                "backend.api.main._authenticate_token",
+                return_value=(_USER_RECORD, _ORGANIZATION, _AUTH_USER),
+            ),
+            patch("backend.api.main.update_onboarding_session") as update_session,
+        ):
+            update_session.return_value = {
+                "tenant_id": "tenant-onboarding-001",
+                "frameworks": ["soc2", "nist_csf"],
+                "primary_objective": "audit_prep",
+                "build_method": "upload_existing_docs",
+                "current_step": "complete",
+                "progress": 100,
+                "completed": True,
+            }
+            response = self.client.post(
+                "/onboarding/session",
+                json={
+                    "frameworks": ["soc2", "nist_csf"],
+                    "primary_objective": "audit_prep",
+                    "build_method": "upload_existing_docs",
+                },
+                cookies={"midnight_session": "valid-test-token"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["redirect_to"], "/midnight_dashboard.html")
+        update_session.assert_called_once_with(
+            "tenant-onboarding-001",
+            {
+                "frameworks": ["soc2", "nist_csf"],
+                "primary_objective": "audit_prep",
+                "build_method": "upload_existing_docs",
+                "current_step": "complete",
+                "progress": 100,
+                "completed": True,
+            },
+        )
+
+    def test_onboarding_save_rejects_logged_out_users(self):
+        response = self.client.post(
+            "/onboarding/session",
+            json={
+                "frameworks": ["soc2"],
+                "primary_objective": "audit_prep",
+                "build_method": "guided_review",
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == "__main__":

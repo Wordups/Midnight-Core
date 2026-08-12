@@ -25,19 +25,21 @@ logger = logging.getLogger("midnight.billing")
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
-_TIER_TO_ENV: dict[str, str] = {
-    "starter":    "STRIPE_PRICE_STARTER",
-    "growth":     "STRIPE_PRICE_GROWTH",
-    "enterprise": "STRIPE_PRICE_ENTERPRISE",
+# Self-serve tiers only — enterprise is contact-only, no checkout.
+_TIER_TO_ENV: dict[tuple[str, str], str] = {
+    ("starter", "month"): "STRIPE_PRICE_STARTER",
+    ("starter", "year"):  "STRIPE_PRICE_STARTER_ANNUAL",
+    ("pro", "month"):     "STRIPE_PRICE_PRO",
+    ("pro", "year"):      "STRIPE_PRICE_PRO_ANNUAL",
 }
 
 
-def _resolve_price_id(tier: str) -> str:
-    env_key = _TIER_TO_ENV.get(tier.lower())
+def _resolve_price_id(tier: str, interval: str) -> str:
+    env_key = _TIER_TO_ENV.get((tier.lower(), interval.lower()))
     if not env_key:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid tier: '{tier}'. Must be starter, growth, or enterprise.",
+            detail=f"Invalid tier/interval: '{tier}'/'{interval}'. Tier must be starter or pro; interval month or year.",
         )
     price_id = os.getenv(env_key, "").strip()
     if not price_id:
@@ -57,6 +59,7 @@ billing_router = APIRouter(prefix="/billing", tags=["billing"])
 
 class CheckoutRequest(BaseModel):
     tier: str
+    interval: str = "month"
 
 
 @billing_router.post("/checkout")
@@ -65,7 +68,7 @@ async def create_checkout_session(payload: CheckoutRequest, request: Request) ->
     if not tenant_id:
         raise HTTPException(status_code=401, detail="Authenticated tenant context is missing.")
     tier = payload.tier.lower()
-    price_id = _resolve_price_id(tier)
+    price_id = _resolve_price_id(tier, payload.interval)
     base = _base_url()
     # tenant_id travels on the session AND the subscription so both
     # checkout.session.completed and later subscription.* events map back.
@@ -131,7 +134,7 @@ def _handle_stripe_event(event: dict) -> None:
             _activate_plan(tenant_id, tier)
     elif etype == "customer.subscription.deleted":
         if tenant_id:
-            _activate_plan(tenant_id, "trial")
+            _activate_plan(tenant_id, "free")
     else:
         logger.debug("stripe_event_ignored type=%s", etype)
 

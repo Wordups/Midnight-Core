@@ -124,10 +124,19 @@ async def list_findings(request: Request, run_id: str | None = None, status: str
 
 @router.get("/findings/pdf")
 async def export_findings_pdf(request: Request, run_id: str | None = None):
+    from backend.billing_plans import limits_for, resolve_plan
+
     tenant_id = _tenant_from_request(request)
     auth = getattr(request.state, "auth_context", {}) or {}
+    plan = resolve_plan(auth.get("plan_type"))
+    if not limits_for(plan)["docx_export"]:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "upgrade_required", "plan": plan,
+                    "message": "Report export is available on Starter and up. Upgrade to download reports."},
+        )
     org = auth.get("organization_name") or "Your Organization"
-    watermark = "TRIAL" if (auth.get("plan_type") or "").lower() == "trial" else None
+    watermark = None
     filters: dict[str, str] = {}
     if run_id:
         filters["run_id"] = f"eq.{run_id}"

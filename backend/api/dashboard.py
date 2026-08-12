@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from backend.billing_plans import limits_for, resolve_plan
 from backend.core.gap_engine import run_program_gap_analysis
 from backend.renderers.pdf_renderer import build_gap_analysis_pdf
 from backend.storage.file_store import (
@@ -58,6 +59,8 @@ class GapsResponse(BaseModel):
     low: int
     items: list[GapItem]
     overall_coverage_pct: int = 0
+    # Free/Starter fence: counts are real, the item list needs Pro.
+    locked: bool = False
 
 
 class DocumentItem(BaseModel):
@@ -102,6 +105,18 @@ def _tenant_id(request: Request) -> str:
     if not tenant_id:
         raise HTTPException(status_code=401, detail="Authenticated tenant context is missing.")
     return tenant_id
+
+
+def _plan_limits(request: Request) -> dict:
+    return limits_for(getattr(request.state, "plan_type", None))
+
+
+def _upgrade_403(request: Request, message: str) -> HTTPException:
+    plan = resolve_plan(getattr(request.state, "plan_type", None))
+    return HTTPException(
+        status_code=403,
+        detail={"code": "upgrade_required", "plan": plan, "message": message},
+    )
 
 
 def _documents(request: Request) -> list[dict]:
@@ -252,7 +267,7 @@ async def get_gaps(request: Request, severity: Optional[str] = None, framework: 
         items = [g for g in items if g.severity == severity.lower()]
     if framework:
         items = [g for g in items if framework.upper() in g.affected_frameworks]
-    return GapsResponse(
+    response = GapsResponse(
         total=len(items),
         critical=sum(1 for g in items if g.severity == "critical"),
         medium=sum(1 for g in items if g.severity == "medium"),
@@ -260,13 +275,19 @@ async def get_gaps(request: Request, severity: Optional[str] = None, framework: 
         items=items,
         overall_coverage_pct=data.overall_coverage_pct,
     )
+    if not _plan_limits(request)["full_gap_list"]:
+        # The counts and coverage ring are the hook; the list itself is Pro.
+        response.items = []
+        response.locked = True
+    return response
 
 
 @router.get("/gaps/pdf")
 async def export_gaps_pdf(request: Request):
+    if not _plan_limits(request)["full_gap_list"]:
+        raise _upgrade_403(request, "The gap report with citations is a Pro feature. Upgrade to export it.")
     auth = getattr(request.state, "auth_context", {}) or {}
     org = auth.get("organization_name") or "Your Organization"
-    watermark = "TRIAL" if (auth.get("plan_type") or "").lower() == "trial" else None
     result = _gap_result(request)
     pdf = build_gap_analysis_pdf(
         organization_name=org,
@@ -274,7 +295,7 @@ async def export_gaps_pdf(request: Request):
         coverage_by_framework=result.get("coverage_by_framework", {}) if result else {},
         gaps=result.get("gaps", []) if result else [],
         overall_coverage_pct=result.get("overall_coverage_pct", 0) if result else 0,
-        watermark=watermark,
+        watermark=None,
     )
     headers = {"Content-Disposition": 'attachment; filename="midnight-gap-analysis.pdf"'}
     return Response(content=pdf, media_type="application/pdf", headers=headers)
@@ -293,6 +314,8 @@ async def get_documents(request: Request, status: Optional[str] = None, doc_type
 
 @router.get("/documents/{document_id}/download")
 async def download_document(request: Request, document_id: str):
+    if not _plan_limits(request)["docx_export"]:
+        raise _upgrade_403(request, "Document export is available on Starter and up. Upgrade to download your documents.")
     try:
         record, file_bytes = download_generated_document(_tenant_id(request), document_id)
     except SupabaseStoreError as exc:

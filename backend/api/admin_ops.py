@@ -116,7 +116,7 @@ async def admin_tenants(request: Request) -> dict[str, Any]:
             "slug": t.get("slug") or "—",
             "organization_name": org_map.get(tid) or t.get("slug") or "—",
             "industry": t.get("industry") or "—",
-            "plan_type": t.get("plan_type") or "trial",
+            "plan_type": t.get("plan_type") or "free",
             "created_at": t.get("created_at"),
             "profile_count": profile_count.get(tid, 0),
         })

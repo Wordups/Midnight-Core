@@ -11,7 +11,7 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role"
 os.environ["TOOL_PASSWORD"] = "test-password"
 os.environ["ENVIRONMENT"] = "dev"
 
-from backend.api.main import app  # noqa: E402
+from backend.api.main import app, verify_access  # noqa: E402
 
 
 class _FakeMessageContent:
@@ -39,7 +39,19 @@ class _FakeClient:
 
 class AssessmentsRouteTests(unittest.TestCase):
     def setUp(self):
+        app.dependency_overrides[verify_access] = lambda: {"authenticated": True}
         self.client = TestClient(app)
+
+    def tearDown(self):
+        app.dependency_overrides.clear()
+
+    def test_create_assessment_requires_auth(self):
+        app.dependency_overrides.clear()
+        response = self.client.post(
+            "/api/v1/assessments",
+            json={"text": "Some policy text.", "framework": "soc2"},
+        )
+        self.assertEqual(response.status_code, 401)
 
     @patch("backend.api.assessments._get_anthropic_client")
     def test_create_assessment_happy_path(self, mock_get_client):

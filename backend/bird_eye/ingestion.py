@@ -196,31 +196,150 @@ def extract_text(filename: str, content: bytes) -> str:
 
 
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
-NUMBERED_RE = re.compile(r"^(\d+(?:\.\d+)*)\s+([A-Z].{1,120})$")
+NUMBERED_RE = re.compile(r"^(\d+(?:\.\d+)*\.?)\s+([A-Z][A-Za-z0-9 &/(),:;'\-—]{2,120})$")
+ALL_CAPS_RE = re.compile(r"^[A-Z][A-Z0-9 &/(),:;'\-—]{3,80}$")
+
+KNOWN_SECTION_HEADINGS = {
+    "purpose",
+    "scope",
+    "roles and responsibilities",
+    "responsibilities",
+    "definitions",
+    "policy statements",
+    "standard requirements",
+    "procedure",
+    "procedures",
+    "incident lifecycle",
+    "severity and sla model",
+    "escalation path",
+    "shift operations",
+    "detection engineering governance",
+    "incident closure requirements",
+    "sla monitoring and continuous improvement",
+    "operational command layer",
+    "exceptions",
+    "enforcement",
+    "evidence requirements",
+    "review cadence",
+    "approval",
+    "revision history",
+}
+
+TABLE_HEADER_TERMS = {
+    "role",
+    "roles",
+    "responsibility",
+    "responsibilities",
+    "severity",
+    "mttd",
+    "mtta",
+    "mttr",
+    "status",
+    "owner",
+    "date",
+    "version",
+}
+
+ACRONYMS = {"AI", "GRC", "IAM", "IR", "MFA", "MTTA", "MTTD", "MTTR", "SLA", "SOC", "TLS"}
+
+
+def _clean_heading(text: str) -> str:
+    cleaned = re.sub(r"^\d+(?:\.\d+)*\.?\s+", "", text).strip()
+    words: list[str] = []
+    for word in cleaned.title().split():
+        token = re.sub(r"[^A-Za-z0-9]", "", word).upper()
+        if token in ACRONYMS:
+            words.append(word.upper())
+        else:
+            words.append(word)
+    return " ".join(words)
+
+
+def _normalized_heading(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().lower())
+
+
+def _next_nonblank(lines: list[str], start: int) -> str:
+    for raw in lines[start + 1 :]:
+        line = raw.strip()
+        if line:
+            return line
+    return ""
+
+
+def _detect_heading(lines: list[str], idx: int) -> str | None:
+    """Detect deterministic section headings from real-world policy/SOP text."""
+    stripped = lines[idx].strip()
+    if not stripped:
+        return None
+
+    markdown = HEADING_RE.match(stripped)
+    if markdown:
+        return _clean_heading(markdown.group(2))
+
+    numbered = NUMBERED_RE.match(stripped)
+    if numbered:
+        return _clean_heading(numbered.group(2))
+
+    normalized = _normalized_heading(stripped)
+    prev_blank = idx == 0 or not lines[idx - 1].strip()
+    next_line = _next_nonblank(lines, idx)
+    next_normalized = _normalized_heading(next_line)
+    if (
+        normalized in KNOWN_SECTION_HEADINGS
+        and ALL_CAPS_RE.match(stripped)
+        and prev_blank
+        and next_normalized not in TABLE_HEADER_TERMS
+    ):
+        return _clean_heading(stripped)
+
+    return None
+
+
+def _chunk_unsectioned_text(raw_text: str, *, target_chars: int = 1800) -> list[dict[str, str]]:
+    """Fallback chunking for documents with no detectable headings."""
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", raw_text) if p.strip()]
+    if not paragraphs:
+        text = raw_text.strip()
+        return [{"heading": "Document", "content": text}] if text else []
+
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for paragraph in paragraphs:
+        extra = len(paragraph) + (2 if current else 0)
+        if current and current_len + extra > target_chars:
+            chunks.append("\n\n".join(current))
+            current = [paragraph]
+            current_len = len(paragraph)
+        else:
+            current.append(paragraph)
+            current_len += extra
+    if current:
+        chunks.append("\n\n".join(current))
+
+    if len(chunks) == 1:
+        return [{"heading": "Document", "content": chunks[0]}]
+
+    return [{"heading": f"Document Part {idx}", "content": chunk} for idx, chunk in enumerate(chunks, start=1)]
 
 
 def split_sections(raw_text: str) -> list[dict[str, str]]:
     """Split into section dicts with heading + content.
 
-    Treats any ATX heading (`#` .. `######`) as a section boundary. The
-    _extract_text_docx pass also emits Word `Heading 1..6` styles as
-    matching `#` prefixes, so this regex is the single source of truth.
-
-    Title-only or empty sections (heading immediately followed by another
-    heading) are filtered out so they don't pollute downstream similarity
-    detection. The MIN_CHUNK_CHARS guard in detect_duplicates would catch
-    most of those anyway, but filtering here also keeps the chunk count
-    honest.
+    Supports markdown/Word-style headings, numbered policy/SOP headings, and
+    guarded all-caps GRC headings. If no headings are detectable, falls back to
+    paragraph-preserving document parts instead of one giant blob.
     """
     sections: list[dict[str, str]] = []
     current_heading: str | None = None
     current_lines: list[str] = []
 
-    for raw_line in raw_text.splitlines():
+    lines = raw_text.splitlines()
+    for idx, raw_line in enumerate(lines):
         line = raw_line.rstrip()
-        m = HEADING_RE.match(line.strip())
-        if m:
-            heading_text = m.group(2).strip()
+        heading_text = _detect_heading(lines, idx)
+        if heading_text:
             # Close the previous section
             if current_heading is not None:
                 sections.append({"heading": current_heading, "content": "\n".join(current_lines).strip()})
@@ -234,7 +353,10 @@ def split_sections(raw_text: str) -> list[dict[str, str]]:
         sections.append({"heading": current_heading, "content": "\n".join(current_lines).strip()})
 
     # Drop empty / title-only sections (heading line with no body before the next heading).
-    return [s for s in sections if s["content"].strip()]
+    sections = [s for s in sections if s["content"].strip()]
+    if not sections:
+        return _chunk_unsectioned_text(raw_text)
+    return sections
 
 
 # Mapping of section heading -> slot_id used in existing schema. Falls back to slugified heading.

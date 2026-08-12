@@ -164,6 +164,24 @@ async function workflowSessionCheck() {
   return session;
 }
 
+function apiDetailMessage(detail) {
+  if (detail && typeof detail === 'object') return detail.message || 'Access denied.';
+  return detail;
+}
+
+function planFeatures() {
+  return workflowSession?.plan_features || {};
+}
+
+function goToBilling() {
+  window.location.href = '/midnight_dashboard.html?view=billing';
+}
+
+function upgradeToast(message) {
+  workflowToast(`${message} Opening plans…`, true);
+  setTimeout(goToBilling, 1600);
+}
+
 async function workflowApi(path, options = {}) {
   const response = await fetch(WORKFLOW_API + path, {
     credentials: 'include',
@@ -175,9 +193,14 @@ async function workflowApi(path, options = {}) {
   }
   if (response.status === 403) {
     const err = await response.json().catch(() => ({}));
-    const reason = encodeURIComponent(err.detail || 'Access denied.');
+    // Plan fences send the user to pricing, not the access-denied wall.
+    if (err.detail?.code === 'upgrade_required') {
+      upgradeToast(err.detail.message || 'Upgrade required to continue.');
+      throw new Error(err.detail.message || 'Upgrade required.');
+    }
+    const reason = encodeURIComponent(apiDetailMessage(err.detail) || 'Access denied.');
     window.location.replace(`/access_denied.html?reason=${reason}`);
-    throw new Error(err.detail || 'Access denied.');
+    throw new Error(apiDetailMessage(err.detail) || 'Access denied.');
   }
   return response;
 }
@@ -225,7 +248,7 @@ function workflowSyncTopbar() {
   const lane = WORKFLOW_CONFIG[workflowState.lane];
   document.getElementById('wf-breadcrumb-lane').textContent = lane.title;
   document.getElementById('wf-breadcrumb-state').textContent = workflowState.previewData ? 'Preview Ready' : 'Draft';
-  document.getElementById('wf-tenant-badge').innerHTML = `<strong>${workflowSession.organization_name || 'Workspace'}</strong> · ${String(workflowSession.plan_type || 'trial').toUpperCase()}`;
+  document.getElementById('wf-tenant-badge').innerHTML = `<strong>${workflowSession.organization_name || 'Workspace'}</strong> · ${String(workflowSession.plan_type || 'free').toUpperCase()}`;
   const initials = ((workflowSession.display_name || workflowSession.email || 'MW').trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2) || 'MW').toUpperCase();
   document.getElementById('wf-profile-chip').innerHTML = `<span class="wf-profile-avatar">${initials}</span><span><strong>${workflowSession.display_name || 'Workspace User'}</strong> · ${workflowSession.role || 'Owner'}</span>`;
 }
@@ -282,7 +305,11 @@ function renderMainStep() {
   const devBanner = LIVE_LANES.has(workflowState.lane)
     ? ''
     : `<div class="wf-card" style="border-color:rgba(180,83,9,0.35);background:rgba(180,83,9,0.06);margin-bottom:16px;"><strong>In development.</strong> ${IN_DEV_MESSAGE}</div>`;
+  const freeBanner = planFeatures().docx_export === false
+    ? `<div class="wf-card" style="border-color:rgba(37,99,235,0.35);background:rgba(37,99,235,0.05);margin-bottom:16px;"><strong>Free plan.</strong> Your first policy generates as a watermarked in-app preview. Download and further documents unlock on Starter. <a href="/midnight_dashboard.html?view=billing" style="font-weight:600;">See plans</a></div>`
+    : '';
   main.innerHTML = `
+    ${freeBanner}
     ${devBanner}
     ${renderMetadataStep()}
     ${renderContentStep()}
@@ -404,14 +431,21 @@ function renderExportStep() {
           <div class="wf-export-grid">
             ${config.exportOptions.map((name) => {
               const live = LIVE_LANES.has(workflowState.lane) && name === 'Word (.docx)';
+              const exportLocked = live && planFeatures().docx_export === false;
+              const badge = !live ? 'In development'
+                : exportLocked ? 'Preview only — Free plan'
+                : (workflowState.previewData ? 'Ready path' : 'Queued path');
+              const copy = !live ? 'This export format is in development and does not generate output yet.'
+                : exportLocked ? 'Your policy generates as a watermarked in-app preview. The .docx download unlocks on Starter.'
+                : 'This export will be rendered from the tenant-owned draft after preview/generation completes.';
               return `
               <div class="wf-card wf-export-card">
                 <div>
-                  <div class="wf-export-badge">${live ? (workflowState.previewData ? 'Ready path' : 'Queued path') : 'In development'}</div>
+                  <div class="wf-export-badge">${badge}</div>
                   <h4 style="margin-top:16px;">${name}</h4>
-                  <p>${live ? 'This export will be rendered from the tenant-owned draft after preview/generation completes.' : 'This export format is in development and does not generate output yet.'}</p>
+                  <p>${copy}</p>
                 </div>
-                <button type="button" class="wf-btn${live ? ' wf-btn-primary' : ''}" ${live ? 'onclick="runPolicyGenerate()"' : `onclick="workflowToast('${IN_DEV_MESSAGE.replace(/'/g, "\\'")}')"`} ${live && !workflowState.previewData ? 'disabled' : ''}>${live ? 'Generate Export' : 'In Development'}</button>
+                <button type="button" class="wf-btn${live ? ' wf-btn-primary' : ''}" ${live ? 'onclick="runPolicyGenerate()"' : `onclick="workflowToast('${IN_DEV_MESSAGE.replace(/'/g, "\\'")}')"`} ${live && !workflowState.previewData ? 'disabled' : ''}>${live ? (exportLocked ? 'Generate Preview' : 'Generate Export') : 'In Development'}</button>
               </div>
             `;
             }).join('')}
@@ -508,7 +542,7 @@ async function runPolicyPreview() {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || `Server error ${response.status}`);
+      throw new Error(apiDetailMessage(err.detail) || `Server error ${response.status}`);
     }
 
     const data = await response.json();
@@ -546,14 +580,18 @@ async function runPolicyGenerate() {
     });
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || `Server error ${response.status}`);
+      throw new Error(apiDetailMessage(err.detail) || `Server error ${response.status}`);
     }
     const data = await response.json();
     if (data?.download?.url) {
       window.open(data.download.url, '_blank', 'noopener');
     }
     clearPreview();  // H6: consumed — drop the persisted preview
-    workflowToast(`Policy generated — ${data?.policy_data?.policy_name || getFieldValue('policy_name') || 'policy'}`);
+    if (data?.export_locked) {
+      workflowToast('Policy generated as a watermarked preview. Upgrade to Starter to download the .docx.');
+    } else {
+      workflowToast(`Policy generated — ${data?.policy_data?.policy_name || getFieldValue('policy_name') || 'policy'}`);
+    }
   } catch (error) {
     workflowToast(error.message || 'Document generation failed.', true);
   } finally {

@@ -72,7 +72,6 @@ app.include_router(health_router)
 logger = logging.getLogger("midnight.auth")
 
 session_cookie_name = "midnight_session"
-TRIAL_MAX_USERS = 3  # raised from 1 — B2B teams need at least 3 seats to evaluate
 
 
 class LoginRequest(BaseModel):
@@ -289,8 +288,8 @@ def _require_admin_role(request: Request) -> dict[str, Any]:
 
 
 def _ensure_seat_available_for_join(tenant_id: str, plan_type: str | None) -> None:
-    from backend.billing_plans import limits_for
-    plan = str(plan_type or "trial").lower()
+    from backend.billing_plans import limits_for, resolve_plan
+    plan = resolve_plan(plan_type)
     max_users = limits_for(plan)["max_users"]
     if max_users is None:
         return  # unlimited (e.g. enterprise)
@@ -395,8 +394,8 @@ def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] 
 
     organization = _first_row(org_response.data)
     if organization:
-        from backend.billing_plans import limits_for
-        plan = str(organization.get("plan_type") or "trial").lower()
+        from backend.billing_plans import limits_for, resolve_plan
+        plan = resolve_plan(organization.get("plan_type"))
         max_users = limits_for(plan)["max_users"]
         if max_users is not None:
             profile_count = _count_profiles_for_tenant(str(tenant_id))
@@ -433,7 +432,8 @@ def _build_session_payload(
         or (user_record or {}).get("organization_name")
         or "Midnight Workspace"
     )
-    plan_type = (organization or {}).get("plan_type") or "trial"
+    from backend.billing_plans import plan_features, resolve_plan
+    plan_type = resolve_plan((organization or {}).get("plan_type"))
     has_profile = profile_exists if profile_exists is not None else bool(user_record)
     has_tenant = tenant_assigned if tenant_assigned is not None else bool(tenant_id)
     resolved_access_state = access_state or (
@@ -452,6 +452,7 @@ def _build_session_payload(
         "organization_name": organization_name,
         "role": role,
         "plan_type": plan_type,
+        "plan_features": plan_features(plan_type),
         "environment": settings.ENVIRONMENT,
         "profile_exists": has_profile,
         "tenant_assigned": has_tenant,
@@ -608,7 +609,7 @@ async def signup(payload: SignupRequest, response: Response):
                     "industry": (payload.industry or "").strip() or None,
                     "region": (payload.region or "").strip() or None,
                     "employee_count": (payload.employee_count or "").strip() or None,
-                    "plan_type": "trial",
+                    "plan_type": "free",
                 }
             )
             .execute()
@@ -1005,7 +1006,7 @@ from backend.api.admin_ops import admin_router
 from backend.api.stripe_router import billing_router, billing_webhook_router
 from backend.api.pm import router as pm_router
 
-app.include_router(assessments_router)
+app.include_router(assessments_router, dependencies=[Depends(verify_access)])
 app.include_router(pipeline_router, dependencies=[Depends(verify_access)])
 app.include_router(dashboard_router, dependencies=[Depends(verify_access)])
 app.include_router(smart_scan_router, dependencies=[Depends(verify_access)])

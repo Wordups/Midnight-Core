@@ -580,10 +580,12 @@ def count_documents_for_tenant(tenant_id: str) -> int:
     return len(data or [])
 
 
-def count_activity_for_tenant(tenant_id: str, *, action: str | None = None) -> int:
+def count_activity_for_tenant(tenant_id: str, *, action: str | None = None, since: datetime | None = None) -> int:
     params = {"tenant_id": f"eq.{tenant_id}", "select": "id"}
     if action:
         params["action"] = f"eq.{action}"
+    if since is not None:
+        params["created_at"] = f"gte.{since.isoformat()}"
     response = _request("GET", "/rest/v1/activity_log", headers=_json_headers(), params=params)
     data = response.json()
     return len(data or [])
@@ -682,7 +684,7 @@ def get_tenant_by_slug(slug: str) -> dict[str, Any] | None:
     return _first_row(rows)
 
 
-def create_tenant(*, name: str, slug: str, industry: str | None, region: str | None, employee_count: str | None, plan_type: str = "trial") -> dict[str, Any]:
+def create_tenant(*, name: str, slug: str, industry: str | None, region: str | None, employee_count: str | None, plan_type: str = "free") -> dict[str, Any]:
     created = _postgrest(
         "POST",
         "tenants",

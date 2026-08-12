@@ -17,8 +17,9 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role"
 os.environ["ENVIRONMENT"] = "dev"
 os.environ["STRIPE_SECRET_KEY"] = "sk_test_fake"
 os.environ["STRIPE_PRICE_STARTER"] = "price_test_starter"
-os.environ["STRIPE_PRICE_GROWTH"] = "price_test_growth"
-os.environ["STRIPE_PRICE_ENTERPRISE"] = "price_test_enterprise"
+os.environ["STRIPE_PRICE_STARTER_ANNUAL"] = "price_test_starter_annual"
+os.environ["STRIPE_PRICE_PRO"] = "price_test_pro"
+os.environ["STRIPE_PRICE_PRO_ANNUAL"] = "price_test_pro_annual"
 os.environ["FRONTEND_BASE_URL"] = "http://localhost:8000"
 
 from fastapi import Request  # noqa: E402
@@ -93,7 +94,7 @@ class TestCheckoutSuccess(unittest.TestCase):
         mock_session.url = "https://checkout.stripe.com/test"
         mock_create.return_value = mock_session
 
-        self.client.post("/billing/checkout", json={"tier": "growth"})
+        self.client.post("/billing/checkout", json={"tier": "pro"})
 
         call_kwargs = mock_create.call_args.kwargs
         self.assertEqual(call_kwargs.get("mode"), "subscription")
@@ -107,7 +108,7 @@ class TestCheckoutSuccess(unittest.TestCase):
 
         response = self.client.post(
             "/billing/checkout",
-            json={"tier": "enterprise"},
+            json={"tier": "pro"},
             follow_redirects=False,
         )
 
@@ -116,30 +117,36 @@ class TestCheckoutSuccess(unittest.TestCase):
 
     @patch.dict(os.environ, {
         "STRIPE_PRICE_STARTER": "price_test_starter",
-        "STRIPE_PRICE_GROWTH": "price_test_growth",
-        "STRIPE_PRICE_ENTERPRISE": "price_test_enterprise",
+        "STRIPE_PRICE_STARTER_ANNUAL": "price_test_starter_annual",
+        "STRIPE_PRICE_PRO": "price_test_pro",
+        "STRIPE_PRICE_PRO_ANNUAL": "price_test_pro_annual",
     })
     @patch("backend.api.stripe_router.stripe.checkout.Session.create")
-    def test_all_tiers_resolve(self, mock_create):
+    def test_all_tiers_and_intervals_resolve(self, mock_create):
         mock_session = MagicMock()
         mock_session.url = "https://checkout.stripe.com/test"
         mock_create.return_value = mock_session
 
-        for tier, expected_price in [
-            ("starter", "price_test_starter"),
-            ("growth", "price_test_growth"),
-            ("enterprise", "price_test_enterprise"),
+        for tier, interval, expected_price in [
+            ("starter", "month", "price_test_starter"),
+            ("starter", "year", "price_test_starter_annual"),
+            ("pro", "month", "price_test_pro"),
+            ("pro", "year", "price_test_pro_annual"),
         ]:
-            with self.subTest(tier=tier):
+            with self.subTest(tier=tier, interval=interval):
                 mock_create.reset_mock()
-                response = self.client.post("/billing/checkout", json={"tier": tier})
+                response = self.client.post("/billing/checkout", json={"tier": tier, "interval": interval})
                 self.assertEqual(response.status_code, 200)
                 call_kwargs = mock_create.call_args.kwargs
                 line_items = call_kwargs.get("line_items", [])
                 self.assertTrue(
                     any(item.get("price") == expected_price for item in line_items),
-                    f"Tier '{tier}': expected {expected_price} in line_items, got {line_items}",
+                    f"Tier '{tier}'/{interval}: expected {expected_price} in line_items, got {line_items}",
                 )
+
+    def test_enterprise_is_not_self_serve(self):
+        response = self.client.post("/billing/checkout", json={"tier": "enterprise"})
+        self.assertEqual(response.status_code, 400)
 
 
 class TestCheckoutInvalidTier(unittest.TestCase):
@@ -164,6 +171,10 @@ class TestCheckoutInvalidTier(unittest.TestCase):
         with patch("backend.api.stripe_router.stripe.checkout.Session.create") as mock_create:
             self.client.post("/billing/checkout", json={"tier": "free"})
             mock_create.assert_not_called()
+
+    def test_invalid_interval_returns_400(self):
+        response = self.client.post("/billing/checkout", json={"tier": "starter", "interval": "week"})
+        self.assertEqual(response.status_code, 400)
 
 
 class TestWebhook(unittest.TestCase):
@@ -203,18 +214,18 @@ class TestWebhook(unittest.TestCase):
             "id": "evt_ok_1",
             "type": "checkout.session.completed",
             "data": {"object": {"client_reference_id": "tenant-test-001",
-                                 "metadata": {"tenant_id": "tenant-test-001", "tier": "growth"}}},
+                                 "metadata": {"tenant_id": "tenant-test-001", "tier": "pro"}}},
         }
         response = self.client.post("/billing/webhook", content=b"{}",
                                     headers={"stripe-signature": "valid"})
         self.assertEqual(response.status_code, 200)
-        mock_activate.assert_called_once_with("tenant-test-001", "growth")
+        mock_activate.assert_called_once_with("tenant-test-001", "pro")
 
     @patch("backend.api.stripe_router._mark_processed")
     @patch("backend.api.stripe_router._already_processed", return_value=False)
     @patch("backend.api.stripe_router._activate_plan")
     @patch("backend.api.stripe_router.stripe.Webhook.construct_event")
-    def test_subscription_deleted_downgrades_to_trial(self, mock_construct, mock_activate, *_):
+    def test_subscription_deleted_downgrades_to_free(self, mock_construct, mock_activate, *_):
         mock_construct.return_value = {
             "id": "evt_del_1",
             "type": "customer.subscription.deleted",
@@ -223,7 +234,7 @@ class TestWebhook(unittest.TestCase):
         response = self.client.post("/billing/webhook", content=b"{}",
                                     headers={"stripe-signature": "valid"})
         self.assertEqual(response.status_code, 200)
-        mock_activate.assert_called_once_with("tenant-test-001", "trial")
+        mock_activate.assert_called_once_with("tenant-test-001", "free")
 
     @patch("backend.api.stripe_router._activate_plan")
     @patch("backend.api.stripe_router._already_processed", return_value=True)

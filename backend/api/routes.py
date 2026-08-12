@@ -14,6 +14,7 @@ import tempfile
 import uuid
 import zipfile
 import xml.etree.ElementTree as ET
+from datetime import UTC, datetime
 from io import BytesIO
 from typing import Any, Optional
 
@@ -40,7 +41,7 @@ from backend.core.json_parser import (
 from backend.renderers.docx_renderer import render_markdown_bullet, render_markdown_into
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
 from backend.core.gap_engine import CONTROL_REGISTRY, get_required_controls, run_program_gap_analysis
-from backend.billing_plans import limits_for
+from backend.billing_plans import limits_for, resolve_plan
 from backend.storage.file_store import (
     SupabaseStoreError,
     count_activity_for_tenant,
@@ -94,9 +95,7 @@ _FW_TO_GO = {
     "ISO 27001": "ISO_27001",
 }
 
-TRIAL_MAX_UPLOADS = 3
-TRIAL_MAX_FRAMEWORKS = 1
-TRIAL_WATERMARK_TEXT = "TRIAL - Midnight Preview"
+PREVIEW_WATERMARK_TEXT = "PREVIEW - Midnight Free Plan"
 POLICY_SCHEMA_VERSION = "midnight-policy-v2"
 POLICY_REQUIRED_SLOTS = [
     "purpose",
@@ -354,21 +353,43 @@ def _assert_tenant_access(request: Request, tenant_id: str) -> dict:
     return _tenant_context_from_request(request)
 
 
-def _enforce_trial_limits(
+def _upgrade_403(plan: str, message: str) -> HTTPException:
+    """403 whose detail carries a machine-readable upgrade marker for the UI."""
+    return HTTPException(
+        status_code=403,
+        detail={"code": "upgrade_required", "plan": plan, "message": message},
+    )
+
+
+def _plan_limits_for_tenant(tenant: dict) -> dict:
+    return limits_for(tenant.get("plan_type"))
+
+
+def _enforce_export_allowed(plan_type: str | None) -> None:
+    plan = resolve_plan(plan_type)
+    if not limits_for(plan)["docx_export"]:
+        raise _upgrade_403(
+            plan,
+            "Document export is available on Starter and up. Upgrade to download your documents.",
+        )
+
+
+def _enforce_plan_limits(
     request: Request,
     *,
     frameworks: list[str] | None = None,
     upload_action: str | None = None,
+    generation: bool = False,
 ) -> dict:
     tenant = _tenant_context_from_request(request)
-    plan = str(tenant.get("plan_type") or "trial").lower()
+    plan = resolve_plan(tenant.get("plan_type"))
     limits = limits_for(plan)
 
     max_frameworks = limits["max_frameworks"]
     if max_frameworks is not None and frameworks is not None and len([fw for fw in frameworks if fw]) > max_frameworks:
-        raise HTTPException(
-            status_code=403,
-            detail=f"The {plan} plan supports up to {max_frameworks} framework(s) at a time. Upgrade to add more.",
+        raise _upgrade_403(
+            plan,
+            f"The {plan} plan supports up to {max_frameworks} framework(s) at a time. Upgrade to add more.",
         )
 
     max_uploads = limits["max_uploads"]
@@ -378,14 +399,39 @@ def _enforce_trial_limits(
         except SupabaseStoreError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         if upload_count >= max_uploads:
-            raise HTTPException(
-                status_code=403,
-                detail=f"The {plan} plan is limited to {max_uploads} uploads. Upgrade to continue.",
+            raise _upgrade_403(
+                plan,
+                f"The {plan} plan is limited to {max_uploads} uploads. Upgrade to continue.",
             )
+
+    if generation:
+        max_total = limits["max_generations_total"]
+        max_monthly = limits["max_docs_per_month"]
+        if max_total is not None:
+            try:
+                generated = count_activity_for_tenant(tenant["id"], action="generated")
+            except SupabaseStoreError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            if generated >= max_total:
+                raise _upgrade_403(
+                    plan,
+                    "Your free policy has been generated. Upgrade to Starter to keep creating documents.",
+                )
+        elif max_monthly is not None:
+            month_start = datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            try:
+                generated = count_activity_for_tenant(tenant["id"], action="generated", since=month_start)
+            except SupabaseStoreError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            if generated >= max_monthly:
+                raise _upgrade_403(
+                    plan,
+                    f"The {plan} plan includes {max_monthly} documents per month. Upgrade to Pro for unlimited documents.",
+                )
     return tenant
 
 
-def _watermark_docx_bytes(docx_bytes: bytes, *, watermark_text: str = TRIAL_WATERMARK_TEXT) -> bytes:
+def _watermark_docx_bytes(docx_bytes: bytes, *, watermark_text: str = PREVIEW_WATERMARK_TEXT) -> bytes:
     doc = Document(BytesIO(docx_bytes))
     notice = doc.paragraphs[0].insert_paragraph_before()
     notice.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -476,7 +522,10 @@ _CREATIVE_SLOT_IDS = {
 }
 
 
-def _model_for_slot(slot_id: str) -> str:
+def _model_for_slot(slot_id: str, plan_limits: dict | None = None) -> str:
+    # Free plan is fenced to the structural (Haiku) tier for every slot.
+    if plan_limits and plan_limits.get("haiku_only"):
+        return STRUCTURAL_MODEL
     return CREATIVE_MODEL if slot_id in _CREATIVE_SLOT_IDS else STRUCTURAL_MODEL
 
 
@@ -1602,9 +1651,51 @@ def _wants_json(request: Request) -> bool:
     return "application/json" in (request.headers.get("accept") or "").lower()
 
 
+# Bird Talk system prompts are server-owned. Clients select a persona by key;
+# free-text system prompts are not accepted (the endpoint would otherwise be an
+# unrestricted Claude proxy on our API key).
+_BIRDSONG_PERSONAS = {
+    "landing": (
+        "You are Midnight, the AI compliance assistant for Midnight by Takeoff — a compliance "
+        "system builder and audit preparation platform. Your mascot persona is a chicken named "
+        "Bird Talk who is the Chief Compliance Officer.\n\n"
+        "Your job is to help visitors understand their compliance needs, qualify leads, and "
+        "guide them toward requesting enterprise access.\n\n"
+        "Key product facts:\n"
+        "- Midnight helps organizations build their compliance program, structure documentation, "
+        "and prepare for audits\n"
+        "- Covers: HIPAA, HiTrust, PCI DSS, ISO 27001, NIST CSF, SOC 2\n"
+        "- Philosophy: \"Handshake, not takeover\" — human-led, intelligence-backed\n"
+        "- Not a replacement for compliance teams — an accelerator\n\n"
+        "Your personality: warm, direct, a little witty. You're a chicken who knows compliance "
+        "cold. Keep responses SHORT (2-4 sentences max). Ask one question at a time. Always move "
+        "toward: 1) understanding their industry, 2) identifying their pain, 3) routing them to "
+        "sign up.\n\n"
+        "Never give long lists. Never be salesy. Just be helpful and smart. End responses with a "
+        "relevant question when appropriate. \U0001F414"
+    ),
+    "dashboard": (
+        "You are Midnight, the AI compliance assistant for the Midnight compliance platform by "
+        "Takeoff. You are also known as Bird Talk — a chicken mascot who is the Chief Compliance "
+        "Officer.\n\n"
+        "Your job: help users understand their compliance program, identify gaps, and guide them "
+        "toward building the right policies and controls.\n\n"
+        "Key product context:\n"
+        "- Midnight covers HIPAA, HITRUST-aligned domains, PCI DSS, NIST CSF, and SOC 2\n"
+        "- Philosophy: \"Handshake, not takeover\" — human-led, AI-accelerated\n"
+        "- You help BUILD and PREPARE, not certify or replace auditors\n\n"
+        "Your persona: warm, direct, expert. Keep responses SHORT (3-5 sentences max). Ask one "
+        "question at a time to guide users. Be genuinely helpful. When relevant, suggest using "
+        "Create Policy or Migrate Document to fill gaps. \U0001F414"
+    ),
+}
+
+
 class BirdsongRequest(BaseModel):
     messages: list[dict]
-    system: Optional[str] = None
+    # Persona key resolved server-side; unknown values fall back to "dashboard".
+    # (Legacy clients that still send a "system" field are ignored by Pydantic.)
+    persona: str = "dashboard"
 
 
 @pipeline_router.get("/smoke-docx")
@@ -1628,15 +1719,7 @@ async def smoke_docx():
 async def birdsong(request: BirdsongRequest):
     try:
         client = _get_anthropic_client()
-        system = request.system or (
-            "You are Midnight, the AI compliance assistant for the Midnight compliance platform "
-            "by Takeoff LLC. You are also known as Bird Talk, a chicken mascot who is the Chief "
-            "Compliance Officer. Help users understand their compliance program, identify gaps, "
-            "and guide them toward building the right policies and controls. "
-            "Midnight covers HIPAA, HITRUST-aligned domains, PCI DSS, NIST CSF, and SOC 2. "
-            "Philosophy: Handshake, not takeover - human-led, AI-accelerated. "
-            "Keep responses short (3-5 sentences max). Warm, direct, expert tone."
-        )
+        system = _BIRDSONG_PERSONAS.get(request.persona, _BIRDSONG_PERSONAS["dashboard"])
 
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
@@ -2205,6 +2288,7 @@ async def _generate_policy_data(
     tenant_id: str,
     organization_hint: str = "",
     existing_policy_id: str | None = None,
+    plan_limits: dict | None = None,
 ) -> tuple[dict[str, Any], str]:
     normalized_frameworks, fw_context = build_framework_prompt_context(request.frameworks)
     mapping_rules = build_framework_mapping_rules(request.frameworks)
@@ -2266,7 +2350,7 @@ async def _generate_policy_data(
                         flow=f"create_policy_section_{slot_id}",
                         context={"policy_name": request.policy_name, "slot_id": slot_id},
                         max_tokens=attempt_max_tokens,
-                        model=_model_for_slot(slot_id),
+                        model=_model_for_slot(slot_id, plan_limits),
                     )
                     break
                 except HTTPException as exc:
@@ -2484,7 +2568,7 @@ async def migrate_preview(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
-    tenant = _enforce_trial_limits(request, frameworks=framework_list, upload_action="migrate_upload")
+    tenant = _enforce_plan_limits(request, frameworks=framework_list, upload_action="migrate_upload")
     template_section_map = _default_template_section_map(template_name)
     template_reference_name = template_name
 
@@ -2549,7 +2633,7 @@ async def migrate_preview(
         "industry": industry,
         "preview_id": str(uuid.uuid4()),
         "tenant_id": tenant["id"],
-        "plan_type": tenant.get("plan_type", "trial"),
+        "plan_type": resolve_plan(tenant.get("plan_type")),
     }
     policy_data["template_section_map"] = template_section_map
 
@@ -2579,7 +2663,8 @@ async def migrate_generate(request: Request, payload: MigrateGenerateRequest):
     template_name = session.get("template_name", "generic_policy")
     base_name = source_name.rsplit(".", 1)[0]
     output_name = f"{base_name}_migrated.docx"
-    tenant = _tenant_context_from_request(request)
+    tenant = _enforce_plan_limits(request, generation=True)
+    _enforce_export_allowed(tenant.get("plan_type"))
     policy_data = _normalize_policy_payload_or_400(
         policy_data,
         organization_hint=str(tenant.get("name") or ""),
@@ -2603,7 +2688,7 @@ async def migrate_generate(request: Request, payload: MigrateGenerateRequest):
         document_name=policy_data.get("policy_name", base_name),
         doc_type=policy_data.get("doc_type", template_name),
         source_name=source_name,
-        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        watermark_exports=bool(_plan_limits_for_tenant(tenant)["watermark"]),
     )
 
 
@@ -2628,7 +2713,10 @@ async def migrate_document(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
-    tenant = _enforce_trial_limits(request, frameworks=framework_list, upload_action="migrate_upload")
+    tenant = _enforce_plan_limits(
+        request, frameworks=framework_list, upload_action="migrate_upload", generation=True
+    )
+    _enforce_export_allowed(tenant.get("plan_type"))
     template_section_map = _default_template_section_map(template_name)
 
     if template_file is not None:
@@ -2692,7 +2780,7 @@ async def migrate_document(
         document_name=policy_data.get("policy_name", base_name),
         doc_type=policy_data.get("doc_type", template_name),
         source_name=upload.filename or "document",
-        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        watermark_exports=bool(_plan_limits_for_tenant(tenant)["watermark"]),
     )
 
 
@@ -2701,11 +2789,14 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
     tenant = None
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
-        tenant = _enforce_trial_limits(request, frameworks=framework_list)
+        # generation=True: once a free tenant's one document exists, preview is
+        # fenced too — otherwise the LLM spend has no cap at all on free.
+        tenant = _enforce_plan_limits(request, frameworks=framework_list, generation=True)
         policy_data, policy_id = await _generate_policy_data(
             payload,
             tenant_id=tenant["id"],
             organization_hint=str(tenant.get("name") or ""),
+            plan_limits=_plan_limits_for_tenant(tenant),
         )
     except HTTPException:
         _emit_signal(
@@ -2735,7 +2826,7 @@ async def create_preview(request: Request, payload: CreatePolicyRequest):
         "source_name": payload.policy_name,
         "preview_id": str(uuid.uuid4()),
         "tenant_id": tenant["id"],
-        "plan_type": tenant.get("plan_type", "trial"),
+        "plan_type": resolve_plan(tenant.get("plan_type")),
         "policy_id": policy_id,
     }
 
@@ -2763,7 +2854,11 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
     policy_name = policy_data.get("policy_name", session.get("source_name", "Policy"))
     doc_type = policy_data.get("doc_type", session.get("doc_type", "POLICY"))
     output_name = f"{policy_name.replace(' ', '_')}_v{policy_data.get('version', '1.0')}.docx"
-    tenant = _tenant_context_from_request(request)
+    tenant = _enforce_plan_limits(request, generation=True)
+    plan_limits = _plan_limits_for_tenant(tenant)
+    if not _wants_json(request):
+        # Binary callers download directly — fence before the expensive work.
+        _enforce_export_allowed(tenant.get("plan_type"))
     policy_data = _merge_sections_from_top_level(policy_data)
     policy_data = _normalize_policy_payload_or_400(
         policy_data,
@@ -2853,14 +2948,18 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
             doc_type=doc_type,
             source_name=session.get("source_name", policy_name),
             policy_id=session.get("policy_id"),
-            watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+            watermark_exports=bool(plan_limits["watermark"]),
         )
+        # Free plan gets its one document generated and previewable in-app,
+        # but the download itself is the Starter fence.
+        export_locked = not plan_limits["docx_export"]
         return JSONResponse({
             "document_id": record["id"],
-            "download": {
+            "download": None if export_locked else {
                 "url": f"/dashboard/documents/{record['id']}/download",
                 "filename": output_name,
             },
+            "export_locked": export_locked,
             "policy_data": {"policy_name": policy_name},
             "preview": preview_text,
             "evidence_count": evidence_count,
@@ -2875,7 +2974,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
         doc_type=doc_type,
         source_name=session.get("source_name", policy_name),
         policy_id=session.get("policy_id"),
-        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        watermark_exports=bool(plan_limits["watermark"]),
         extra_headers={"X-Midnight-Evidence-Count": str(evidence_count)},
     )
 
@@ -2885,11 +2984,13 @@ async def create_document(request: Request, payload: CreatePolicyRequest):
     tenant = None
     try:
         framework_list = [item.strip() for item in payload.frameworks if item.strip()]
-        tenant = _enforce_trial_limits(request, frameworks=framework_list)
+        tenant = _enforce_plan_limits(request, frameworks=framework_list, generation=True)
+        _enforce_export_allowed(tenant.get("plan_type"))
         policy_data, policy_id = await _generate_policy_data(
             payload,
             tenant_id=tenant["id"],
             organization_hint=str(tenant.get("name") or ""),
+            plan_limits=_plan_limits_for_tenant(tenant),
         )
         policy_data = _ensure_required_slots_or_400(policy_data)
     except HTTPException:
@@ -2933,7 +3034,7 @@ async def create_document(request: Request, payload: CreatePolicyRequest):
         doc_type=payload.doc_type,
         source_name=payload.policy_name,
         policy_id=policy_id,
-        watermark_exports=str(tenant.get("plan_type") or "").lower() == "trial",
+        watermark_exports=bool(_plan_limits_for_tenant(tenant)["watermark"]),
     )
 
 
@@ -2968,7 +3069,8 @@ class TenantActivateRequest(BaseModel):
 @pipeline_router.post("/grc-summary")
 async def create_grc_summary(request: Request, payload: GrcSummaryRequest):
     normalized_frameworks, _ = build_framework_prompt_context(payload.frameworks)
-    tenant = _enforce_trial_limits(request, frameworks=normalized_frameworks)
+    tenant = _enforce_plan_limits(request, frameworks=normalized_frameworks, generation=True)
+    _enforce_export_allowed(tenant.get("plan_type"))
     try:
         documents = list_generated_documents(tenant["id"])
     except SupabaseStoreError as exc:
@@ -3019,15 +3121,6 @@ async def create_grc_summary(request: Request, payload: GrcSummaryRequest):
         narrative=exec_narrative,
     )
 
-    if str(tenant.get("plan_type") or "").lower() == "trial":
-        pdf_bytes = build_grc_summary_pdf(
-            organization_name=f"{TRIAL_WATERMARK_TEXT} - {payload.organization_name.strip() or 'Organization'}",
-            industry=payload.industry.strip() or "Unspecified",
-            frameworks=normalized_frameworks,
-            documents=documents,
-            narrative=exec_narrative,
-        )
-
     org_slug = (payload.organization_name.strip() or "organization").replace(" ", "_")
     output_name = f"{org_slug}_grc_summary.pdf"
     preview_text = (
@@ -3073,7 +3166,7 @@ async def analyze_document(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     framework_list = [item.strip() for item in frameworks.split(",") if item.strip()]
-    tenant = _enforce_trial_limits(request, frameworks=framework_list, upload_action="analysis_upload")
+    tenant = _enforce_plan_limits(request, frameworks=framework_list, upload_action="analysis_upload")
     tenant_id = tenant["id"]
     raw_text = _extract_text_from_upload(file_bytes, file.filename or "document")[:10000]
 
@@ -3161,7 +3254,7 @@ async def create_org(request: Request, payload: TenantCreateRequest):
             industry=payload.industry,
             region=payload.region,
             employee_count=payload.employee_count,
-            plan_type="trial",
+            plan_type="free",
         )
         update_profile_membership(
             user_id=getattr(request.state, "user_id", ""),
@@ -3185,7 +3278,7 @@ async def update_org_onboarding(request: Request, tenant_id: str, payload: Onboa
     tenant = _assert_tenant_access(request, tenant_id)
     frameworks = [item.strip() for item in (payload.frameworks or []) if item and item.strip()]
     if payload.frameworks is not None:
-        _enforce_trial_limits(request, frameworks=frameworks)
+        _enforce_plan_limits(request, frameworks=frameworks)
 
     updates: dict[str, object] = {}
     for field in ("current_step", "progress", "build_method", "primary_objective", "completed"):

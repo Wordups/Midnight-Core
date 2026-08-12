@@ -1,0 +1,77 @@
+[
+  {
+    "source_id": "nist_sp_800_61",
+    "name": "NIST SP 800-61 Computer Security Incident Handling Guide",
+    "publisher": "NIST",
+    "source_url": "https://csrc.nist.gov/publications/detail/sp/800-61/rev-2/final",
+    "version": "Rev. 2",
+    "license_policy": {
+      "status": "public_domain",
+      "allowed_uses": ["index", "summarize", "cite", "retrieve_snippet", "generate_original_guidance"],
+      "blocked_uses": ["template_clone"],
+      "max_quote_chars": 600,
+      "attribution_required": true,
+      "source_license_url": "https://www.nist.gov/open/copyright-fair-use-and-licensing-statements-srd-data-and-software"
+    }
+  },
+  {
+    "source_id": "owasp_asvs",
+    "name": "OWASP Application Security Verification Standard",
+    "publisher": "OWASP Foundation",
+    "source_url": "https://github.com/OWASP/ASVS",
+    "version": "5.0",
+    "license_policy": {
+      "status": "open_license",
+      "allowed_uses": ["index", "summarize", "cite", "retrieve_snippet", "generate_original_guidance"],
+      "blocked_uses": ["template_clone"],
+      "max_quote_chars": 500,
+      "attribution_required": true,
+      "source_license_url": "https://github.com/OWASP/ASVS/blob/master/LICENSE.md"
+    }
+  },
+  {
+    "source_id": "iso_27001_2022",
+    "name": "ISO/IEC 27001:2022",
+    "publisher": "ISO",
+    "source_url": "https://www.iso.org/standard/27001",
+    "version": "2022",
+    "license_policy": {
+      "status": "restricted",
+      "allowed_uses": ["index", "summarize", "cite", "generate_original_guidance"],
+      "blocked_uses": ["quote_full_text", "redistribute", "template_clone", "retrieve_snippet"],
+      "max_quote_chars": 0,
+      "attribution_required": true,
+      "source_license_url": "https://www.iso.org/copyright.html"
+    }
+  },
+  {
+    "source_id": "soc2_tsc",
+    "name": "AICPA Trust Services Criteria",
+    "publisher": "AICPA",
+    "source_url": "https://www.aicpa-cima.com/resources/landing/trust-services-criteria",
+    "version": "current",
+    "license_policy": {
+      "status": "restricted",
+      "allowed_uses": ["index", "summarize", "cite", "generate_original_guidance"],
+      "blocked_uses": ["quote_full_text", "redistribute", "template_clone", "retrieve_snippet"],
+      "max_quote_chars": 0,
+      "attribution_required": true,
+      "source_license_url": "https://www.aicpa-cima.com/help/terms-and-conditions"
+    }
+  },
+  {
+    "source_id": "mitre_attack_enterprise",
+    "name": "MITRE ATT&CK Enterprise",
+    "publisher": "MITRE",
+    "source_url": "https://attack.mitre.org/",
+    "version": "current",
+    "license_policy": {
+      "status": "attribution_required",
+      "allowed_uses": ["index", "summarize", "cite", "retrieve_snippet", "generate_original_guidance"],
+      "blocked_uses": ["template_clone"],
+      "max_quote_chars": 500,
+      "attribution_required": true,
+      "source_license_url": "https://attack.mitre.org/resources/terms-of-use/"
+    }
+  }
+]

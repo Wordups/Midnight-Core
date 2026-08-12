@@ -1,0 +1,60 @@
+[
+  {
+    "id": "nist_800_61_incident_handling_lifecycle",
+    "source_id": "nist_sp_800_61",
+    "title": "Incident handling lifecycle",
+    "domain": "incident_response",
+    "themes": ["incident response", "triage", "containment", "eradication", "recovery", "post incident review"],
+    "doc_types": ["playbook", "procedure", "plan", "sop"],
+    "citation": "NIST SP 800-61 Rev. 2 Computer Security Incident Handling Guide",
+    "source_url": "https://csrc.nist.gov/publications/detail/sp/800-61/rev-2/final",
+    "midnight_summary": "Incident response documents should define repeatable preparation, detection, analysis, containment, eradication, recovery, and post-incident improvement activities.",
+    "raw_text": "Incident handling typically includes preparation; detection and analysis; containment, eradication, and recovery; and post-incident activity."
+  },
+  {
+    "id": "owasp_asvs_application_security_verification",
+    "source_id": "owasp_asvs",
+    "title": "Application security verification requirements",
+    "domain": "application_security",
+    "themes": ["application security", "api security", "authentication", "session management", "input validation", "secure development"],
+    "doc_types": ["standard", "policy", "procedure", "sop"],
+    "citation": "OWASP Application Security Verification Standard 5.0",
+    "source_url": "https://github.com/OWASP/ASVS",
+    "midnight_summary": "Application security standards should define verification expectations for authentication, session management, access control, validation, cryptography, error handling, logging, and API protections.",
+    "raw_text": "The OWASP Application Security Verification Standard provides a basis for testing web application technical security controls and provides developers with a list of requirements for secure development."
+  },
+  {
+    "id": "iso_27001_a_5_1",
+    "source_id": "iso_27001_2022",
+    "title": "Policies for information security",
+    "domain": "governance",
+    "themes": ["policy governance", "security policy", "management approval", "review cadence"],
+    "doc_types": ["policy", "standard"],
+    "citation": "ISO/IEC 27001:2022 Annex A 5.1",
+    "source_url": "https://www.iso.org/standard/27001",
+    "midnight_summary": "Organizations should maintain approved information security policies with defined ownership, communication expectations, review cadence, and update triggers. Generate original implementation guidance only; do not quote ISO control text."
+  },
+  {
+    "id": "soc2_cc7_incident_response_monitoring",
+    "source_id": "soc2_tsc",
+    "title": "System operations, monitoring, and incident response themes",
+    "domain": "security_monitoring",
+    "themes": ["security monitoring", "incident response", "anomaly detection", "case closure", "evidence management"],
+    "doc_types": ["playbook", "procedure", "policy", "sop"],
+    "citation": "AICPA Trust Services Criteria CC7 family",
+    "source_url": "https://www.aicpa-cima.com/resources/landing/trust-services-criteria",
+    "midnight_summary": "Security operations documentation should define monitoring responsibilities, anomaly response, incident evaluation, evidence capture, communication, remediation tracking, and closure discipline. Generate original guidance only; do not quote AICPA criteria text."
+  },
+  {
+    "id": "mitre_attack_detection_engineering_context",
+    "source_id": "mitre_attack_enterprise",
+    "title": "ATT&CK-informed detection engineering context",
+    "domain": "detection_engineering",
+    "themes": ["detection engineering", "security monitoring", "threat hunting", "attack techniques", "data sources"],
+    "doc_types": ["playbook", "procedure", "standard", "sop"],
+    "citation": "MITRE ATT&CK Enterprise Matrix",
+    "source_url": "https://attack.mitre.org/",
+    "midnight_summary": "Detection engineering documents should connect alert logic, data sources, threat behaviors, validation, tuning, and operational feedback loops to observable adversary techniques.",
+    "raw_text": "MITRE ATT&CK is a globally-accessible knowledge base of adversary tactics and techniques based on real-world observations."
+  }
+]
