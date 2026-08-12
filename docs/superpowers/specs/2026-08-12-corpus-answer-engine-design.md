@@ -10,8 +10,8 @@ control mapping (174-control registry + gap engine), served for four use cases:
 audits, security questionnaires, vendor assessments, and internal security
 requests. One mechanism serves all four; `use_case` is a stored label.
 
-Interview honesty rule: this is new, dated pivot work. Never present it as part
-of v1.
+Provenance note: this capability was added 2026-08-12 and is documented as
+such.
 
 ## What exists (verified)
 
@@ -21,7 +21,7 @@ of v1.
   (`ingestion.py:519`); similarity is local cosine (`detectors.py:157`).
 - Control registry: `gap_engine.load_control_registry()` — 174 controls
   (61 SOC 2, 20 HIPAA, 93 ISO 27001:2022), 4 equivalence groups, severity per
-  control. Say "across", not "mapped across" (18 controls cross-walked).
+  control. Controls span frameworks; 18 are cross-walked via equivalence groups.
 - Strict-JSON LLM parsing: `backend/core/json_parser.parse_model_json` —
   fail-closed pattern used by `assessments.py` and `metadata_llm.py`.
 - Auth: routers registered in `main.py` with `Depends(verify_access)`.
