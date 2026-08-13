@@ -2819,10 +2819,15 @@ async function uploadToCorpus() {
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
       const detail = (data && (data.detail || data.error)) || `HTTP ${r.status}`;
-      status.textContent = '';
-      showToast(typeof detail === 'string' ? detail : 'Upload failed.', true);
+      const msg = typeof detail === 'string' ? detail : 'Upload failed.';
+      // Persistent inline error — a transient toast reads as a silent failure
+      // to anyone who looks away during the 60-90s processing window.
+      status.textContent = `Failed: ${msg}`;
+      status.style.color = 'var(--red)';
+      showToast(msg, true);
       return;
     }
+    status.style.color = 'var(--text3)';
     const mapped = (data.ingest && data.ingest.covered_control_ids || []).length;
     status.textContent = `Done — ${data.ingest ? data.ingest.sections_count : '?'} sections, ${mapped} controls mapped.`;
     fileInput.value = '';
