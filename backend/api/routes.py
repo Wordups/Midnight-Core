@@ -292,17 +292,76 @@ INCIDENT_RUNBOOK_SLOT_SPECS = [
 # Doc-type-aware generation: lanes listed here are live end to end.
 # Slot specs for other Studio lanes don't exist yet — per CLAUDE.md,
 # ask the owner before inventing them.
+
+PROCESS_FLOW_SLOT_SPECS = [
+    {"slot_id": "purpose", "heading": "Purpose", "instruction": "State what business process this flow documents and why it must be standardized."},
+    {"slot_id": "scope", "heading": "Scope and Boundaries", "instruction": "Define where the process starts and ends, which teams and systems participate, and what is out of scope."},
+    {"slot_id": "roles_responsibilities", "heading": "Roles and Actors", "instruction": "Identify every actor in the flow and what each is responsible for at their step."},
+    {"slot_id": "process_steps", "heading": "Process Steps", "instruction": "Describe the process end to end as numbered sequential steps, each with its actor, action, inputs, and outputs."},
+    {"slot_id": "decision_points", "heading": "Decision Points and Branches", "instruction": "Describe each decision point, the criteria applied, and where each branch leads including exception paths."},
+    {"slot_id": "controls_checkpoints", "heading": "Controls and Checkpoints", "instruction": "State the control checkpoints in the flow, what each verifies, and what evidence is captured."},
+    {"slot_id": "review_cycle", "heading": "Review Cycle", "instruction": "Describe how often the process flow is reviewed and how changes are approved."},
+]
+TRAINING_SLOT_SPECS = [
+    {"slot_id": "learning_objectives", "heading": "Learning Objectives", "instruction": "State what the learner will know or be able to do after this module, in measurable terms."},
+    {"slot_id": "audience", "heading": "Audience and Prerequisites", "instruction": "Define who must take this training, when, and any prerequisite knowledge."},
+    {"slot_id": "core_content", "heading": "Core Content", "instruction": "Write the training content itself: the concepts, rules, and expectations, organized into short teachable segments."},
+    {"slot_id": "scenarios", "heading": "Scenarios and Examples", "instruction": "Provide realistic workplace scenarios that apply the content, each with the correct handling explained."},
+    {"slot_id": "knowledge_checks", "heading": "Knowledge Checks", "instruction": "Write 5-8 check questions with answers that verify the learning objectives."},
+    {"slot_id": "completion_criteria", "heading": "Completion and Recordkeeping", "instruction": "Define what constitutes completion, passing criteria, frequency of retraining, and how completion is recorded."},
+]
+RISK_ASSESSMENT_SLOT_SPECS = [
+    {"slot_id": "assessment_scope", "heading": "Assessment Scope", "instruction": "Define what systems, processes, data, and time period this risk assessment covers."},
+    {"slot_id": "methodology", "heading": "Methodology", "instruction": "Describe the risk assessment methodology: how likelihood and impact are scored and how risk levels are derived."},
+    {"slot_id": "threat_landscape", "heading": "Threat and Vulnerability Analysis", "instruction": "Describe the relevant threat categories and vulnerability classes considered for the in-scope assets."},
+    {"slot_id": "risk_analysis", "heading": "Risk Analysis", "instruction": "Analyze the identified risks: describe each significant risk, its likelihood, impact, and current mitigations."},
+    {"slot_id": "risk_ratings", "heading": "Risk Ratings Summary", "instruction": "Summarize the assessed risks with their ratings in a structured list ordered by severity."},
+    {"slot_id": "treatment_plan", "heading": "Risk Treatment Plan", "instruction": "For each risk above appetite, state the treatment decision (mitigate, accept, transfer, avoid), the planned actions, owners, and target dates."},
+    {"slot_id": "review_monitoring", "heading": "Review and Monitoring", "instruction": "Describe how risks are monitored, when the assessment is refreshed, and the escalation path for material changes."},
+]
+AUDIT_PACKAGE_SLOT_SPECS = [
+    {"slot_id": "audit_scope", "heading": "Audit Scope and Objectives", "instruction": "Define the audit period, frameworks in scope, systems covered, and the objectives of this package."},
+    {"slot_id": "control_summary", "heading": "Control Environment Summary", "instruction": "Summarize the control environment: governance structure, key control families, and how controls are operated."},
+    {"slot_id": "evidence_index", "heading": "Evidence Index", "instruction": "Provide an organized index of evidence artifacts by control family: what each artifact demonstrates and where it lives."},
+    {"slot_id": "testing_procedures", "heading": "Testing Procedures", "instruction": "Describe how each control family is tested: population, sampling approach, test steps, and pass criteria."},
+    {"slot_id": "findings_template", "heading": "Findings and Exceptions", "instruction": "Define how findings are recorded: severity levels, exception handling, and the remediation workflow."},
+    {"slot_id": "attestation", "heading": "Management Attestation", "instruction": "Write the management attestation statement covering responsibility for the control environment and the accuracy of the package."},
+]
+AI_GOVERNANCE_SLOT_SPECS = [
+    {"slot_id": "purpose", "heading": "Purpose", "instruction": "State why AI governance is required, the risks it addresses, and the organizational commitment it encodes."},
+    {"slot_id": "scope", "heading": "Scope of AI Systems", "instruction": "Define which AI systems, models, and use cases are governed, including third-party AI services and employee use of external AI tools."},
+    {"slot_id": "roles_responsibilities", "heading": "Governance Roles", "instruction": "Identify the accountable roles for AI decisions: ownership, review authority, and escalation."},
+    {"slot_id": "acceptable_use", "heading": "Acceptable Use of AI", "instruction": "Write the mandatory rules for AI use: permitted uses, prohibited uses, data that may and may not be provided to AI systems, and human oversight requirements."},
+    {"slot_id": "risk_management", "heading": "AI Risk Management", "instruction": "Describe how AI risks are assessed and managed: bias, accuracy, privacy, security, and vendor risk for AI services."},
+    {"slot_id": "lifecycle_controls", "heading": "Model and Data Lifecycle Controls", "instruction": "Describe controls across the AI lifecycle: data sourcing, evaluation before deployment, monitoring in production, and decommissioning."},
+    {"slot_id": "monitoring_audit", "heading": "Monitoring and Audit", "instruction": "State how AI use is monitored, what is logged, and how compliance with this policy is audited."},
+    {"slot_id": "exceptions", "heading": "Exceptions and Review", "instruction": "Explain how exceptions are requested and approved, and how often this policy is reviewed."},
+]
+
 DOC_TYPE_SLOT_SPECS: dict[str, list[dict[str, str]]] = {
     "POLICY": POLICY_SLOT_SPECS,
     "SOP": SOP_SLOT_SPECS,
     "PROCEDURE": SOP_SLOT_SPECS,
     "STANDARD": STANDARD_SLOT_SPECS,
     "INCIDENT_RUNBOOK": INCIDENT_RUNBOOK_SLOT_SPECS,
+    "PROCESS_FLOW": PROCESS_FLOW_SLOT_SPECS,
+    "TRAINING_MODULE": TRAINING_SLOT_SPECS,
+    "TRAINING": TRAINING_SLOT_SPECS,
+    "RISK_ASSESSMENT": RISK_ASSESSMENT_SLOT_SPECS,
+    "AUDIT_PACKAGE": AUDIT_PACKAGE_SLOT_SPECS,
+    "AI_GOVERNANCE": AI_GOVERNANCE_SLOT_SPECS,
 }
 
 # The gap engine's control doc_types vocabulary (frameworks/*.json) uses
 # PLAYBOOK for incident-response documents.
-GAP_DOC_TYPE_ALIAS = {"INCIDENT_RUNBOOK": "PLAYBOOK"}
+GAP_DOC_TYPE_ALIAS = {
+    "INCIDENT_RUNBOOK": "PLAYBOOK",
+    # New lanes map onto the registry doc_types vocabulary where a sensible
+    # fit exists; lanes without a fit simply skip control mapping.
+    "PROCESS_FLOW": "PROCEDURE",
+    "RISK_ASSESSMENT": "PLAN",
+    "AUDIT_PACKAGE": "PLAN",
+}
 
 
 def _normalize_doc_type(doc_type: str | None) -> str:
@@ -520,6 +579,11 @@ _CREATIVE_SLOT_IDS = {
     # long-form slots in the SOP / Standard / Incident Runbook lanes
     "procedure_steps", "escalation", "requirements",
     "activation_triggers", "response_steps", "escalation_paths",
+    # long-form slots in the five newly-live lanes
+    "process_steps", "decision_points", "core_content", "scenarios",
+    "threat_landscape", "risk_analysis", "treatment_plan",
+    "evidence_index", "testing_procedures", "acceptable_use",
+    "risk_management", "lifecycle_controls",
 }
 
 

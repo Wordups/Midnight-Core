@@ -37,6 +37,7 @@ DOC_TYPE_TO_CATEGORY = {
     "PLAYBOOK": "incident_runbook",
     "PROCESS_FLOW": "process_flow",
     "TRAINING": "training",
+    "TRAINING_MODULE": "training",
     "RISK_ASSESSMENT": "risk_assessment",
     "AUDIT_PACKAGE": "audit_package",
     "AI_GOVERNANCE": "ai_governance",

@@ -68,7 +68,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   render thumbnails in the Studio "Template style" picker so choosing a
   variant is visual. Frontend + one static route if needed.
 
-- [ ] **Un-gate lanes whose templates now exist.** Process Flow, Training,
+- [x] **Un-gate lanes whose templates now exist.** Process Flow, Training,
   Audit Package, AI Governance have shells but no DOC_TYPE_SLOT_SPECS.
   Add slot specs for ONE lane (Audit Package first), add it to LIVE_LANES +
   LIVE_CREATE_LANES, verify preview/generate end-to-end with tests. One lane

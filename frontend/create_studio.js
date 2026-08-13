@@ -72,8 +72,8 @@ const QUERY_TYPE_TO_LANE = Object.fromEntries(
 
 // Lanes wired to the backend generation pipeline end to end. Everything
 // else is visibly in development — no dead-end flows shown to buyers.
-const LIVE_LANES = new Set(['POLICY', 'SOP', 'STANDARD', 'INCIDENT_RUNBOOK']);
-const IN_DEV_MESSAGE = 'This lane is in development. Policy, SOP, Standard, and Incident Runbook generate documents today.';
+const LIVE_LANES = new Set(['POLICY', 'SOP', 'STANDARD', 'INCIDENT_RUNBOOK', 'PROCESS_FLOW', 'TRAINING_MODULE', 'RISK_ASSESSMENT', 'AUDIT_PACKAGE', 'AI_GOVERNANCE']);
+const IN_DEV_MESSAGE = 'This lane is in development.';
 
 let workflowSession = null;
 let workflowState = {

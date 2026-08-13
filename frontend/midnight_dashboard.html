@@ -3894,7 +3894,7 @@ function handleCreateLaneNavigation(event, key) {
 
 // Lanes wired to the backend generation pipeline end to end. Must match
 // LIVE_LANES in create_studio.js.
-const LIVE_CREATE_LANES = new Set(['POLICY', 'SOP', 'STANDARD', 'INCIDENT_RUNBOOK']);
+const LIVE_CREATE_LANES = new Set(['POLICY', 'SOP', 'STANDARD', 'INCIDENT_RUNBOOK', 'PROCESS_FLOW', 'TRAINING_MODULE', 'RISK_ASSESSMENT', 'AUDIT_PACKAGE', 'AI_GOVERNANCE']);
 
 function renderCreateDocTypeSelector() {
   const selector = document.getElementById('cp-type-selector');
