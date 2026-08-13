@@ -31,11 +31,10 @@ ANTHROPIC_MODEL   = resolve_model()
 
 
 def _get_anthropic_client():
-    if anthropic is None:
-        raise RuntimeError("Anthropic dependency is not installed on the server.")
-    if not ANTHROPIC_API_KEY:
-        raise RuntimeError("ANTHROPIC_API_KEY is not configured.")
-    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    # Provider-routed: Anthropic by default, Ollama when LLM_PROVIDER=ollama.
+    from backend.llm.provider import get_client
+
+    return get_client(anthropic_api_key=ANTHROPIC_API_KEY)
 
 SECTION_SYNONYMS: dict[str, list[str]] = {
     "purpose":                ["objective", "intent", "goal", "overview", "introduction", "background"],

@@ -176,7 +176,11 @@ def extract_metadata(raw_text: str, *, default_title: str | None = None) -> dict
     if not settings.ANTHROPIC_API_KEY:
         raise RuntimeError("ANTHROPIC_API_KEY is not configured; cannot run metadata extraction.")
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    # Provider-routed: Anthropic by default, Ollama when LLM_PROVIDER=ollama.
+    # This module previously built its own client and bypassed the switch.
+    from backend.llm.provider import get_client
+
+    client = get_client(anthropic_api_key=settings.ANTHROPIC_API_KEY)
     truncated = raw_text[:MAX_TEXT_CHARS]
     prompt = _PROMPT.format(text=truncated)
     response = client.messages.create(
