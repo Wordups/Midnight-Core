@@ -20,3 +20,9 @@ jobs:
           test "$code" = "200"
       - name: Touch landing page
         run: curl -s -o /dev/null --max-time 90 -L https://midnight-core-cod3.onrender.com/
+      - name: Alert on failure
+        if: failure()
+        run: |
+          curl -s -H "Title: Midnight DEMO DOWN" -H "Tags: rotating_light" \
+            -d "Keepalive ping failed — the demo URL is not responding. Check Render." \
+            https://ntfy.sh/midnight-core-brw-x7k42m9p
