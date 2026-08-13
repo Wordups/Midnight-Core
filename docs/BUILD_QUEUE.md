@@ -34,7 +34,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   routes to Groq/Ollama. Thread the true model (from the provider response)
   into the run row and the API response. Small; add a test.
 
-- [ ] **Overview view: posture first.** The Overview hero currently pushes
+- [x] **Overview view: posture first.** The Overview hero currently pushes
   Migrate/Create/Bird Talk. Make compliance posture the hero (documents,
   controls covered, framework coverage, open gaps — data already served for
   the corpus view) with the corpus/questionnaire flow as the primary CTA;

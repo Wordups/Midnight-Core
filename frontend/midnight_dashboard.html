@@ -1276,12 +1276,21 @@
         </div>
         <div class="cluck-cta">Ask Midnight →</div>
       </div>
+      <div class="launcher-panel" id="posture-hero" style="cursor:pointer" onclick="showView('corpus', document.getElementById('nav-corpus'), 'Compliance Corpus')">
+        <div class="launcher-title">Your Compliance Posture</div>
+        <div class="launcher-sub" id="posture-sub">Loading your corpus…</div>
+        <div id="posture-bars" style="margin-top:10px"></div>
+        <div class="launcher-actions" style="margin-top:12px">
+          <button class="run-btn" onclick="event.stopPropagation(); showView('corpus', document.getElementById('nav-corpus'), 'Compliance Corpus')">Open Compliance Corpus</button>
+          <button class="run-btn" onclick="event.stopPropagation(); showView('gaps', document.getElementById('nav-gaps'), 'Gap Analysis')">Review Gaps</button>
+        </div>
+      </div>
       <div class="launcher-panel">
-        <div class="launcher-title">Launch The Tool Workspace</div>
-        <div class="launcher-sub">Migrate a legacy doc, create a new policy, or open Bird Talk. All outputs appear in this dashboard.</div>
+        <div class="launcher-title">Build &amp; Migrate</div>
+        <div class="launcher-sub">Create a new policy, migrate a legacy doc, or open Bird Talk. Everything lands in your corpus automatically.</div>
         <div class="launcher-actions">
-          <button class="run-btn" onclick="showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document')">Migrate</button>
           <button class="run-btn" onclick="showView('create', document.getElementById('nav-create'), 'Create Policy')">Create</button>
+          <button class="run-btn" onclick="showView('migrate', document.getElementById('nav-migrate'), 'Migrate Document')">Migrate</button>
           <button class="run-btn" onclick="showView('birdtalk', document.getElementById('nav-birdtalk'), 'Bird Talk')">Bird Talk</button>
         </div>
       </div>
@@ -2762,6 +2771,7 @@ function showView(viewId, navEl, title) {
   if (viewId === 'birdtalk') { try { btLoadPulse(); } catch (_) {} }
   if (viewId === 'library') { try { loadBirdEye(); } catch (_) {} }
   if (viewId === 'corpus') { try { loadCorpusView(); } catch (_) {} }
+  if (viewId === 'overview') { try { loadPostureHero(); } catch (_) {} }
   if (viewId === 'billing') { try { renderBillingView(); } catch (_) {} }
   if (isMobileSidebarLayout()) closeSidebarDrawer();
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2801,6 +2811,36 @@ let corpusCurrentRunId = null;
 async function loadCorpusView() {
   loadCorpusIndex();
   loadCorpusRuns();
+}
+
+// Overview hero: posture summary from the corpus index. Fails quiet — the
+// Overview must render even when the corpus is empty or unreachable.
+async function loadPostureHero() {
+  const sub = document.getElementById('posture-sub');
+  const bars = document.getElementById('posture-bars');
+  if (!sub || !bars) return;
+  try {
+    const r = await fetch(`${API}/api/v1/corpus`, { credentials: 'include' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const idx = await r.json();
+    window._corpusIndex = idx;
+    if (!idx.document_count) {
+      sub.textContent = 'No documents yet — upload what you already have and your posture appears here.';
+      bars.innerHTML = '';
+      return;
+    }
+    sub.textContent = `${idx.document_count} documents · ${idx.controls_covered_total}/${idx.controls_total} controls covered · ${idx.stale_count} stale`;
+    const top = (idx.frameworks || []).filter(f => f.covered_controls > 0)
+      .sort((a, b) => b.coverage_pct - a.coverage_pct).slice(0, 3);
+    bars.innerHTML = top.map(f => `
+      <div class="corpus-cov-row">
+        <div class="corpus-cov-name">${escHtml(f.framework)}</div>
+        <div class="corpus-cov-bar"><div class="corpus-cov-fill" style="width:${f.coverage_pct}%"></div></div>
+        <div class="corpus-cov-pct">${f.coverage_pct}%</div>
+      </div>`).join('');
+  } catch (_) {
+    sub.textContent = 'Posture unavailable right now.';
+  }
 }
 
 async function uploadToCorpus() {
@@ -5774,7 +5814,7 @@ async function fetchAgents() {
 }
 
 async function refreshDashboardData() {
-  await Promise.all([loadSummary(), loadDocuments(), loadActivity(), loadGaps(), fetchAgents()]);
+  await Promise.all([loadSummary(), loadDocuments(), loadActivity(), loadGaps(), fetchAgents(), loadPostureHero()]);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
