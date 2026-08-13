@@ -436,6 +436,7 @@ def answer_question(
     answer["usage"] = {
         "input_tokens": int(result.get("input_tokens") or 0),
         "output_tokens": int(result.get("output_tokens") or 0),
+        "model": str(result.get("model") or ""),
     }
     return answer
 
@@ -473,6 +474,7 @@ def answer_batch(
     answers: list[dict[str, Any]] = []
     input_tokens = 0
     output_tokens = 0
+    actual_model = model_name
     for idx, question in enumerate(questions):
         qvec = qvecs[idx] if qvecs and idx < len(qvecs) else None
         try:
@@ -487,6 +489,8 @@ def answer_batch(
         usage = answer.pop("usage", {})
         input_tokens += usage.get("input_tokens", 0)
         output_tokens += usage.get("output_tokens", 0)
+        if usage.get("model"):
+            actual_model = usage["model"]
         answers.append(answer)
 
     counts = {status: 0 for status in STATUSES}
@@ -502,7 +506,7 @@ def answer_batch(
         "not_satisfied_count": counts["not_satisfied"],
         "insufficient_count": counts["insufficient_evidence"],
         "not_applicable_count": counts["not_applicable"],
-        "model": model_name,
+        "model": actual_model,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
     }
@@ -532,7 +536,7 @@ def answer_batch(
         "use_case": use_case,
         "question_count": len(answers),
         "counts": counts,
-        "model": model_name,
+        "model": actual_model,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "answers": answers,

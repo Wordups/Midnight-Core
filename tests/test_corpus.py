@@ -23,7 +23,7 @@ TENANT = "00000000-0000-0000-0000-000000000001"
 
 def _fake_llm(text: str):
     def llm(prompt: str):
-        return {"text": text, "input_tokens": 100, "output_tokens": 50}
+        return {"text": text, "input_tokens": 100, "output_tokens": 50, "model": "actual-answering-model"}
     return llm
 
 
@@ -231,6 +231,8 @@ class BatchTests(unittest.TestCase):
         self.assertEqual(run["counts"]["satisfied"], 1)
         self.assertEqual(run["input_tokens"], 100)
         self.assertEqual(run["use_case"], "vendor_assessment")
+        # run reports the model that actually answered, not the configured one
+        self.assertEqual(run["model"], "actual-answering-model")
         # runs row + answers rows
         self.assertEqual(mock_insert.call_count, 2)
         answers_payload = mock_insert.call_args_list[1].args[1]

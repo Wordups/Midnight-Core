@@ -29,7 +29,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   --ignore=tests/test_document_isolation.py` (those two need live Supabase).
   Stub required env vars the way tests/test_birdsong.py does.
 
-- [ ] **Run rows report the model that actually answered.** `corpus_runs.model`
+- [x] **Run rows report the model that actually answered.** `corpus_runs.model`
   stores the configured Anthropic model name even when the provider switch
   routes to Groq/Ollama. Thread the true model (from the provider response)
   into the run row and the API response. Small; add a test.

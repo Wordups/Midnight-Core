@@ -93,6 +93,9 @@ def _llm_for_request(request: Request) -> tuple[Any, str]:
             "text": response.content[0].text if response.content else "",
             "input_tokens": getattr(usage, "input_tokens", 0) or 0,
             "output_tokens": getattr(usage, "output_tokens", 0) or 0,
+            # The provider switch may route to a different backend than the
+            # configured Anthropic id — report what actually answered.
+            "model": getattr(response, "model", None) or model,
         }
 
     return llm, model
