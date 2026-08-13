@@ -229,13 +229,23 @@ def fill_template_placeholders(doc, values: dict[str, str]) -> None:
         if "{{" in p.text:  # token spanned multiple runs
             p.text = resolve(p.text)
 
+    def fill_tables(tables) -> None:
+        for table in tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for p in cell.paragraphs:
+                        fill_paragraph(p)
+
     for p in doc.paragraphs:
         fill_paragraph(p)
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for p in cell.paragraphs:
-                    fill_paragraph(p)
+    fill_tables(doc.tables)
+    # Headers/footers carry {{DOCUMENT_TITLE}} / {{CLASSIFICATION}} too.
+    for section in doc.sections:
+        for container in (section.header, section.footer,
+                          section.first_page_header, section.first_page_footer):
+            for p in container.paragraphs:
+                fill_paragraph(p)
+            fill_tables(container.tables)
 
 
 def _replace_placeholder_text(doc, replacements: dict[str, str]) -> None:

@@ -2475,22 +2475,46 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
     # Render into a styled template shell (doc_type + variant select the pack;
     # tenant branding fills header placeholders and heading colors). Falls
     # back to a blank Document when no pack exists — old behavior, kept.
-    from backend.core.template_engine import fill_template_placeholders, load_template_shell
+    from backend.core.template_engine import (
+        _fetch_logo_bytes,
+        _parse_hex_color,
+        fill_template_placeholders,
+        load_template_shell,
+    )
 
     _branding = policy_data.get("_branding") or {}
     _title = policy_data.get("policy_name") or policy_data.get("title") or "Untitled"
     _org = policy_data.get("organization") or ""
-    doc = load_template_shell(
-        policy_data.get("doc_type") or "POLICY",
-        policy_data.get("template_variant"),
-        branding={
-            "organization": _org,
-            "title": _title,
-            "primary_color": _branding.get("primary_color"),
-            "classification": _branding.get("classification") or "Internal",
-            "logo_url": _branding.get("logo_url"),
-        },
-    )
+    _doc_type = policy_data.get("doc_type") or "POLICY"
+    _variant = policy_data.get("template_variant")
+
+    # Default: the designed reusable master template (real type hierarchy, live
+    # TOC, page numbers, tenant accent). USE_MASTER_TEMPLATE=0 falls back to the
+    # pandoc pack shells. Either way, a build failure falls back gracefully.
+    _use_master = os.getenv("USE_MASTER_TEMPLATE", "1").strip().lower() not in ("0", "false", "no")
+    doc = None
+    if _use_master:
+        try:
+            from backend.core.master_template import VIOLET, build_master_shell
+
+            _accent = _parse_hex_color(_branding.get("primary_color")) or VIOLET
+            _logo = _fetch_logo_bytes(_branding["logo_url"]) if _branding.get("logo_url") else None
+            doc = build_master_shell(_doc_type, _variant, accent=_accent, logo_bytes=_logo)
+        except Exception as exc:  # never let styling fail the export
+            logger.warning("master template build failed (%s); using pack shell", exc)
+            doc = None
+    if doc is None:
+        doc = load_template_shell(
+            _doc_type,
+            _variant,
+            branding={
+                "organization": _org,
+                "title": _title,
+                "primary_color": _branding.get("primary_color"),
+                "classification": _branding.get("classification") or "Internal",
+                "logo_url": _branding.get("logo_url"),
+            },
+        )
 
     # Fill the template's designed cover page + Document Control table with real
     # metadata (the shell now keeps that front matter instead of clearing it).
@@ -2532,9 +2556,9 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         render_markdown_bullet(doc, _safe_text(text))
 
     is_shell = getattr(doc, "is_template_shell", False)
-    # Shells render sections at the template's own level (Heading 2 sections,
-    # Heading 3 sub-sections). The blank fallback keeps the historical Heading 1.
-    section_level = 2 if is_shell else 1
+    # Section heading level: the master template renders sections as styled
+    # Heading 1; pandoc pack shells use Heading 2; the blank fallback Heading 1.
+    section_level = getattr(doc, "section_heading_level", 2 if is_shell else 1)
     sub_level = section_level + 1
 
     # The blank fallback has no cover page or control table, so it still needs
@@ -2664,13 +2688,16 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
     else:
         add_body("[No revision history found in source document]")
 
-    footer = doc.sections[0].footer.paragraphs[0]
-    footer.text = (
-        f"{policy_data.get('policy_name', 'Policy')} · "
-        f"v{policy_data.get('version', '1.0')} · "
-        "Midnight - Takeoff LLC · CONFIDENTIAL"
-    )
-    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # The master template ships its own designed footer (classification +
+    # page numbers); only the pack shells / blank fallback need this default.
+    if not getattr(doc, "is_master_template", False):
+        footer = doc.sections[0].footer.paragraphs[0]
+        footer.text = (
+            f"{policy_data.get('policy_name', 'Policy')} · "
+            f"v{policy_data.get('version', '1.0')} · "
+            "Midnight - Takeoff LLC · CONFIDENTIAL"
+        )
+        footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     buffer = BytesIO()
     doc.save(buffer)
