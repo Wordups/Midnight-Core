@@ -84,6 +84,36 @@ def _normalize_builtin_style_names(doc) -> None:
                 continue
 
 
+def _ensure_table_grid_style(doc) -> None:
+    """The render path styles metadata tables as "Table Grid"; pandoc shells
+    don't define it. Register a minimal bordered table style under that name
+    so table.style = "Table Grid" resolves."""
+    from docx.enum.style import WD_STYLE_TYPE
+
+    try:
+        doc.styles["Table Grid"]
+        return
+    except KeyError:
+        pass
+    try:
+        style = doc.styles.add_style("Table Grid", WD_STYLE_TYPE.TABLE, builtin=True)
+        # Single-line borders on all edges, matching Word's built-in look.
+        from docx.oxml.ns import qn
+        from docx.oxml.parser import OxmlElement
+
+        borders = OxmlElement("w:tblBorders")
+        for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+            el = OxmlElement(f"w:{edge}")
+            el.set(qn("w:val"), "single")
+            el.set(qn("w:sz"), "4")
+            el.set(qn("w:color"), "auto")
+            borders.append(el)
+        tbl_pr = style.element.get_or_add_tblPr()
+        tbl_pr.append(borders)
+    except Exception as exc:
+        logger.warning("could not register Table Grid style: %s", exc)
+
+
 def _clear_body(doc) -> None:
     """Remove all body content, keeping section properties (headers/margins)."""
     body = doc.element.body
@@ -149,6 +179,7 @@ def load_template_shell(doc_type: str, variant: str | None = None, *, branding: 
     try:
         doc = Document(str(path))
         _normalize_builtin_style_names(doc)
+        _ensure_table_grid_style(doc)
         _clear_body(doc)
         doc.is_template_shell = True
         if branding:

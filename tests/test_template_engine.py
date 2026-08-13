@@ -79,3 +79,13 @@ class ShellLoadTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TableGridTests(unittest.TestCase):
+    def test_shell_supports_table_grid_style(self):
+        """The metadata/revision tables style themselves as Table Grid;
+        pandoc shells lack it — the engine must register it (prod 500)."""
+        doc = load_template_shell("POLICY", "formal")
+        table = doc.add_table(rows=1, cols=2)
+        table.style = "Table Grid"  # must not raise
+        self.assertIsNotNone(table.style)
