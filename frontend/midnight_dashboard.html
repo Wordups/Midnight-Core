@@ -1202,6 +1202,10 @@
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 11l3-3 2.5 2.5L11 6l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
       <span class="nav-item-label">Framework Coverage</span>
     </div>
+    <div class="nav-item" id="nav-requests" data-label="Requests" title="Requests" onclick="showView('requests', this, 'Requests')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h6M5 8.5h6M5 11h3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span class="nav-item-label">Requests</span>
+    </div>
     <div class="nav-item" id="nav-corpus" data-label="Compliance Corpus" title="Compliance Corpus" onclick="showView('corpus', this, 'Compliance Corpus')">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1l6 3v4c0 3.5-2.5 6-6 7-3.5-1-6-3.5-6-7V4l6-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5.5 8l1.8 1.8L10.8 6.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="nav-item-label">Compliance Corpus</span>
@@ -2341,6 +2345,44 @@
   </div>
 
   <!-- ── LIBRARY ────────────────────────────────────────────────────────────── -->
+  <div class="view" id="view-requests">
+    <div class="content">
+      <div class="build-header">
+        <div class="build-title">Requests</div>
+        <div class="build-sub">Work that needs a human: assessment gaps routed to reviewers, SME assignments, and their state — open → in review → complete.</div>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title">New request</div>
+        <div class="corpus-run-controls">
+          <input type="text" id="req-title" placeholder="Title" style="flex:1;min-width:220px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+          <select id="req-assignee" aria-label="Assignee"><option value="">Unassigned</option></select>
+          <button type="button" class="run-btn" onclick="createPmRequest()">Create</button>
+        </div>
+        <textarea id="req-desc" placeholder="Description (optional)" style="width:100%;min-height:56px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:10px;font-size:12.5px;margin-top:8px;font-family:inherit"></textarea>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title">Open work</div>
+        <div class="corpus-table-wrap">
+          <table class="corpus-table">
+            <thead><tr><th>Request</th><th>Status</th><th>Assignee</th><th>Control</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody id="req-rows"><tr><td colspan="6" style="color:var(--text3)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title">Invite a reviewer (SME)</div>
+        <div class="corpus-run-controls">
+          <input type="email" id="invite-email" placeholder="reviewer@company.com" style="flex:1;min-width:220px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+          <button type="button" class="run-btn" onclick="sendSmeInvite()">Send invite</button>
+          <span id="invite-status" style="font-size:12px;color:var(--text3)"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="view" id="view-corpus">
     <div class="content">
       <div class="build-header">
@@ -2775,6 +2817,7 @@ function showView(viewId, navEl, title) {
   if (viewId === 'birdtalk') { try { btLoadPulse(); } catch (_) {} }
   if (viewId === 'library') { try { loadBirdEye(); } catch (_) {} }
   if (viewId === 'corpus') { try { loadCorpusView(); } catch (_) {} }
+  if (viewId === 'requests') { try { loadRequestsView(); } catch (_) {} }
   if (viewId === 'overview') { try { loadPostureHero(); } catch (_) {} }
   if (viewId === 'billing') { try { renderBillingView(); } catch (_) {} }
   if (isMobileSidebarLayout()) closeSidebarDrawer();
@@ -2964,6 +3007,125 @@ async function loadCorpusRuns() {
   } catch (_) {}
 }
 
+// ── Requests (PM layer) ───────────────────────────────────────────────
+const REQ_STATUS_LABELS = { open: 'Open', in_review: 'In review', complete: 'Complete' };
+const REQ_TRANSITIONS = { open: ['in_review', 'complete'], in_review: ['open', 'complete'], complete: ['in_review'] };
+
+async function loadRequestsView() {
+  loadPmSmes();
+  loadPmRequests();
+}
+
+async function loadPmSmes() {
+  try {
+    const r = await fetch(`${API}/pm/smes`, { credentials: 'include' });
+    if (!r.ok) return;
+    const data = await r.json();
+    const sel = document.getElementById('req-assignee');
+    sel.innerHTML = '<option value="">Unassigned</option>' + (data.smes || []).map(s =>
+      `<option value="${escHtml(s.id)}">${escHtml(s.name || s.email)}</option>`).join('');
+    window._pmSmes = data.smes || [];
+  } catch (_) {}
+}
+
+function pmSmeName(id) {
+  const sme = (window._pmSmes || []).find(s => s.id === id);
+  return sme ? (sme.name || sme.email) : (id ? 'Assigned' : '—');
+}
+
+async function loadPmRequests() {
+  const rows = document.getElementById('req-rows');
+  try {
+    const r = await fetch(`${API}/pm/requests`, { credentials: 'include' });
+    if (r.status === 401) { corpusSessionExpired(); return; }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    if (!(data.items || []).length) {
+      rows.innerHTML = '<tr><td colspan="6" style="color:var(--text3)">No requests yet — assessment refusals and manual assignments land here.</td></tr>';
+      return;
+    }
+    rows.innerHTML = data.items.map(it => {
+      const chipClass = it.status === 'complete' ? 'satisfied' : it.status === 'in_review' ? 'partially_satisfied' : 'insufficient_evidence';
+      const actions = (REQ_TRANSITIONS[it.status] || []).map(next =>
+        `<button type="button" class="run-btn corpus-gap-btn" onclick="transitionPmRequest('${escHtml(it.id)}', '${next}')">${REQ_STATUS_LABELS[next]}</button>`).join(' ');
+      return `
+        <tr>
+          <td class="corpus-answer-q">${escHtml(it.title)}${it.description ? `<div style="font-size:11.5px;color:var(--text3);font-weight:400;margin-top:3px">${escHtml((it.description || '').slice(0, 160))}${(it.description || '').length > 160 ? '…' : ''}</div>` : ''}</td>
+          <td><span class="corpus-badge ${chipClass}">${REQ_STATUS_LABELS[it.status] || escHtml(it.status)}</span></td>
+          <td>${escHtml(pmSmeName(it.assignee_id))}</td>
+          <td>${escHtml(it.control_id || '—')}</td>
+          <td>${escHtml(String(it.created_at || '').slice(0, 10))}</td>
+          <td style="white-space:nowrap">${actions}</td>
+        </tr>`;
+    }).join('');
+  } catch (_) {
+    rows.innerHTML = '<tr><td colspan="6" style="color:var(--text3)">Requests unavailable right now.</td></tr>';
+  }
+}
+
+async function createPmRequest(prefill) {
+  const title = prefill ? prefill.title : document.getElementById('req-title').value.trim();
+  const description = prefill ? prefill.description : document.getElementById('req-desc').value.trim();
+  const assignee = prefill ? null : (document.getElementById('req-assignee').value || null);
+  if (!title) { showToast('A title is required.', true); return; }
+  try {
+    const r = await fetch(`${API}/pm/requests`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, description: description || null, assignee_id: assignee, control_id: prefill && prefill.control_id || null }),
+    });
+    if (r.status === 401) { corpusSessionExpired(); return; }
+    if (!r.ok) { showToast('Could not create the request.', true); return; }
+    showToast(prefill ? 'Gap assigned — it\'s in your Requests inbox.' : 'Request created.');
+    if (!prefill) {
+      document.getElementById('req-title').value = '';
+      document.getElementById('req-desc').value = '';
+      loadPmRequests();
+    }
+  } catch (_) { showToast('Could not create the request.', true); }
+}
+
+async function transitionPmRequest(id, status) {
+  try {
+    const r = await fetch(`${API}/pm/requests/${encodeURIComponent(id)}`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: status }),
+    });
+    if (!r.ok) { showToast('Transition failed.', true); return; }
+    loadPmRequests();
+  } catch (_) { showToast('Transition failed.', true); }
+}
+
+async function sendSmeInvite() {
+  const email = document.getElementById('invite-email').value.trim();
+  const status = document.getElementById('invite-status');
+  if (!email.includes('@')) { showToast('Enter a valid email.', true); return; }
+  try {
+    const r = await fetch(`${API}/pm/invites`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, role: 'sme' }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { status.textContent = 'Invite failed.'; return; }
+    status.textContent = data.email_sent === false
+      ? 'Invite created — email delivery is not configured, share the link manually from the API response.'
+      : `Invite sent to ${email}.`;
+    document.getElementById('invite-email').value = '';
+  } catch (_) { status.textContent = 'Invite failed.'; }
+}
+
+function assignGapToReviewer(index) {
+  const a = (window._corpusAnswers || [])[index];
+  if (!a) return;
+  createPmRequest({
+    title: `Assessment gap: ${a.question.slice(0, 120)}`,
+    description: `Engine verdict: ${a.status}. ${a.answer_text || ''}${a.followup_question ? `\n\nResolve: ${a.followup_question}` : ''}`,
+    control_id: (a.control_ids || [])[0] || null,
+  });
+}
+
 function corpusDocTypeForQuestion(question) {
   const q = (question || '').toLowerCase();
   if (/incident|breach|outage|response plan|recovery|contain/.test(q)) return 'runbook';
@@ -3003,7 +3165,10 @@ function renderCorpusAnswers(answers) {
     const followup = a.followup_question ? `<div class="corpus-followup">${escHtml(a.followup_question)}</div>` : '';
     const controls = (a.control_ids || []).length ? `<div class="corpus-cite-src">Controls: ${(a.control_ids || []).map(escHtml).join(', ')}</div>` : '';
     const gapBtn = (a.status === 'insufficient_evidence' || a.status === 'partially_satisfied')
-      ? `<div style="margin-top:8px"><button type="button" class="run-btn corpus-gap-btn" onclick="draftFromGap(${i})">Draft the missing policy →</button></div>`
+      ? `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+           <button type="button" class="run-btn corpus-gap-btn" onclick="draftFromGap(${i})">Draft the missing policy →</button>
+           <button type="button" class="run-btn corpus-gap-btn" onclick="assignGapToReviewer(${i})">Assign to reviewer</button>
+         </div>`
       : '';
     return `
       <tr>

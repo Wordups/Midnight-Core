@@ -412,3 +412,18 @@ class ParseQuestionnaireTests(unittest.TestCase):
         self._login()
         resp = self.client.post("/api/v1/corpus/parse", files={"file": ("q.docx", b"x", "application/octet-stream")})
         self.assertEqual(resp.status_code, 415)
+
+
+class PmSurfaceSmokeTests(unittest.TestCase):
+    """The Requests view depends on these PM routes existing behind auth."""
+
+    def setUp(self):
+        from backend.api.main import app
+        self.client = TestClient(app)
+
+    def test_pm_routes_require_auth(self):
+        self.assertEqual(self.client.get("/pm/requests").status_code, 401)
+        self.assertEqual(self.client.get("/pm/smes").status_code, 401)
+        self.assertEqual(
+            self.client.post("/pm/requests", json={"title": "x"}).status_code, 401
+        )
