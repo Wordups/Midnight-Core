@@ -7,7 +7,7 @@ development and cost-free testing — it runs entirely on the developer's machin
 (no data leaves the box), but a small local model is not audit-grade, so it is
 opt-in only and never the default.
 
-    LLM_PROVIDER = "anthropic" (default) | "ollama"
+    LLM_PROVIDER = "anthropic" (default) | "ollama" | "groq"
     OLLAMA_URL   = "http://localhost:11434"
     OLLAMA_MODEL = "qwen2.5-coder:7b"
 

@@ -1,3 +1,13 @@
+> **SUPERSEDED — historical self-audit.** This document is the 2026-05-21
+> vertical-scope audit, kept as a record of how gaps were tracked. Much of it
+> is now stale: the gap engine is wired and registry-backed (186 controls, 5
+> frameworks), four Studio lanes are live end-to-end (POLICY / SOP / STANDARD /
+> INCIDENT_RUNBOOK), Bird Eye ingests with embeddings + control mapping, and a
+> corpus + answer engine (backend/core/corpus.py, /api/v1/corpus) answers
+> questionnaires with citations and fail-closed verdicts. Current entry points:
+> docs/BUILD_QUEUE.md for active work; the test suite (tests/, 179 tests) reads
+> as the enforced architecture.
+
 # ARCHITECTURE.md — Midnight Core Vertical Scope Audit
 
 _Produced: 2026-05-21. Authoritative reference for what is wired, what is dangling, and what to wire next._
