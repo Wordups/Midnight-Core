@@ -41,10 +41,12 @@ class ShellResolutionTests(unittest.TestCase):
 
 
 class ShellLoadTests(unittest.TestCase):
-    def test_shell_body_is_cleared_but_styles_survive(self):
+    def test_shell_keeps_front_matter_and_styles(self):
+        # Front matter (cover page, Document Control, TOC) is preserved; only the
+        # sample sections are dropped. Styles survive.
         doc = load_template_shell("POLICY", "formal")
         self.assertTrue(doc.is_template_shell)
-        self.assertEqual(len(doc.paragraphs), 0)
+        self.assertGreater(len(doc.paragraphs), 0)
         style_names = {s.name for s in doc.styles}
         self.assertIn("Heading 1", style_names)
         self.assertIn("Title", style_names)
@@ -139,3 +141,34 @@ class ParagraphStyleTests(unittest.TestCase):
         )
         self.assertIn("Real Title", header_text)
         self.assertNotIn("Acceptable Use Policy", header_text)
+
+
+class FrontMatterPreservationTests(unittest.TestCase):
+    def test_shell_keeps_cover_and_control(self):
+        """load_template_shell must preserve the designed front matter (cover
+        page, Document Control, Table of Contents) — not clear the whole body."""
+        doc = load_template_shell("POLICY", "formal")
+        lines = [p.text.strip() for p in doc.paragraphs]
+        self.assertIn("Document Control", lines)
+        self.assertIn("Table of Contents", lines)
+        # sample numbered sections are dropped
+        self.assertFalse(any(t.startswith("1. Purpose") for t in lines))
+
+    def test_placeholders_fill_and_none_leak(self):
+        from backend.core.template_engine import fill_template_placeholders
+        doc = load_template_shell("POLICY", "formal")
+        fill_template_placeholders(doc, {
+            "DOCUMENT_TITLE": "My Policy", "VERSION": "3.1",
+            "POLICY_OWNER": "Sam Rivera", "EFFECTIVE_DATE": "2026-01-01",
+        })
+        joined = "\n".join(p.text for p in doc.paragraphs)
+        table_text = "\n".join(
+            c.text for t in doc.tables for r in t.rows for c in r.cells
+        )
+        self.assertIn("My Policy", joined)
+        self.assertNotIn("{{", joined + table_text)  # nothing leaks
+
+    def test_sample_title_removed(self):
+        doc = load_template_shell("POLICY", "formal")
+        joined = "\n".join(p.text for p in doc.paragraphs)
+        self.assertNotIn("Acceptable Use Policy", joined)  # hardcoded sample gone

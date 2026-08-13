@@ -2475,19 +2475,38 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
     # Render into a styled template shell (doc_type + variant select the pack;
     # tenant branding fills header placeholders and heading colors). Falls
     # back to a blank Document when no pack exists — old behavior, kept.
-    from backend.core.template_engine import load_template_shell
+    from backend.core.template_engine import fill_template_placeholders, load_template_shell
 
+    _branding = policy_data.get("_branding") or {}
+    _title = policy_data.get("policy_name") or policy_data.get("title") or "Untitled"
+    _org = policy_data.get("organization") or ""
     doc = load_template_shell(
         policy_data.get("doc_type") or "POLICY",
         policy_data.get("template_variant"),
         branding={
-            "organization": policy_data.get("organization") or "",
-            "title": policy_data.get("policy_name") or policy_data.get("title") or "",
-            "primary_color": (policy_data.get("_branding") or {}).get("primary_color"),
-            "classification": (policy_data.get("_branding") or {}).get("classification") or "Internal",
-            "logo_url": (policy_data.get("_branding") or {}).get("logo_url"),
+            "organization": _org,
+            "title": _title,
+            "primary_color": _branding.get("primary_color"),
+            "classification": _branding.get("classification") or "Internal",
+            "logo_url": _branding.get("logo_url"),
         },
     )
+
+    # Fill the template's designed cover page + Document Control table with real
+    # metadata (the shell now keeps that front matter instead of clearing it).
+    fill_template_placeholders(doc, {
+        "DOCUMENT_TITLE": _title,
+        "ORGANIZATION_NAME": _org,
+        "VERSION": str(policy_data.get("version") or "1.0"),
+        "EFFECTIVE_DATE": policy_data.get("effective_date") or "",
+        "NEXT_REVIEW_DATE": policy_data.get("next_review_date") or policy_data.get("last_reviewed") or "",
+        "POLICY_OWNER": policy_data.get("owner") or "",
+        "POLICY_OWNER_TITLE": policy_data.get("owner_title") or "",
+        "APPROVER_NAME": policy_data.get("approver_name") or "",
+        "APPROVER_TITLE": policy_data.get("approver_title") or "",
+        "AUTHOR_NAME": policy_data.get("owner") or _org or "",
+        "CLASSIFICATION": _branding.get("classification") or "Internal",
+    })
 
     if not getattr(doc, "is_template_shell", False):
         # Blank-document fallback keeps the historical look; shells keep
@@ -2512,28 +2531,44 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         # markdown formatting to the bullet body.
         render_markdown_bullet(doc, _safe_text(text))
 
-    fields = [
-        ("Policy Name", policy_data.get("policy_name", "Untitled Policy")),
-        ("Document Type", policy_data.get("doc_type", "Policy")),
-        ("Version", policy_data.get("version", "1.0")),
-        ("Effective Date", policy_data.get("effective_date", "-")),
-        ("Policy Owner", policy_data.get("owner", "-")),
-    ]
+    is_shell = getattr(doc, "is_template_shell", False)
+    # Shells render sections at the template's own level (Heading 2 sections,
+    # Heading 3 sub-sections). The blank fallback keeps the historical Heading 1.
+    section_level = 2 if is_shell else 1
+    sub_level = section_level + 1
 
-    table = doc.add_table(rows=len(fields), cols=2)
-    table.style = "Table Grid"
+    # The blank fallback has no cover page or control table, so it still needs
+    # this metadata block. Template shells carry their own designed cover page +
+    # Document Control table (already placeholder-filled), so skip the duplicate.
+    if not is_shell:
+        fields = [
+            ("Policy Name", policy_data.get("policy_name", "Untitled Policy")),
+            ("Document Type", policy_data.get("doc_type", "Policy")),
+            ("Version", policy_data.get("version", "1.0")),
+            ("Effective Date", policy_data.get("effective_date", "-")),
+            ("Policy Owner", policy_data.get("owner", "-")),
+        ]
+        table = doc.add_table(rows=len(fields), cols=2)
+        table.style = "Table Grid"
+        for index, (label, value) in enumerate(fields):
+            row = table.rows[index]
+            row.cells[0].text = _safe_text(label)
+            row.cells[1].text = _safe_text(value)
+        doc.add_paragraph()
 
-    for index, (label, value) in enumerate(fields):
-        row = table.rows[index]
-        row.cells[0].text = _safe_text(label)
-        row.cells[1].text = _safe_text(value)
+    # Single running counter across body + framework + gaps + revision, so the
+    # numbering can't collide (the old code hardcoded "10." after N sections).
+    section_number = 0
 
-    doc.add_paragraph()
+    def numbered_heading(text: str):
+        nonlocal section_number
+        section_number += 1
+        add_heading(f"{section_number}. {_safe_text(text)}", level=section_level)
 
     rendered_sections = policy_data.get("sections")
     if isinstance(rendered_sections, list) and rendered_sections:
         sections = [
-            (f"{index}. {section.get('heading') or 'Section'}", str(section.get("slot_id") or f"section_{index}"))
+            (section.get("heading") or "Section", str(section.get("slot_id") or f"section_{index}"))
             for index, section in enumerate(rendered_sections, start=1)
         ]
         section_content_map = {
@@ -2543,20 +2578,20 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         }
     else:
         sections = [
-            ("1. Purpose", "purpose"),
-            ("2. Scope", "scope"),
-            ("3. Policy Statement", "policy_statement"),
-            ("4. Definitions", "definitions"),
-            ("5. Procedures", "procedures"),
-            ("6. Roles & Responsibilities", "roles_responsibilities"),
-            ("7. Exceptions", "exceptions"),
-            ("8. Enforcement", "enforcement"),
-            ("9. References", "references"),
+            ("Purpose", "purpose"),
+            ("Scope", "scope"),
+            ("Policy Statement", "policy_statement"),
+            ("Definitions", "definitions"),
+            ("Procedures", "procedures"),
+            ("Roles & Responsibilities", "roles_responsibilities"),
+            ("Exceptions", "exceptions"),
+            ("Enforcement", "enforcement"),
+            ("References", "references"),
         ]
         section_content_map = {key: policy_data.get(key) for _, key in sections}
 
-    for title, key in sections:
-        add_heading(title, level=1)
+    for heading, key in sections:
+        numbered_heading(heading)
         content = section_content_map.get(key)
 
         if not content:
@@ -2577,11 +2612,11 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
 
     framework_mappings = policy_data.get("framework_mappings", {})
     if framework_mappings:
-        add_heading("10. Framework Mappings", level=1)
+        numbered_heading("Framework Mappings")
         for framework, controls in framework_mappings.items():
             if not controls:
                 continue
-            add_heading(_safe_text(framework), level=2)
+            add_heading(_safe_text(framework), level=sub_level)
             if isinstance(controls, list):
                 for control in controls:
                     add_bullet(control)
@@ -2592,7 +2627,7 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
     framework_map = policy_data.get("framework_map", {}) or {}
     gaps = framework_map.get("gaps") or policy_data.get("gaps", [])
     if gaps:
-        add_heading("11. Gap Analysis", level=1)
+        numbered_heading("Gap Analysis")
         for gap in gaps:
             if isinstance(gap, dict):
                 label = (
@@ -2607,7 +2642,7 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         doc.add_paragraph()
 
     revision_history = policy_data.get("revision_history", [])
-    add_heading("12. Revision History", level=1)
+    numbered_heading("Revision History")
     if revision_history:
         rev_table = doc.add_table(rows=1, cols=3)
         rev_table.style = "Table Grid"

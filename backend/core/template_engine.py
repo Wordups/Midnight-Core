@@ -141,6 +141,103 @@ def _clear_body(doc) -> None:
         body.remove(child)
 
 
+import re as _re
+
+# A designed template's front matter (cover page, Document Control, Table of
+# Contents) runs until its first numbered body section — "1. Purpose",
+# "1. Learning Objectives", "1. Incident Type and Scope", etc. The pattern is
+# universal across the pack even though the wording differs.
+_SECTION_NUM_RE = _re.compile(r"^\s*\d+\.\s+\S")
+_TOKEN_RE = _re.compile(r"\{\{([A-Z0-9_]+)\}\}")
+
+# Cover-page category labels — kept as-is; never mistaken for the sample title.
+_CATEGORY_LABELS = {
+    "POLICY", "PROCEDURE", "STANDARD", "PROCESS FLOW", "TRAINING",
+    "INCIDENT RUNBOOK", "RISK ASSESSMENT", "AUDIT PACKAGE", "AI GOVERNANCE",
+    "AI SYSTEM GOVERNANCE",
+}
+
+
+def _strip_sample_sections(doc) -> None:
+    """Keep the template's designed front matter (cover page, Document Control,
+    Table of Contents) and drop only the sample numbered sections — generated
+    content is rendered in their place. If no numbered-section boundary is
+    found, fall back to the old full-clear so odd shells still work."""
+    from docx.text.paragraph import Paragraph
+
+    body = doc.element.body
+    children = [c for c in body if not c.tag.endswith("}sectPr")]
+    boundary = None
+    for idx, child in enumerate(children):
+        if child.tag.endswith("}p"):
+            p = Paragraph(child, doc)
+            style = (p.style.name or "") if p.style is not None else ""
+            if style.startswith("Heading") and _SECTION_NUM_RE.match(p.text.strip()):
+                boundary = idx
+                break
+    if boundary is None:
+        _clear_body(doc)
+        return
+    for child in children[boundary:]:
+        body.remove(child)
+
+
+def _clean_cover(doc) -> None:
+    """Tidy the cover page before placeholder fill: drop the editor-only logo
+    instruction lines and the hardcoded sample title (the paragraph directly
+    above the {{DOCUMENT_TITLE}} placeholder), so the filled title stands
+    alone."""
+    paras = doc.paragraphs
+    title_idx = next(
+        (i for i, p in enumerate(paras) if "{{DOCUMENT_TITLE}}" in p.text), None
+    )
+    if title_idx is not None:
+        # Walk back to the nearest non-empty paragraph; if it's a leftover
+        # sample title (not the category label, no placeholder), clear it.
+        j = title_idx - 1
+        while j >= 0 and not paras[j].text.strip():
+            j -= 1
+        if j >= 0:
+            text = paras[j].text.strip()
+            if text and "{{" not in text and text.upper() not in _CATEGORY_LABELS:
+                for run in paras[j].runs:
+                    run.text = ""
+                if paras[j].text:
+                    paras[j].text = ""
+    for p in paras:
+        stripped = p.text.strip()
+        if stripped.startswith("[LOGO") or stripped.startswith('(Reserve'):
+            for run in p.runs:
+                run.text = ""
+            if p.text:
+                p.text = ""
+
+
+def fill_template_placeholders(doc, values: dict[str, str]) -> None:
+    """Replace {{TOKEN}} placeholders in the cover page and control tables with
+    real metadata. Tokens without a supplied value are blanked so raw braces
+    never reach the output."""
+    def resolve(text: str) -> str:
+        return _TOKEN_RE.sub(lambda m: str(values.get(m.group(1), "") or ""), text)
+
+    def fill_paragraph(p) -> None:
+        if "{{" not in p.text:
+            return
+        for run in p.runs:
+            if "{{" in run.text:
+                run.text = resolve(run.text)
+        if "{{" in p.text:  # token spanned multiple runs
+            p.text = resolve(p.text)
+
+    for p in doc.paragraphs:
+        fill_paragraph(p)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    fill_paragraph(p)
+
+
 def _replace_placeholder_text(doc, replacements: dict[str, str]) -> None:
     for section in doc.sections:
         for container in (section.header, section.footer):
@@ -249,7 +346,11 @@ def load_template_shell(doc_type: str, variant: str | None = None, *, branding: 
         _normalize_builtin_style_names(doc)
         _ensure_table_grid_style(doc)
         _ensure_paragraph_styles(doc)
-        _clear_body(doc)
+        # Preserve the designed front matter (cover page, Document Control,
+        # Table of Contents); only the sample sections are dropped so generated
+        # content renders in their place.
+        _strip_sample_sections(doc)
+        _clean_cover(doc)
         doc.is_template_shell = True
         if branding:
             apply_branding(
