@@ -88,3 +88,6 @@ htmlcov/
 
 task-def.json
 midnight_task_def.json
+
+# Word/Office lock files
+~$*
