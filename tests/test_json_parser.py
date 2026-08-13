@@ -112,3 +112,22 @@ class JsonParserTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_parse_survives_literal_control_chars_in_strings():
+    """Groq/Llama emit literal newlines inside JSON strings; strict=False path."""
+    raw = '{"heading": "Definitions", "content": "Line one\nLine two\ttabbed"}'
+    parsed = parse_model_json(raw)
+    assert "Line one" in parsed["content"]
+
+
+def test_parse_survives_invalid_escapes():
+    raw = '{"content": "Vendors must be tiered \& reviewed annually"}'
+    parsed = parse_model_json(raw)
+    assert "tiered" in parsed["content"]
+
+
+def test_valid_escapes_untouched():
+    raw = '{"content": "line\nbreak and \\"quote\\""}'
+    parsed = parse_model_json(raw)
+    assert parsed["content"] == 'line\nbreak and "quote"'

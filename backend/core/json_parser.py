@@ -95,19 +95,32 @@ def _cleanup_candidate(json_text: str) -> str:
     return candidate
 
 
+# Backslash not starting a legal JSON escape — open models (notably Llama via
+# Groq) emit these routinely (e.g. "\&" or a lone trailing "\").
+_INVALID_ESCAPE_RE = re.compile(r'\\(?![\\/"bfnrtu])')
+
+
+def _repair_escapes(candidate: str) -> str:
+    return _INVALID_ESCAPE_RE.sub(r"\\\\", candidate)
+
+
 def parse_model_json(raw_text: str) -> Any:
     extracted = extract_first_complete_json(raw_text)
+    cleaned = _cleanup_candidate(extracted)
     candidates = []
-    for candidate in (extracted, _cleanup_candidate(extracted)):
+    for candidate in (extracted, cleaned, _repair_escapes(cleaned)):
         if candidate not in candidates:
             candidates.append(candidate)
 
     last_error: Exception | None = None
     for candidate in candidates:
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError as exc:
-            last_error = exc
+        # strict=False accepts raw control characters (literal newlines/tabs)
+        # inside strings — the other JSON defect open models produce.
+        for strict in (True, False):
+            try:
+                return json.loads(candidate, strict=strict)
+            except json.JSONDecodeError as exc:
+                last_error = exc
 
     detail = str(last_error) if last_error else "Unable to decode model JSON."
     raise ParsedModelOutputError(detail)
