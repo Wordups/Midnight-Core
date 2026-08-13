@@ -15,7 +15,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   soft-failing like ingestion does. Tests: generated doc sections carry
   embeddings; retrieval finds them.
 
-- [ ] **"Draft the missing policy" button on unresolved answers.** In the
+- [x] **"Draft the missing policy" button on unresolved answers.** In the
   Compliance Corpus answer table, rows with status `insufficient_evidence`
   or `partially_satisfied` get a button linking to Create Studio pre-filled:
   doc type inferred from the question, tenant frameworks, description seeded

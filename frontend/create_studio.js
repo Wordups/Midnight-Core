@@ -656,6 +656,23 @@ function getLaneFromQuery() {
   return QUERY_TYPE_TO_LANE[type] || 'POLICY';
 }
 
+// Gap-close entry point: the corpus view's "Draft the missing policy" button
+// links here with ?prefill=1 and seeds the intake from the unresolved
+// assessment question. URL values override the stored draft for those fields.
+function applyPrefillFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('prefill') !== '1') return;
+  const fieldMap = { name: 'policy_name', desc: 'purpose_scope' };
+  Object.entries(fieldMap).forEach(([param, field]) => {
+    const value = params.get(param);
+    if (value) workflowState.draft[field] = value;
+  });
+  const frameworks = params.get('frameworks');
+  if (frameworks) {
+    workflowState.draft.frameworks = frameworks.split(',').map(s => s.trim()).filter(Boolean);
+  }
+}
+
 function syncDocumentTitle() {
   const config = WORKFLOW_CONFIG[workflowState.lane];
   document.title = `Create ${config.title}`;
@@ -674,6 +691,7 @@ async function bootWorkflowPage() {
   }
 
   loadWorkflowDraft();
+  applyPrefillFromQuery();
   restorePreview();  // H6: bring back a reviewed preview after a reload
   renderWorkflowApp();
 }
