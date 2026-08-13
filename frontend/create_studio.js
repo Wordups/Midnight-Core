@@ -428,6 +428,15 @@ function renderExportStep() {
         <div class="wf-card">
           <div class="wf-panel-kicker">Step 6 · Export</div>
           <h3>Export path</h3>
+          <label class="wf-field" style="max-width:340px;margin-bottom:14px">
+            <span class="wf-label">Template style</span>
+            <select class="wf-select" id="wf-template-variant">
+              <option value="modern">Modern — scannable, plain-language</option>
+              <option value="formal">Formal — traditional enterprise</option>
+              <option value="detailed">Detailed — full structure, audit-depth</option>
+              <option value="executive">Executive — brief, leadership-facing</option>
+            </select>
+          </label>
           <div class="wf-export-grid">
             ${config.exportOptions.map((name) => {
               const live = LIVE_LANES.has(workflowState.lane) && name === 'Word (.docx)';
@@ -573,10 +582,13 @@ async function runPolicyGenerate() {
 
   workflowSetLoading(true, 'Bird Eye Rendering', 'Midnight is rendering the tenant-owned draft into a document export.');
   try {
+    const variantSel = document.getElementById('wf-template-variant');
+    const generatePayload = { ...workflowState.previewData };
+    if (variantSel && variantSel.value) generatePayload.template_variant = variantSel.value;
     const response = await workflowApi('/pipeline/create/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ policy_data: workflowState.previewData }),
+      body: JSON.stringify({ policy_data: generatePayload }),
     });
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));

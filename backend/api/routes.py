@@ -2421,11 +2421,28 @@ async def _generate_policy_data(
 
 
 def _build_docx(policy_data: dict, template_name: str) -> bytes:
-    doc = Document()
+    # Render into a styled template shell (doc_type + variant select the pack;
+    # tenant branding fills header placeholders and heading colors). Falls
+    # back to a blank Document when no pack exists — old behavior, kept.
+    from backend.core.template_engine import load_template_shell
 
-    style = doc.styles["Normal"]
-    style.font.name = "Calibri"
-    style.font.size = Pt(11)
+    doc = load_template_shell(
+        policy_data.get("doc_type") or "POLICY",
+        policy_data.get("template_variant"),
+        branding={
+            "organization": policy_data.get("organization") or "",
+            "title": policy_data.get("policy_name") or policy_data.get("title") or "",
+            "primary_color": (policy_data.get("_branding") or {}).get("primary_color"),
+            "classification": (policy_data.get("_branding") or {}).get("classification") or "Internal",
+        },
+    )
+
+    if not getattr(doc, "is_template_shell", False):
+        # Blank-document fallback keeps the historical look; shells keep
+        # their own pack typography untouched.
+        style = doc.styles["Normal"]
+        style.font.name = "Calibri"
+        style.font.size = Pt(11)
 
     def add_heading(text: str, level: int = 1):
         heading = doc.add_heading(text, level=level)
@@ -2888,6 +2905,15 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
         required_frameworks=[item for item in session.get("frameworks", []) if str(item).strip()],
     )
     policy_data = _ensure_required_slots_or_400(policy_data)
+    # Tenant branding + template variant for the styled-shell renderer.
+    # Injected post-normalization so the cleaner can't strip them.
+    policy_data["_branding"] = {
+        "primary_color": tenant.get("brand_primary_color"),
+        "classification": "Internal",
+    }
+    requested_variant = str(payload.policy_data.get("template_variant") or "").strip().lower()
+    if requested_variant:
+        policy_data["template_variant"] = requested_variant
     active_frameworks = [item for item in session.get("frameworks", []) if str(item).strip()]
     try:
         # save_policy_draft now embeds sections synchronously (Voyage retries can
