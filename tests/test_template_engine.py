@@ -127,3 +127,15 @@ class ParagraphStyleTests(unittest.TestCase):
         p2 = doc.add_paragraph("item2")
         p2.style = "List Number"
         self.assertIsNotNone(p.style)
+
+    def test_shell_headers_carry_title_placeholder(self):
+        """Shells must carry {{TITLE}} in the header, not baked sample titles
+        (a live export shipped 'Acceptable Use Policy' on someone else's doc)."""
+        doc = load_template_shell("POLICY", "formal", branding={
+            "organization": "Acme", "title": "Real Title", "classification": "Internal",
+        })
+        header_text = " ".join(
+            p.text for s in doc.sections for p in s.header.paragraphs
+        )
+        self.assertIn("Real Title", header_text)
+        self.assertNotIn("Acceptable Use Policy", header_text)
