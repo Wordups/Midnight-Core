@@ -112,6 +112,27 @@ def _ensure_table_grid_style(doc) -> None:
         logger.warning("could not register Table Grid style: %s", exc)
 
 
+def _ensure_paragraph_styles(doc) -> None:
+    """Register paragraph styles the render path uses that pandoc shells lack
+    (List Bullet crashed a live export; List Number is the same class)."""
+    from docx.enum.style import WD_STYLE_TYPE
+
+    for name in ("List Bullet", "List Number"):
+        try:
+            doc.styles[name]
+            continue
+        except KeyError:
+            pass
+        try:
+            style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH, builtin=True)
+            try:
+                style.base_style = doc.styles["List Paragraph"]
+            except KeyError:
+                pass
+        except Exception as exc:
+            logger.warning("could not register %s style: %s", name, exc)
+
+
 def _clear_body(doc) -> None:
     """Remove all body content, keeping section properties (headers/margins)."""
     body = doc.element.body
@@ -228,6 +249,7 @@ def load_template_shell(doc_type: str, variant: str | None = None, *, branding: 
         doc = Document(str(path))
         _normalize_builtin_style_names(doc)
         _ensure_table_grid_style(doc)
+        _ensure_paragraph_styles(doc)
         _clear_body(doc)
         doc.is_template_shell = True
         if branding:

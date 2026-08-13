@@ -115,3 +115,15 @@ class PreviewAndLogoTests(unittest.TestCase):
             apply_logo(doc, "javascript:alert(1)")
             apply_logo(doc, "file:///etc/passwd")
             fetch.assert_not_called()
+
+
+class ParagraphStyleTests(unittest.TestCase):
+    def test_shell_supports_bullet_styles(self):
+        """render_markdown_bullet styles bullets as List Bullet; pandoc shells
+        lack it (crashed a live export)."""
+        doc = load_template_shell("POLICY", "formal")
+        p = doc.add_paragraph("item")
+        p.style = "List Bullet"  # must not raise
+        p2 = doc.add_paragraph("item2")
+        p2.style = "List Number"
+        self.assertIsNotNone(p.style)
