@@ -62,3 +62,14 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   tested, and any scope you deliberately left out.
 - Respect existing patterns: provider layer for all LLM calls, tenant_id on
   every query, fail-closed error handling, tests alongside code.
+
+- [ ] **Template picker shows preview images.** The packs ship preview PNGs
+  (backend/templates/packs/<cat>/<variant>/*_preview.png). Serve them and
+  render thumbnails in the Studio "Template style" picker so choosing a
+  variant is visual. Frontend + one static route if needed.
+
+- [ ] **Un-gate lanes whose templates now exist.** Process Flow, Training,
+  Audit Package, AI Governance have shells but no DOC_TYPE_SLOT_SPECS.
+  Add slot specs for ONE lane (Audit Package first), add it to LIVE_LANES +
+  LIVE_CREATE_LANES, verify preview/generate end-to-end with tests. One lane
+  per night.
