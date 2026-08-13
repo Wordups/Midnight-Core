@@ -26,7 +26,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt
+        run: pip install -r backend/requirements.txt pytest pytest-subtests
       - name: Run test suite
         run: >
           python -m pytest tests/ -q
