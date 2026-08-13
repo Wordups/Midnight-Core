@@ -20,7 +20,6 @@ from backend.renderers.pdf_renderer import build_gap_analysis_pdf
 from backend.storage.file_store import (
     SupabaseStoreError,
     download_generated_document,
-    get_generated_document,
     list_generated_documents,
     list_policies_for_gap_analysis,
     list_recent_activity,

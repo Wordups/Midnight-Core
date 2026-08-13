@@ -26,7 +26,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 from dotenv import load_dotenv
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from backend.agents import AgentValidationError, CleanerAgent, EvidenceAgent, ExecutiveSummaryAgent
@@ -550,19 +550,6 @@ def _emit_signal(
     )
 
 
-@pipeline_router.get("/smoke-docx")
-async def smoke_docx():
-    path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.docx")
-
-    doc = Document()
-    doc.add_paragraph("Hello world")
-    doc.save(path)
-
-    return FileResponse(
-        path=path,
-        filename="smoke_test.docx",
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    )
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 from backend.llm.models import (
     resolve_model as _resolve_model,
@@ -1784,21 +1771,6 @@ class BirdsongRequest(BaseModel):
     persona: str = "dashboard"
 
 
-@pipeline_router.get("/smoke-docx")
-async def smoke_docx():
-    doc = Document()
-    doc.add_paragraph("Hello world from Midnight Core")
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-
-    temp_path = _write_temp_docx(buffer.read())
-
-    return FileResponse(
-        path=temp_path,
-        filename="smoke_test.docx",
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    )
 
 
 @pipeline_router.post("/birdsong")

@@ -11,7 +11,6 @@ Pipeline:
 from __future__ import annotations
 
 import io
-import json
 import logging
 import re
 import uuid

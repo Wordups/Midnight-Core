@@ -25,11 +25,10 @@ implement a complete spec.
 from __future__ import annotations
 
 import re
-from typing import Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
-    from docx.document import Document
-    from docx.text.paragraph import Paragraph
+    pass
 
 
 # ── Block-level patterns ─────────────────────────────────────────────────────

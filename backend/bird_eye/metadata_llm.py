@@ -10,12 +10,10 @@ This is the ONLY metadata extractor for Bird Eye. There is no regex fallback.
 """
 from __future__ import annotations
 
-import json
 import logging
 import re
 from typing import Any
 
-import anthropic
 
 from backend.core.json_parser import ParsedModelOutputError, parse_model_json
 from config import settings

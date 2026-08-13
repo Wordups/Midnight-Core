@@ -11,7 +11,6 @@ from __future__ import annotations
 import io
 import logging
 import zipfile
-from pathlib import Path
 from xml.etree import ElementTree as ET
 
 logger = logging.getLogger("midnight.schema_validator")
@@ -40,8 +39,9 @@ class SchemaValidationResult:
 
 
 def validate_schema_bytes(data: bytes) -> SchemaValidationResult:
-    """Validate an in-memory .docx (same checks as validate_schema, no temp
-    file). Used to gate the customer export path before storing/serving."""
+    """Validate an in-memory .docx: confirm the canonical OOXML parts exist
+    and the main document XML parses non-empty. Gates the customer export
+    path before storing/serving."""
     if not data:
         return SchemaValidationResult(False, "File is zero bytes")
 
@@ -74,15 +74,3 @@ def validate_schema_bytes(data: bytes) -> SchemaValidationResult:
         return SchemaValidationResult(False, "document.xml body has zero paragraphs")
 
     return SchemaValidationResult(True, None, body_paragraphs=len(paragraphs))
-
-
-def validate_schema(docx_path: str | Path) -> SchemaValidationResult:
-    """Open the .docx as a zip, confirm required parts exist, parse the
-    main document XML, count body paragraphs. Returns a result object
-    rather than raising — callers want the failure reason as text."""
-    docx_path = Path(docx_path)
-    if not docx_path.exists():
-        return SchemaValidationResult(False, f"File does not exist: {docx_path}")
-    if docx_path.stat().st_size == 0:
-        return SchemaValidationResult(False, "File is zero bytes")
-    return validate_schema_bytes(docx_path.read_bytes())

@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import logging
-import traceback
 from datetime import datetime, timezone
 from typing import Any
 
-from .db import TABLE_DOCUMENTS, TABLE_FINDINGS, TABLE_RUNS, insert as db_insert, select as db_select, update as db_update
+from .db import TABLE_DOCUMENTS, TABLE_RUNS, insert as db_insert, select as db_select, update as db_update
 from .detectors import (
     detect_conflicts,
     detect_duplicates,

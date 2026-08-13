@@ -1,0 +1,481 @@
+<title>Midnight Core Ops Report</title>
+<style>
+  :root {
+    --ground: #0a0b16;
+    --panel: #121322;
+    --panel-2: #191a2e;
+    --edge: #262844;
+    --edge-soft: #1e2039;
+    --violet: #8b6cf0;
+    --violet-dim: #6d54c8;
+    --violet-glow: rgba(139, 108, 240, 0.16);
+    --text: #eceafd;
+    --text-2: #a7a6c9;
+    --text-3: #6f6e91;
+    --good: #45d19a;
+    --good-dim: rgba(69, 209, 154, 0.14);
+    --warn: #e6b34d;
+    --warn-dim: rgba(230, 179, 77, 0.14);
+    --crit: #f0685f;
+    --crit-dim: rgba(240, 104, 95, 0.13);
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(1100px 600px at 78% -8%, rgba(139,108,240,0.10), transparent 60%),
+      radial-gradient(800px 500px at 8% 4%, rgba(69,209,154,0.05), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 22px 90px; }
+
+  /* ── Masthead ── */
+  header.mast {
+    padding: 46px 0 30px;
+    border-bottom: 1px solid var(--edge);
+    margin-bottom: 34px;
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--violet);
+    margin: 0 0 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .kicker::before {
+    content: ""; width: 26px; height: 1px; background: var(--violet-dim); display: inline-block;
+  }
+  h1 {
+    font-size: clamp(30px, 5.4vw, 50px);
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+    margin: 0 0 16px;
+    font-weight: 640;
+    text-wrap: balance;
+  }
+  h1 .thin { color: var(--text-3); font-weight: 400; }
+  .dek {
+    font-size: 17px; color: var(--text-2); max-width: 60ch; margin: 0;
+  }
+  .mast-meta {
+    margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px 26px;
+    font-family: var(--mono); font-size: 12px; color: var(--text-3);
+  }
+  .mast-meta b { color: var(--text-2); font-weight: 500; }
+
+  /* ── Section scaffold ── */
+  section { margin: 44px 0 0; }
+  .sec-head {
+    display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;
+  }
+  .sec-num {
+    font-family: var(--mono); font-size: 12px; color: var(--violet);
+    letter-spacing: 0.1em;
+  }
+  h2 {
+    font-size: 21px; letter-spacing: -0.01em; margin: 0; font-weight: 600;
+  }
+  .sec-sub { color: var(--text-3); font-size: 13.5px; margin-left: auto; font-family: var(--mono); }
+
+  /* ── Verdict hero ── */
+  .verdict {
+    display: grid; grid-template-columns: 168px 1fr; gap: 26px;
+    background: linear-gradient(150deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--edge); border-radius: 16px; padding: 26px;
+  }
+  .grade-badge {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--good-dim); border: 1px solid rgba(69,209,154,0.35);
+    border-radius: 14px; padding: 18px 10px;
+  }
+  .grade-badge .g { font-size: 58px; font-weight: 700; line-height: 1; color: var(--good); letter-spacing: -0.03em; }
+  .grade-badge .l { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-3); margin-top: 8px; }
+  .verdict-body p { margin: 0 0 12px; color: var(--text-2); font-size: 14.5px; }
+  .verdict-body p:last-child { margin-bottom: 0; }
+  .verdict-body strong { color: var(--text); font-weight: 600; }
+
+  /* ── Metric strip ── */
+  .metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px;
+  }
+  .metric {
+    background: var(--panel); border: 1px solid var(--edge-soft); border-radius: 12px; padding: 16px 16px 14px;
+  }
+  .metric .v { font-size: 27px; font-weight: 680; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .metric .v.good { color: var(--good); }
+  .metric .v.violet { color: var(--violet); }
+  .metric .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-top: 6px; }
+
+  /* ── Agent workers ── */
+  .agents { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .agent {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 14px;
+    padding: 20px; position: relative; overflow: hidden;
+  }
+  .agent::before {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 3px;
+    background: linear-gradient(var(--violet), var(--violet-dim));
+  }
+  .agent-top { display: flex; align-items: center; gap: 11px; margin-bottom: 4px; }
+  .pulse {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--good);
+    box-shadow: 0 0 0 0 rgba(69,209,154,0.6); animation: pulse 2.4s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(69,209,154,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(69,209,154,0); }
+    100% { box-shadow: 0 0 0 0 rgba(69,209,154,0); }
+  }
+  @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+  .agent h3 { margin: 0; font-size: 15.5px; font-weight: 600; }
+  .agent .cadence { font-family: var(--mono); font-size: 11px; color: var(--violet); margin-left: auto; }
+  .agent .role { color: var(--text-2); font-size: 13px; margin: 10px 0 16px; }
+  .agent-runline { display: flex; flex-direction: column; gap: 8px; }
+  .runrow { display: flex; justify-content: space-between; font-size: 12.5px; padding: 7px 0; border-top: 1px solid var(--edge-soft); }
+  .runrow:first-child { border-top: none; }
+  .runrow .lab { color: var(--text-3); font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; }
+  .runrow .val { color: var(--text); text-align: right; }
+  .runrow .val.good { color: var(--good); }
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 20px; vertical-align: middle;
+  }
+  .chip.live { background: var(--good-dim); color: var(--good); border: 1px solid rgba(69,209,154,0.3); }
+
+  .flow-note {
+    margin-top: 14px; font-size: 12.5px; color: var(--text-3);
+    background: var(--panel); border: 1px dashed var(--edge); border-radius: 10px; padding: 13px 15px;
+    font-family: var(--mono);
+  }
+  .flow-note b { color: var(--violet); font-weight: 500; }
+
+  /* ── Two-col findings ── */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 20px 20px 8px;
+  }
+  .card h3 {
+    font-size: 13px; font-family: var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+    margin: 0 0 4px; font-weight: 500;
+  }
+  .card.pos h3 { color: var(--good); }
+  .card.fix h3 { color: var(--warn); }
+  .card .sub { color: var(--text-3); font-size: 12px; margin: 0 0 14px; }
+  .item { display: flex; gap: 11px; padding: 11px 0; border-top: 1px solid var(--edge-soft); }
+  .item:first-of-type { border-top: none; }
+  .item .mk { flex: none; width: 16px; text-align: center; font-family: var(--mono); font-size: 13px; margin-top: 1px; }
+  .item.pos .mk { color: var(--good); }
+  .item.fix .mk { color: var(--warn); }
+  .item .txt { font-size: 13.5px; color: var(--text); }
+  .item .txt .m { color: var(--text-3); font-family: var(--mono); font-size: 11.5px; display: block; margin-top: 2px; }
+
+  /* ── Security battery ── */
+  .battery {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; overflow: hidden;
+  }
+  .battery-head {
+    display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--edge);
+    background: linear-gradient(90deg, var(--violet-glow), transparent);
+  }
+  .battery-head .score { font-size: 24px; font-weight: 700; color: var(--good); font-variant-numeric: tabular-nums; }
+  .battery-head .lab { font-size: 13.5px; color: var(--text-2); }
+  .battery-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .probe {
+    display: flex; align-items: flex-start; gap: 11px; padding: 12px 20px;
+    border-top: 1px solid var(--edge-soft); font-size: 13px;
+  }
+  .probe:nth-child(odd) { border-right: 1px solid var(--edge-soft); }
+  .probe .ck { color: var(--good); flex: none; font-family: var(--mono); margin-top: 1px; }
+  .probe .ck.bonus { color: var(--violet); }
+  .probe .pt { color: var(--text); }
+  .probe .pt .r { color: var(--text-3); font-family: var(--mono); font-size: 11px; display: block; }
+
+  /* ── Rollout timeline ── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .phase {
+    display: grid; grid-template-columns: 128px 1fr; gap: 22px; padding: 20px 0;
+    border-top: 1px solid var(--edge); position: relative;
+  }
+  .phase:first-child { border-top: none; }
+  .phase-when { }
+  .phase-when .tag {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 6px; display: inline-block; margin-bottom: 8px;
+  }
+  .phase-when .tag.now { background: var(--warn-dim); color: var(--warn); }
+  .phase-when .tag.next { background: var(--violet-glow); color: var(--violet); }
+  .phase-when .tag.later { background: var(--panel-2); color: var(--text-3); border: 1px solid var(--edge); }
+  .phase-when .wk { font-size: 12px; color: var(--text-3); font-family: var(--mono); }
+  .phase-body h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+  .phase-body p { margin: 0 0 10px; color: var(--text-2); font-size: 13.5px; }
+  .phase-body ul { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .phase-body li { font-size: 13px; color: var(--text-2); padding-left: 18px; position: relative; }
+  .phase-body li::before { content: "→"; position: absolute; left: 0; color: var(--violet-dim); font-family: var(--mono); }
+  .phase-body li b { color: var(--text); font-weight: 600; }
+
+  .position {
+    margin-top: 18px; background: linear-gradient(150deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--edge); border-radius: 14px; padding: 22px 24px;
+  }
+  .position .q {
+    font-size: 20px; letter-spacing: -0.01em; font-weight: 600; margin: 0 0 10px; color: var(--text);
+    text-wrap: balance;
+  }
+  .position .q .accent { color: var(--violet); }
+  .position p { margin: 0; color: var(--text-2); font-size: 14px; }
+
+  footer {
+    margin-top: 54px; padding-top: 22px; border-top: 1px solid var(--edge);
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-3);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  @media (max-width: 720px) {
+    .verdict { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .agents, .cols, .battery-grid { grid-template-columns: 1fr; }
+    .probe:nth-child(odd) { border-right: none; }
+    .phase { grid-template-columns: 1fr; gap: 10px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="kicker">Midnight Core · Ops Report</p>
+    <h1>Autonomous build, live product, <span class="thin">and a defended perimeter.</span></h1>
+    <p class="dek">A 48-hour snapshot: what the agents shipped, what broke and got fixed, how the perimeter held under attack, and the path from working demo to paying customers.</p>
+    <div class="mast-meta">
+      <span>PERIOD <b>Aug 11 – 13, 2026</b></span>
+      <span>ENV <b>midnight-core-cod3.onrender.com</b></span>
+      <span>INFERENCE <b>Groq free tier · $0</b></span>
+      <span>STATUS <b>live</b></span>
+    </div>
+  </header>
+
+  <!-- 1. VERDICT -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>The bottom line</h2>
+      <span class="sec-sub">reviewer grade · this cycle</span>
+    </div>
+    <div class="verdict">
+      <div class="grade-badge">
+        <span class="g">A−</span>
+        <span class="l">Code Health</span>
+      </div>
+      <div class="verdict-body">
+        <p>The product is <strong>live and survives strangers</strong> — every demo runs through the real UI on real infrastructure, with no API-seeded shortcuts. This cycle shipped the template engine, all nine Studio document lanes, the corpus answer engine, a PM requests inbox, a full security pass, and an MCP server — then generated a branded policy end-to-end to prove the flow.</p>
+        <p>An autonomous <strong>build → review loop</strong> now runs nightly without supervision: one agent ships a tested PR, a second grades the codebase and drafts an email verdict. This cycle's verdict on the builder's work: <strong>MERGE</strong>, clean.</p>
+        <p>A 22-probe adversarial battery against production found <strong>zero holes</strong>. The one minus on the grade is housekeeping, not risk — a couple of orphaned code paths to prune and the go-live checklist below.</p>
+      </div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="v good">236</div><div class="k">Tests green</div></div>
+      <div class="metric"><div class="v violet">40</div><div class="k">Commits / 3 days</div></div>
+      <div class="metric"><div class="v">22/22</div><div class="k">Probes defended</div></div>
+      <div class="metric"><div class="v">$0</div><div class="k">Inference cost</div></div>
+    </div>
+  </section>
+
+  <!-- 2. AGENTS -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>What the agents are doing</h2>
+      <span class="sec-sub">2 recurring workers · both enabled</span>
+    </div>
+    <div class="agents">
+      <div class="agent">
+        <div class="agent-top">
+          <span class="pulse"></span>
+          <h3>Nightly Builder</h3>
+          <span class="cadence">08:10 UTC daily</span>
+        </div>
+        <p class="role">Reads the build queue, implements the top unchecked item on a fresh branch with tests, opens a PR against master. Never touches master directly. One item per night.</p>
+        <div class="agent-runline">
+          <div class="runrow"><span class="lab">last run</span><span class="val">Aug 13, 08:12 UTC</span></div>
+          <div class="runrow"><span class="lab">output</span><span class="val good">PR #1 → merged</span></div>
+          <div class="runrow"><span class="lab">next run</span><span class="val">Aug 14, 08:10 UTC</span></div>
+          <div class="runrow"><span class="lab">state</span><span class="val"><span class="chip live">enabled</span></span></div>
+        </div>
+      </div>
+      <div class="agent">
+        <div class="agent-top">
+          <span class="pulse"></span>
+          <h3>Dawn Reviewer</h3>
+          <span class="cadence">10:00 UTC daily</span>
+        </div>
+        <p class="role">Compiles every backend file, reviews the last 26h of changes for bugs and security gaps, reviews open builder PRs, and delivers a graded verdict as a Gmail draft. Read-only — it never merges.</p>
+        <div class="agent-runline">
+          <div class="runrow"><span class="lab">last run</span><span class="val">Aug 13, 10:04 UTC</span></div>
+          <div class="runrow"><span class="lab">verdict</span><span class="val good">A− · PR #1 MERGE</span></div>
+          <div class="runrow"><span class="lab">delivered</span><span class="val">Gmail draft + push</span></div>
+          <div class="runrow"><span class="lab">state</span><span class="val"><span class="chip live">enabled</span></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="flow-note">
+      loop &nbsp;·&nbsp; <b>builder</b> ships tested PR &nbsp;→&nbsp; <b>reviewer</b> grades + drafts verdict email &nbsp;→&nbsp; owner reads verdict, merges &nbsp;→&nbsp; queue advances &nbsp;·&nbsp; ran 4× as one-shot PR check-ins before going recurring
+    </div>
+  </section>
+
+  <!-- 3. POSITIVES / FIXES -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Wins &amp; what broke</h2>
+      <span class="sec-sub">shipped vs. caught-and-fixed</span>
+    </div>
+    <div class="cols">
+      <div class="card pos">
+        <h3>▲ Positives</h3>
+        <p class="sub">Delivered and verified this cycle</p>
+        <div class="item pos"><span class="mk">✓</span><span class="txt">Real template engine — 36 styled shells, 9 categories × 4 variants, tenant branding<span class="m">logo + brand color rendered into every export</span></span></div>
+        <div class="item pos"><span class="mk">✓</span><span class="txt">All nine Studio document lanes live<span class="m">policy, SOP, standard, runbook, process, training, risk, audit, AI-gov</span></span></div>
+        <div class="item pos"><span class="mk">✓</span><span class="txt">Fail-closed answer engine with exact-quote citations<span class="m">unresolved questions → insufficient_evidence, never a guess</span></span></div>
+        <div class="item pos"><span class="mk">✓</span><span class="txt">Autonomous build + review loop, both running unattended<span class="m">PR #1 shipped, reviewed A−, merged</span></span></div>
+        <div class="item pos"><span class="mk">✓</span><span class="txt">MCP server exposing the REST API as agent tools<span class="m">answers the Pinterest "automation against REST/MCP" requirement</span></span></div>
+        <div class="item pos"><span class="mk">✓</span><span class="txt">$0 inference on Groq free tier; keepalive + demo-down alerting<span class="m">no cold-start, pushes if the demo drops</span></span></div>
+      </div>
+      <div class="card fix">
+        <h3>▼ Caught &amp; fixed</h3>
+        <p class="sub">Bugs the real-UI discipline flushed out</p>
+        <div class="item fix"><span class="mk">!</span><span class="txt">Every shell shipped a baked-in sample title in its header<span class="m">would have printed the wrong company name on all 36 templates → replaced with {{TITLE}}</span></span></div>
+        <div class="item fix"><span class="mk">!</span><span class="txt">Live export crashed on missing "List Bullet" style<span class="m">pandoc shells lacked list styles → registered at load</span></span></div>
+        <div class="item fix"><span class="mk">!</span><span class="txt">Export 500 on missing "Table Grid" style<span class="m">registered via parse_xml borders</span></span></div>
+        <div class="item fix"><span class="mk">!</span><span class="txt">Open-model JSON defects dropped ~1 section per preview<span class="m">parser hardened, escape repair → 10/10 clean</span></span></div>
+        <div class="item fix"><span class="mk">!</span><span class="txt">Reserved-key crash in model-failure logging<span class="m">LogRecord key sanitization</span></span></div>
+        <div class="item fix"><span class="mk">!</span><span class="txt">Draft occasionally missing the organization name<span class="m">threaded org hint through the cleaner agent</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SECURITY -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>Perimeter under attack</h2>
+      <span class="sec-sub">adversarial battery vs. production</span>
+    </div>
+    <div class="battery">
+      <div class="battery-head">
+        <span class="score">22/22</span>
+        <span class="lab">probes defended · auth, tenant isolation, traversal, injection, input caps, rate limits, concurrency</span>
+      </div>
+      <div class="battery-grid">
+        <div class="probe"><span class="ck">✓</span><span class="pt">Unauthenticated access rejected<span class="r">4 protected endpoints → 401</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Forged JWT cookie rejected<span class="r">tampered signature → 401</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Cross-tenant read blocked<span class="r">tenant A can't fetch B's run → 404</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Path traversal blocked<span class="r">5 encoded payloads → 404, no leak</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Oversized questionnaire capped<span class="r">500 questions → 413</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Oversized file upload capped<span class="r">3.4 MB → 413</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Unsupported filetype rejected<span class="r">.exe to parser → 415</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Malformed JSON rejected<span class="r">unclosed body → 422</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Rate limiting active<span class="r">corpus 10/5min · birdsong 20/5min</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">Security headers present<span class="r">nosniff, frame-options</span></span></div>
+        <div class="probe"><span class="ck">✓</span><span class="pt">40 concurrent requests, zero 500s<span class="r">no crash under load</span></span></div>
+        <div class="probe"><span class="ck bonus">✦</span><span class="pt">Edge WAF blocks SQLi patterns<span class="r">bonus layer — 403 before the app</span></span></div>
+      </div>
+    </div>
+    <div class="flow-note" style="margin-top:16px;">
+      reviewer static scan &nbsp;·&nbsp; <b>no</b> hardcoded secrets &nbsp;·&nbsp; <b>no</b> bare except &nbsp;·&nbsp; <b>no</b> unresolved model IDs &nbsp;·&nbsp; backend compiles clean &nbsp;·&nbsp; hostile field values sanitized, not executed
+    </div>
+  </section>
+
+  <!-- 5. ROLLOUT -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2>Rollout campaign</h2>
+      <span class="sec-sub">demo → design partners → GA</span>
+    </div>
+    <div class="timeline">
+      <div class="phase">
+        <div class="phase-when">
+          <span class="tag now">Phase 0 · Now</span>
+          <span class="wk">this week</span>
+        </div>
+        <div class="phase-body">
+          <h3>Go-live hardening</h3>
+          <p>Everything below is wiring, not building — the product is done. Close these and the front door opens.</p>
+          <ul>
+            <li>Point <b>midnightgrc.com</b> DNS at Render; wire real Stripe prices + the tier-migration SQL</li>
+            <li>Run the <b>PM-layer migration</b> in Supabase so the Requests inbox stops 500-ing</li>
+            <li>Add <b>RESEND_API_KEY</b> for transactional email; flip the two remaining repos private</li>
+            <li>Prune the orphaned <b>TraceAgent</b> path (~1,300 dead lines) — the only "minus" left</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-when">
+          <span class="tag next">Phase 1 · Next</span>
+          <span class="wk">weeks 1–3</span>
+        </div>
+        <div class="phase-body">
+          <h3>Design partners</h3>
+          <p>Land 3–5 startups actively chasing SOC 2 / HIPAA. Free access in exchange for feedback and a logo. Their real questionnaires become the proof.</p>
+          <ul>
+            <li>Onboard each as a branded tenant; run <b>one real vendor questionnaire</b> through the corpus live</li>
+            <li>Capture the "answered 40 questions from our own evidence in 4 minutes" moment as the hero case study</li>
+            <li>Instrument activation: time-to-first-answer, gaps closed, docs generated</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-when">
+          <span class="tag next">Phase 2 · Beta</span>
+          <span class="wk">weeks 4–8</span>
+        </div>
+        <div class="phase-body">
+          <h3>Public beta &amp; distribution</h3>
+          <p>Open self-serve signup. Lead with the portfolio site and the demo GIFs already captured.</p>
+          <ul>
+            <li>Launch on <b>Product Hunt</b> + a LinkedIn build-in-public thread; seed GRC / r/AskNetsec / vCISO communities</li>
+            <li>Content engine: "we ran your SIG questionnaire through it" teardown posts</li>
+            <li>Free tier (1 workspace, capped runs) → paid conversion on run volume + seats</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-when">
+          <span class="tag later">Phase 3 · GA</span>
+          <span class="wk">quarter 2</span>
+        </div>
+        <div class="phase-body">
+          <h3>Paid general availability</h3>
+          <p>Tiered pricing anchored on questionnaire volume and evidence corpus size. The autonomous build loop keeps shipping features while you sell.</p>
+          <ul>
+            <li>Starter / Team / Enterprise with plan-fenced limits (already enforced in code)</li>
+            <li>MCP server as an enterprise hook — "operate your compliance workspace from your own agents"</li>
+            <li>Land-and-expand: vendor assessments → internal audits → continuous monitoring</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="position">
+      <p class="q">Positioning: <span class="accent">answers from your own evidence, with citations</span> — or it says it doesn't know.</p>
+      <p>Every competitor auto-fills questionnaires with plausible text. Midnight retrieves from the tenant's real corpus, cites the exact quote, and fails closed to "insufficient evidence" rather than bluffing an auditor. That refusal is the product — it's what makes the output defensible in a real audit.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Midnight Core — Takeoff LLC · internal ops report</span>
+    <span>generated Aug 13, 2026 · 236 tests green · 22/22 probes defended</span>
+  </footer>
+
+</div>

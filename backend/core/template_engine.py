@@ -13,7 +13,6 @@ python-docx Document, which is exactly the pre-template-engine behavior.
 """
 from __future__ import annotations
 
-import copy
 import logging
 from pathlib import Path
 

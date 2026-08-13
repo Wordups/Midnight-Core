@@ -16,8 +16,7 @@ Rules:
     - Engine never touches template logic. Pure analysis only.
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 # ── Data models ────────────────────────────────────────────────────────────────

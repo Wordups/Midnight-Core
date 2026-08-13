@@ -11,11 +11,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any
-import json
 import logging
 
 import requests
-from gotrue.errors import AuthApiError, ErrorCode
+from gotrue.errors import AuthApiError
 
 from config import settings
 

@@ -11,7 +11,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import quote
-import json
 import logging
 import mimetypes
 import os
