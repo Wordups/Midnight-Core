@@ -2902,6 +2902,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
             policy_number=policy_data.get("policy_number") or None,
             version=policy_data.get("version") or None,
             policy_id=session.get("policy_id"),
+            embed=True,
         )
     except SupabaseStoreError as exc:
         _emit_signal(

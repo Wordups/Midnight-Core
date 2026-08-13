@@ -7,7 +7,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
 
 ## Queue
 
-- [ ] **Embed generated documents' sections.** Only Bird Eye uploads get
+- [x] **Embed generated documents' sections.** Only Bird Eye uploads get
   embeddings today; Studio-generated documents are invisible to the corpus
   answer engine's retrieval. In the create/generate path, embed saved
   sections with the existing `bird_eye.embeddings.embed_chunks` (one batched

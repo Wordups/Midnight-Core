@@ -21,6 +21,7 @@ import uuid
 import requests
 
 from backend.agents import AgentValidationError, SignalManagerAgent
+from backend.bird_eye.embeddings import embed_chunks
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
@@ -252,6 +253,23 @@ def _insert_policy_sections(sections: list[dict[str, Any]]) -> list[dict[str, An
     return created or []
 
 
+def _embed_section_payloads(section_payloads: list[dict[str, Any]]) -> None:
+    """Attach embeddings to section payloads in place, soft-failing like Bird Eye ingestion."""
+    if not section_payloads:
+        return
+    texts = [f"{p.get('heading') or ''}\n{p.get('content') or ''}" for p in section_payloads]
+    try:
+        vectors = embed_chunks(texts, input_type="document")
+    except Exception as exc:
+        logger.warning("voyage embedding failed (%s); inserting policy sections without vectors", exc)
+        vectors = [[] for _ in texts]
+    now_iso = datetime.now(UTC).isoformat()
+    for idx, payload in enumerate(section_payloads):
+        vec = vectors[idx] if idx < len(vectors) else []
+        payload["embedding"] = vec if vec else None
+        payload["embedded_at"] = now_iso if vec else None
+
+
 def save_policy_draft(
     *,
     tenant_id: str,
@@ -266,6 +284,7 @@ def save_policy_draft(
     policy_number: str | None = None,
     version: str | None = None,
     policy_id: str | None = None,
+    embed: bool = False,
 ) -> dict[str, Any]:
     if policy_id:
         policy = _update_policy(
@@ -313,6 +332,8 @@ def save_policy_draft(
                 "confidence_score": section.get("confidence_score"),
             }
         )
+    if embed:
+        _embed_section_payloads(section_payloads)
     stored_sections = _insert_policy_sections(section_payloads)
     return {"policy": policy, "sections": stored_sections}
 
