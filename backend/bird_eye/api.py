@@ -87,7 +87,15 @@ async def ingest_endpoint(
     auto_run: bool = Form(default=True),
 ):
     tenant_id = _tenant_from_request(request)
+    filename = (file.filename or "").lower()
+    if not filename.endswith((".docx", ".pdf", ".txt", ".md")):
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported file type — upload .docx, .pdf, .txt, or .md.",
+        )
     content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File exceeds the 10 MB upload limit.")
     try:
         result = ingest_document(
             tenant_id,

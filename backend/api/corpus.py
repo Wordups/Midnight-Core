@@ -137,6 +137,14 @@ def corpus_answer(payload: AnswerRequest, request: Request) -> dict[str, Any]:
             detail=f"{len(questions)} questions submitted; the limit is {MAX_QUESTIONS} per run.",
         )
 
+    from backend.core.ratelimit import allow as _rate_allow
+
+    if not _rate_allow(f"corpus:{tenant_id}", max_hits=10, window_seconds=300):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many questionnaire runs — wait a few minutes and try again.",
+        )
+
     _enforce_corpus_fence(request, tenant_id)
 
     try:

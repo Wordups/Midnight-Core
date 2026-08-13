@@ -1802,14 +1802,19 @@ async def smoke_docx():
 
 
 @pipeline_router.post("/birdsong")
-async def birdsong(request: BirdsongRequest):
+async def birdsong(request: BirdsongRequest, http_request: Request):
+    from backend.core.ratelimit import allow as _rate_allow
+
+    tenant_id = getattr(http_request.state, "tenant_id", None) or "anonymous"
+    if not _rate_allow(f"birdsong:{tenant_id}", max_hits=20, window_seconds=300):
+        raise HTTPException(status_code=429, detail="Bird Talk is rate limited — try again in a few minutes.")
     try:
         client = _get_anthropic_client()
         system = _BIRDSONG_PERSONAS.get(request.persona, _BIRDSONG_PERSONAS["dashboard"])
 
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
-            max_tokens=8096,
+            max_tokens=1024,
             system=system,
             messages=request.messages,
         )
