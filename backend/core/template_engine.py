@@ -98,18 +98,15 @@ def _ensure_table_grid_style(doc) -> None:
     try:
         style = doc.styles.add_style("Table Grid", WD_STYLE_TYPE.TABLE, builtin=True)
         # Single-line borders on all edges, matching Word's built-in look.
-        from docx.oxml.ns import qn
-        from docx.oxml.parser import OxmlElement
+        from docx.oxml.parser import parse_xml
+        from docx.oxml.ns import nsdecls
 
-        borders = OxmlElement("w:tblBorders")
-        for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
-            el = OxmlElement(f"w:{edge}")
-            el.set(qn("w:val"), "single")
-            el.set(qn("w:sz"), "4")
-            el.set(qn("w:color"), "auto")
-            borders.append(el)
-        tbl_pr = style.element.get_or_add_tblPr()
-        tbl_pr.append(borders)
+        edges = "".join(
+            f'<w:{edge} w:val="single" w:sz="4" w:color="auto"/>'
+            for edge in ("top", "left", "bottom", "right", "insideH", "insideV")
+        )
+        tbl_pr = parse_xml(f"<w:tblPr {nsdecls('w')}><w:tblBorders>{edges}</w:tblBorders></w:tblPr>")
+        style.element.append(tbl_pr)
     except Exception as exc:
         logger.warning("could not register Table Grid style: %s", exc)
 
