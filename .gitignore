@@ -35,6 +35,8 @@ data/
 outputs/
 logs/
 *.docx
+# Template shells are source, not output
+!backend/templates/packs/**/*.docx
 *.pdf
 *.txt
 !docs/*.md
