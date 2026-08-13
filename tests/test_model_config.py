@@ -33,3 +33,27 @@ def test_resolve_model_rejects_stale_override(monkeypatch):
     assert resolve_model() == DEFAULT_MODEL
     monkeypatch.setenv("ANTHROPIC_MODEL", "claude-opus-4-8")
     assert resolve_model() == "claude-opus-4-8"
+
+
+def test_groq_provider_selected(monkeypatch):
+    """LLM_PROVIDER=groq returns the Groq adapter without touching Anthropic."""
+    monkeypatch.setenv("LLM_PROVIDER", "groq")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
+    from backend.llm.provider import GroqClient, get_client
+
+    client = get_client(anthropic_api_key="")
+    assert isinstance(client, GroqClient)
+    assert hasattr(client.messages, "create")
+
+
+def test_groq_requires_key(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "groq")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    from backend.llm.provider import get_client
+
+    client = get_client(anthropic_api_key="")
+    try:
+        client.messages.create(messages=[{"role": "user", "content": "hi"}])
+        assert False, "should have raised"
+    except RuntimeError as exc:
+        assert "GROQ_API_KEY" in str(exc)

@@ -98,15 +98,80 @@ class OllamaClient:
         self.messages = _OllamaMessages()
 
 
+def _groq_model() -> str:
+    return os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+
+class _GroqMessages:
+    """Anthropic-shaped ``.messages.create`` backed by Groq's OpenAI-style API.
+
+    Free-tier per-token serving of open models — the zero-cost production
+    fallback when Anthropic credits are unavailable. Same cage applies: the
+    caller's JSON validation and registry grounding do not care which model
+    produced the text.
+    """
+
+    def create(self, *, model=None, max_tokens: int = 1024, system=None, messages=None, **kwargs):
+        chat: list[dict] = []
+        if system:
+            chat.append({"role": "system", "content": system})
+        for m in (messages or []):
+            content = m.get("content")
+            if isinstance(content, list):  # Anthropic block form -> flatten to text
+                content = "".join(b.get("text", "") for b in content if isinstance(b, dict))
+            chat.append({"role": m.get("role", "user"), "content": content or ""})
+
+        payload: dict = {"model": _groq_model(), "messages": chat, "max_tokens": max_tokens}
+        if kwargs.get("temperature") is not None:
+            payload["temperature"] = kwargs["temperature"]
+
+        api_key = os.getenv("GROQ_API_KEY", "").strip()
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY is not configured.")
+        resp = httpx.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            json=payload,
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=httpx.Timeout(_llm_timeout(), connect=10.0),
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        choice = (data.get("choices") or [{}])[0]
+        text = (choice.get("message") or {}).get("content", "")
+        stop_reason = "max_tokens" if choice.get("finish_reason") == "length" else "end_turn"
+        usage = data.get("usage") or {}
+        return SimpleNamespace(
+            content=[SimpleNamespace(type="text", text=text)],
+            stop_reason=stop_reason,
+            model=_groq_model(),
+            role="assistant",
+            usage=SimpleNamespace(
+                input_tokens=usage.get("prompt_tokens", 0),
+                output_tokens=usage.get("completion_tokens", 0),
+            ),
+        )
+
+
+class GroqClient:
+    def __init__(self):
+        self.messages = _GroqMessages()
+
+
 def get_client(*, anthropic_api_key: str | None = None):
     """Return an LLM client exposing the Anthropic ``.messages.create`` shape.
 
-    Anthropic by default; Ollama when ``LLM_PROVIDER=ollama``. Raises
-    RuntimeError if the selected provider isn't usable.
+    Anthropic by default; Ollama when ``LLM_PROVIDER=ollama``; Groq when
+    ``LLM_PROVIDER=groq``. Raises RuntimeError if the selected provider
+    isn't usable.
     """
     if provider() == "ollama":
         logger.info("llm_provider_ollama model=%s url=%s", _ollama_model(), _ollama_url())
         return OllamaClient()
+
+    if provider() == "groq":
+        logger.info("llm_provider_groq model=%s", _groq_model())
+        return GroqClient()
 
     try:
         import anthropic
