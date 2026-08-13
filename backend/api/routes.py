@@ -3,6 +3,7 @@ Midnight Core - Pipeline Routes
 Takeoff LLC
 """
 
+import asyncio
 import json
 import os
 import base64
@@ -2889,7 +2890,11 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
     policy_data = _ensure_required_slots_or_400(policy_data)
     active_frameworks = [item for item in session.get("frameworks", []) if str(item).strip()]
     try:
-        draft = save_policy_draft(
+        # save_policy_draft now embeds sections synchronously (Voyage retries can
+        # block for minutes); run it off the event loop so a slow/unreachable
+        # embedding provider can't stall this single-worker process.
+        draft = await asyncio.to_thread(
+            save_policy_draft,
             tenant_id=tenant["id"],
             title=policy_data.get("title") or policy_name,
             document_type=policy_data.get("doc_type") or doc_type,
@@ -2902,6 +2907,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
             policy_number=policy_data.get("policy_number") or None,
             version=policy_data.get("version") or None,
             policy_id=session.get("policy_id"),
+            embed=True,
         )
     except SupabaseStoreError as exc:
         _emit_signal(
