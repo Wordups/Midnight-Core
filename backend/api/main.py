@@ -1025,4 +1025,19 @@ async def root():
     return RedirectResponse(url="/index.html")
 
 
+@app.get("/templates/previews/{category}/{variant}.png")
+def template_preview(category: str, variant: str):
+    """Template pack preview thumbnails for the Studio style picker.
+    Inputs are validated against known category/variant sets — no traversal."""
+    from fastapi.responses import FileResponse
+
+    from backend.core.template_engine import preview_path
+
+    path = preview_path(category, variant)
+    if path is None:
+        raise HTTPException(status_code=404, detail="No preview for that template.")
+    return FileResponse(str(path), media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

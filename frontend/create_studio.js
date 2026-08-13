@@ -428,15 +428,20 @@ function renderExportStep() {
         <div class="wf-card">
           <div class="wf-panel-kicker">Step 6 · Export</div>
           <h3>Export path</h3>
-          <label class="wf-field" style="max-width:340px;margin-bottom:14px">
+          <div class="wf-field" style="margin-bottom:14px">
             <span class="wf-label">Template style</span>
-            <select class="wf-select" id="wf-template-variant">
-              <option value="modern">Modern — scannable, plain-language</option>
-              <option value="formal">Formal — traditional enterprise</option>
-              <option value="detailed">Detailed — full structure, audit-depth</option>
-              <option value="executive">Executive — brief, leadership-facing</option>
-            </select>
-          </label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:8px">
+              ${TEMPLATE_VARIANTS.map(v => `
+                <div class="wf-card" data-variant-card="${v.id}" onclick="selectTemplateVariant('${v.id}')"
+                     style="cursor:pointer;padding:8px;border-width:2px;${(workflowState.templateVariant || 'modern') === v.id ? 'border-color:var(--wf-accent, #2563eb);' : ''}">
+                  <img src="/templates/previews/${laneTemplateCategory()}/${v.id}.png" alt="${v.title} preview"
+                       style="width:100%;border-radius:6px;display:block;background:#f2f4f8"
+                       onerror="this.style.display='none'">
+                  <div style="font-size:12.5px;font-weight:600;margin-top:6px">${v.title}</div>
+                  <div style="font-size:11px;opacity:.7">${v.blurb}</div>
+                </div>`).join('')}
+            </div>
+          </div>
           <div class="wf-export-grid">
             ${config.exportOptions.map((name) => {
               const live = LIVE_LANES.has(workflowState.lane) && name === 'Word (.docx)';
@@ -582,9 +587,8 @@ async function runPolicyGenerate() {
 
   workflowSetLoading(true, 'Bird Eye Rendering', 'Midnight is rendering the tenant-owned draft into a document export.');
   try {
-    const variantSel = document.getElementById('wf-template-variant');
     const generatePayload = { ...workflowState.previewData };
-    if (variantSel && variantSel.value) generatePayload.template_variant = variantSel.value;
+    generatePayload.template_variant = workflowState.templateVariant || 'modern';
     const response = await workflowApi('/pipeline/create/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -666,6 +670,32 @@ function getLaneFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const type = (params.get('type') || 'policy').toLowerCase();
   return QUERY_TYPE_TO_LANE[type] || 'POLICY';
+}
+
+const TEMPLATE_VARIANTS = [
+  { id: 'modern', title: 'Modern', blurb: 'Scannable, plain-language' },
+  { id: 'formal', title: 'Formal', blurb: 'Traditional enterprise' },
+  { id: 'detailed', title: 'Detailed', blurb: 'Full structure, audit-depth' },
+  { id: 'executive', title: 'Executive', blurb: 'Brief, leadership-facing' },
+];
+
+const LANE_TO_TEMPLATE_CATEGORY = {
+  POLICY: 'policy', STANDARD: 'standard', SOP: 'procedure', PROCEDURE: 'procedure',
+  INCIDENT_RUNBOOK: 'incident_runbook', PLAYBOOK: 'incident_runbook',
+  PROCESS_FLOW: 'process_flow', TRAINING: 'training',
+  RISK_ASSESSMENT: 'risk_assessment', AUDIT_PACKAGE: 'audit_package',
+  AI_GOVERNANCE: 'ai_governance',
+};
+
+function laneTemplateCategory() {
+  return LANE_TO_TEMPLATE_CATEGORY[workflowState.lane] || 'policy';
+}
+
+function selectTemplateVariant(variant) {
+  workflowState.templateVariant = variant;
+  document.querySelectorAll('[data-variant-card]').forEach((card) => {
+    card.style.borderColor = card.getAttribute('data-variant-card') === variant ? 'var(--wf-accent, #2563eb)' : '';
+  });
 }
 
 // Gap-close entry point: the corpus view's "Draft the missing policy" button

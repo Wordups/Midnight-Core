@@ -63,7 +63,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
 - Respect existing patterns: provider layer for all LLM calls, tenant_id on
   every query, fail-closed error handling, tests alongside code.
 
-- [ ] **Template picker shows preview images.** The packs ship preview PNGs
+- [x] **Template picker shows preview images.** The packs ship preview PNGs
   (backend/templates/packs/<cat>/<variant>/*_preview.png). Serve them and
   render thumbnails in the Studio "Template style" picker so choosing a
   variant is visual. Frontend + one static route if needed.
@@ -74,7 +74,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   LIVE_CREATE_LANES, verify preview/generate end-to-end with tests. One lane
   per night.
 
-- [ ] **Brand logo renders in document headers.** tenants.brand_logo_url is
+- [x] **Brand logo renders in document headers.** tenants.brand_logo_url is
   stored but never rendered (brand color now is). In template_engine
   apply_branding: fetch the logo (timeout 5s, fail-open), insert into the
   shell's header at a sane width (~1.2in). Test with a stub image.

@@ -162,6 +162,56 @@ def apply_branding(doc, *, organization: str = "", title: str = "", primary_colo
                 continue
 
 
+def apply_logo(doc, logo_url: str | None) -> None:
+    """Insert the tenant logo into the document header. Fail-open."""
+    url = str(logo_url or "").strip()
+    if not url.lower().startswith(("http://", "https://")):
+        return
+    logo = _fetch_logo_bytes(url)
+    if logo:
+        _insert_logo(doc, logo)
+
+
+def preview_path(category: str, variant: str) -> Path | None:
+    """Validated path to a pack's preview PNG — inputs checked against the
+    known category/variant sets, so no traversal is possible."""
+    cat = str(category or "").strip().lower()
+    v = str(variant or "").strip().lower()
+    if cat not in set(DOC_TYPE_TO_CATEGORY.values()) or v not in VARIANTS:
+        return None
+    path = PACKS_DIR / cat / v / f"{cat}_{v}_preview.png"
+    return path if path.exists() else None
+
+
+def _fetch_logo_bytes(url: str) -> bytes | None:
+    """Fetch a tenant logo, fail-open. Small timeout — rendering must not hang."""
+    try:
+        import httpx
+
+        resp = httpx.get(url, timeout=5.0, follow_redirects=True)
+        resp.raise_for_status()
+        if len(resp.content) > 2 * 1024 * 1024:
+            return None
+        return resp.content
+    except Exception as exc:
+        logger.warning("logo fetch failed (%s); rendering without logo", exc)
+        return None
+
+
+def _insert_logo(doc, logo_bytes: bytes) -> None:
+    from io import BytesIO
+
+    from docx.shared import Inches
+
+    try:
+        header = doc.sections[0].header
+        paragraph = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+        run = paragraph.add_run()
+        run.add_picture(BytesIO(logo_bytes), width=Inches(1.1))
+    except Exception as exc:
+        logger.warning("logo insert failed (%s); rendering without logo", exc)
+
+
 def load_template_shell(doc_type: str, variant: str | None = None, *, branding: dict | None = None):
     """Return a python-docx Document ready to render into.
 
@@ -187,6 +237,7 @@ def load_template_shell(doc_type: str, variant: str | None = None, *, branding: 
                 primary_color=branding.get("primary_color"),
                 classification=str(branding.get("classification") or "Internal"),
             )
+            apply_logo(doc, branding.get("logo_url"))
         return doc
     except Exception as exc:
         logger.warning("template shell %s unusable (%s); falling back to blank", path, exc)

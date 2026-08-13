@@ -89,3 +89,29 @@ class TableGridTests(unittest.TestCase):
         table = doc.add_table(rows=1, cols=2)
         table.style = "Table Grid"  # must not raise
         self.assertIsNotNone(table.style)
+
+
+class PreviewAndLogoTests(unittest.TestCase):
+    def test_preview_path_resolves_for_known_pairs(self):
+        from backend.core.template_engine import preview_path
+        self.assertIsNotNone(preview_path("policy", "formal"))
+        self.assertIsNotNone(preview_path("audit_package", "executive"))
+
+    def test_preview_path_rejects_traversal(self):
+        from backend.core.template_engine import preview_path
+        self.assertIsNone(preview_path("../secrets", "formal"))
+        self.assertIsNone(preview_path("policy", "nope"))
+
+    def test_logo_fetch_failure_is_silent(self):
+        from backend.core.template_engine import apply_logo, load_template_shell
+        doc = load_template_shell("POLICY", "modern")
+        apply_logo(doc, "https://127.0.0.1:1/never-resolves.png")  # must not raise
+
+    def test_non_http_logo_url_ignored(self):
+        from unittest.mock import patch
+        from backend.core.template_engine import apply_logo, load_template_shell
+        doc = load_template_shell("POLICY", "modern")
+        with patch("backend.core.template_engine._fetch_logo_bytes") as fetch:
+            apply_logo(doc, "javascript:alert(1)")
+            apply_logo(doc, "file:///etc/passwd")
+            fetch.assert_not_called()

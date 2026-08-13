@@ -2434,6 +2434,7 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
             "title": policy_data.get("policy_name") or policy_data.get("title") or "",
             "primary_color": (policy_data.get("_branding") or {}).get("primary_color"),
             "classification": (policy_data.get("_branding") or {}).get("classification") or "Internal",
+            "logo_url": (policy_data.get("_branding") or {}).get("logo_url"),
         },
     )
 
@@ -2909,6 +2910,7 @@ async def create_generate(request: Request, payload: CreateGenerateRequest):
     # Injected post-normalization so the cleaner can't strip them.
     policy_data["_branding"] = {
         "primary_color": tenant.get("brand_primary_color"),
+        "logo_url": tenant.get("brand_logo_url"),
         "classification": "Internal",
     }
     requested_variant = str(payload.policy_data.get("template_variant") or "").strip().lower()
