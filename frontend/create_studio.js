@@ -551,6 +551,9 @@ async function runPolicyPreview() {
         definitions_text: getFieldValue('definitions_text'),
         policy_statement: getFieldValue('policy_statement'),
         procedures_text: getFieldValue('procedures_text'),
+        // Variant carries a voice + length register, so it must reach content
+        // generation — not just the export shell.
+        template_variant: workflowState.templateVariant || 'modern',
       }),
     });
 
@@ -562,6 +565,7 @@ async function runPolicyPreview() {
     const data = await response.json();
     workflowState.previewData = data.policy_data;
     workflowState.previewText = buildPolicyPreviewText(data.policy_data);
+    workflowState.previewVariant = workflowState.templateVariant || 'modern';
     workflowState.draft = { ...workflowCollectDraft() };
     persistPreview();
     document.getElementById('wf-breadcrumb-state').textContent = 'Preview Ready';
@@ -691,11 +695,24 @@ function laneTemplateCategory() {
   return LANE_TO_TEMPLATE_CATEGORY[workflowState.lane] || 'policy';
 }
 
-function selectTemplateVariant(variant) {
+async function selectTemplateVariant(variant) {
+  const previous = workflowState.templateVariant;
   workflowState.templateVariant = variant;
   document.querySelectorAll('[data-variant-card]').forEach((card) => {
     card.style.borderColor = card.getAttribute('data-variant-card') === variant ? 'var(--wf-accent, #2563eb)' : '';
   });
+  // The variant is a voice (formal=legalese, executive=one-page brief), not just
+  // a shell. If a draft already exists and was written in a different variant's
+  // voice, regenerate so the prose matches the variant the user just picked.
+  if (
+    variant !== previous &&
+    workflowState.previewData &&
+    workflowState.previewVariant &&
+    workflowState.previewVariant !== variant
+  ) {
+    workflowToast(`Rewriting the draft in the ${variant} voice…`);
+    await runPolicyPreview();
+  }
 }
 
 // Gap-close entry point: the corpus view's "Draft the missing policy" button

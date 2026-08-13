@@ -42,6 +42,7 @@ from backend.core.json_parser import (
 from backend.renderers.docx_renderer import render_markdown_bullet, render_markdown_into
 from backend.renderers.pdf_renderer import build_grc_summary_pdf
 from backend.core.gap_engine import CONTROL_REGISTRY, get_required_controls, run_program_gap_analysis
+from backend.core.template_voice import section_voice_block
 from backend.billing_plans import limits_for, resolve_plan
 from backend.storage.file_store import (
     SupabaseStoreError,
@@ -1971,6 +1972,7 @@ class CreatePolicyRequest(BaseModel):
     procedures_text: Optional[str] = None
     related_policies: Optional[str] = None
     citations_references: Optional[str] = None
+    template_variant: Optional[str] = None
 
 
 def _anthropic_text_response(message: Any) -> tuple[str, str]:
@@ -2325,7 +2327,12 @@ def _build_section_prompt(
     normalized_frameworks: list[str],
     fw_context: list[str],
     mapping_rules: str,
+    num_slots: int = 1,
 ) -> str:
+    # Carry the selected template variant's voice + length budget into the
+    # section prompt so the four variants actually diverge (formal=legalese,
+    # executive=one-page brief). Variant-blind before this.
+    voice_block = section_voice_block(request.template_variant, num_slots=num_slots)
     return (
         f"Policy Title: {metadata['title']}\n"
         f"Organization: {metadata['organization']}\n"
@@ -2334,12 +2341,14 @@ def _build_section_prompt(
         f"Frameworks: {', '.join(normalized_frameworks) or 'None selected'}\n"
         f"Document Type: {metadata['document_type']}\n"
         f"Policy Description: {request.description or 'Not provided'}\n"
+        f"{voice_block}\n"
         f"Requested Slot: {slot_spec['slot_id']}\n"
         f"Required Heading: {slot_spec['heading']}\n"
         f"Section Guidance: {slot_spec['instruction']}\n"
         f"Framework Controls Reference:\n{chr(10).join(fw_context)}\n\n"
         f"Mapping Rules: {mapping_rules}\n\n"
-        "Generate only one policy section. Return valid JSON only in this shape:\n"
+        "Generate only one policy section in the voice and length described "
+        "above. Return valid JSON only in this shape:\n"
         '{\n  "slot_id": "' + slot_spec["slot_id"] + '",\n  "heading": "' + slot_spec["heading"] + '",\n  "content": "..."\n}\n'
         "Do not include markdown fences or prose."
     )
@@ -2409,6 +2418,7 @@ async def _generate_policy_data(
                             normalized_frameworks=normalized_frameworks,
                             fw_context=fw_context,
                             mapping_rules=mapping_rules,
+                            num_slots=len(doc_slot_specs),
                         ),
                         flow=f"create_policy_section_{slot_id}",
                         context={"policy_name": request.policy_name, "slot_id": slot_id},
