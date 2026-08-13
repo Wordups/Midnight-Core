@@ -139,3 +139,23 @@ class AgentFoundationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_cleaner_agent_organization_hint_fallback():
+    """Docs that never state their organization must not fail schema validation
+    when the caller supplies a tenant-name hint (live Migrate bug, Pixel Forge run)."""
+    from backend.agents.cleaner_agent import CleanerAgent
+
+    payload = '{"title": "Access Control Policy", "sections": [{"slot_id": "purpose", "heading": "Purpose", "content": "Control access."}]}'
+    result = CleanerAgent().run(
+        {"raw_output": payload, "organization_hint": "Pixel Forge Interactive"}
+    )
+    assert result.organization == "Pixel Forge Interactive"
+
+
+def test_cleaner_agent_explicit_organization_wins_over_hint():
+    from backend.agents.cleaner_agent import CleanerAgent
+
+    payload = '{"title": "T", "organization": "Stated Org", "sections": [{"slot_id": "purpose", "heading": "Purpose", "content": "x"}]}'
+    result = CleanerAgent().run({"raw_output": payload, "organization_hint": "Hint Org"})
+    assert result.organization == "Stated Org"

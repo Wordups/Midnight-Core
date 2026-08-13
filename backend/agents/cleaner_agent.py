@@ -37,9 +37,16 @@ class CleanerAgent(BaseAgent):
     def _run(self, data: dict[str, Any]) -> dict[str, Any]:
         raw_output = data["raw_output"]
         required_frameworks = data.get("required_frameworks")
+        # Without the hint, documents that never state their organization fail
+        # schema validation here — before callers' tenant-name fallback runs.
+        organization_hint = str(data.get("organization_hint") or "").strip()
         try:
             parsed = parse_model_json(raw_output)
-            normalized = normalize_policy_payload(parsed, required_frameworks=required_frameworks)
+            normalized = normalize_policy_payload(
+                parsed,
+                organization_hint=organization_hint,
+                required_frameworks=required_frameworks,
+            )
         except (ParsedModelOutputError, PolicySchemaError) as exc:
             raise AgentValidationError(str(exc)) from exc
         return normalized

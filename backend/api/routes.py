@@ -1422,6 +1422,7 @@ def _parse_policy_model_output(
             {
                 "raw_output": raw_text,
                 "required_frameworks": required_frameworks,
+                "organization_hint": organization_hint,
             }
         )
         normalized = cleaned.model_dump()
@@ -1463,6 +1464,7 @@ def _normalize_policy_payload_or_400(
             {
                 "raw_output": raw_text,
                 "required_frameworks": required_frameworks,
+                "organization_hint": organization_hint,
             }
         )
         normalized = cleaned.model_dump()
