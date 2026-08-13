@@ -366,3 +366,49 @@ class ApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ParseQuestionnaireTests(unittest.TestCase):
+    def setUp(self):
+        from backend.api.main import app
+        self.app = app
+        self.client = TestClient(app)
+
+    def tearDown(self):
+        self.app.dependency_overrides.clear()
+
+    def _login(self):
+        from fastapi import Request
+        from backend.api.main import verify_access
+
+        def fake_access(request: Request):
+            request.state.tenant_id = TENANT
+            request.state.plan_type = "pro"
+            return {"authenticated": True}
+
+        self.app.dependency_overrides[verify_access] = fake_access
+
+    def test_parse_requires_auth(self):
+        resp = self.client.post("/api/v1/corpus/parse", files={"file": ("q.csv", b"a,b", "text/csv")})
+        self.assertEqual(resp.status_code, 401)
+
+    def test_parse_csv_takes_longest_cell(self):
+        self._login()
+        csv_body = b"ID,Question,Ref\nQ1,Do you require MFA for all privileged access?,IAM-1\nQ2,Is data encrypted at rest and in transit?,DP-2\n"
+        resp = self.client.post("/api/v1/corpus/parse", files={"file": ("sig.csv", csv_body, "text/csv")})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["count"], 2)
+        self.assertIn("MFA", data["questions"][0])
+
+    def test_parse_markdown_uses_splitter(self):
+        self._login()
+        md = b"1. Do you have an incident response plan?\n2. Do you rotate encryption keys annually?\n"
+        resp = self.client.post("/api/v1/corpus/parse", files={"file": ("q.md", md, "text/markdown")})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["count"], 2)
+
+    def test_parse_rejects_unknown_type(self):
+        self._login()
+        resp = self.client.post("/api/v1/corpus/parse", files={"file": ("q.docx", b"x", "application/octet-stream")})
+        self.assertEqual(resp.status_code, 415)

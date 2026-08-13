@@ -2399,6 +2399,10 @@
             <option value="">Run history…</option>
           </select>
           <button type="button" class="run-btn" id="corpus-export-btn" style="display:none" onclick="exportCorpusRun()">Export CSV</button>
+          <label class="run-btn" style="cursor:pointer" title="Upload a questionnaire file (.csv, .tsv, .txt, .md, .xlsx)">
+            Upload questionnaire…
+            <input type="file" id="corpus-questionnaire-file" accept=".csv,.tsv,.txt,.md,.xlsx" style="display:none" onchange="parseQuestionnaireFile(this)">
+          </label>
         </div>
         <textarea id="corpus-questions" placeholder="Paste a questionnaire — numbered, bulleted, or one question per line.&#10;&#10;1. Do you require MFA for all privileged access?&#10;2. Is customer data encrypted at rest?&#10;3. Do you have a tested incident response plan?"></textarea>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
@@ -2808,7 +2812,34 @@ const CORPUS_STATUS_LABELS = {
 };
 let corpusCurrentRunId = null;
 
+// Session-expiry recovery: a long corpus session dying with a 401 must not
+// eat the questionnaire the analyst pasted. Stash → re-auth → restore.
+const CORPUS_STASH_KEY = 'midnight-corpus-stash';
+
+function corpusSessionExpired() {
+  const ta = document.getElementById('corpus-questions');
+  if (ta && ta.value.trim()) {
+    try { sessionStorage.setItem(CORPUS_STASH_KEY, ta.value); } catch (_) {}
+  }
+  showToast('Session expired — sign in again. Your questionnaire is saved and will be restored.', true);
+  setTimeout(() => { window.location.href = '/login.html'; }, 1800);
+}
+
+function restoreCorpusStash() {
+  try {
+    const stash = sessionStorage.getItem(CORPUS_STASH_KEY);
+    if (!stash) return;
+    const ta = document.getElementById('corpus-questions');
+    if (ta && !ta.value.trim()) {
+      ta.value = stash;
+      showToast('Restored your unsent questionnaire from before the session expired.');
+    }
+    sessionStorage.removeItem(CORPUS_STASH_KEY);
+  } catch (_) {}
+}
+
 async function loadCorpusView() {
+  restoreCorpusStash();
   loadCorpusIndex();
   loadCorpusRuns();
 }
@@ -2857,6 +2888,7 @@ async function uploadToCorpus() {
     fd.append('artifact_type', document.getElementById('corpus-upload-type').value);
     fd.append('auto_run', 'false');
     const r = await fetch(`${API}/bird-eye/ingest`, { method: 'POST', credentials: 'include', body: fd });
+    if (r.status === 401) { corpusSessionExpired(); return; }
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
       const detail = (data && (data.detail || data.error)) || `HTTP ${r.status}`;
@@ -2998,6 +3030,7 @@ async function runCorpusAnswer() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw_text: raw, use_case: document.getElementById('corpus-use-case').value }),
     });
+    if (r.status === 401) { corpusSessionExpired(); return; }
     const data = await r.json();
     if (!r.ok) {
       const detail = data && data.detail;
@@ -3029,6 +3062,30 @@ async function loadCorpusRun(runId) {
 function exportCorpusRun() {
   if (!corpusCurrentRunId) return;
   window.open(`${API}/api/v1/corpus/runs/${encodeURIComponent(corpusCurrentRunId)}/export`, '_blank');
+}
+
+async function parseQuestionnaireFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch(`${API}/api/v1/corpus/parse`, { method: 'POST', credentials: 'include', body: fd });
+    if (r.status === 401) { corpusSessionExpired(); return; }
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const detail = (data && data.detail) || 'Could not parse that file.';
+      showToast(typeof detail === 'string' ? detail : 'Could not parse that file.', true);
+      return;
+    }
+    const ta = document.getElementById('corpus-questions');
+    ta.value = (data.questions || []).map((q, i) => `${i + 1}. ${q}`).join('\n');
+    showToast(`Loaded ${data.count} question(s) from ${file.name}${data.truncated ? ' (truncated to the run limit)' : ''} — review, then run.`);
+  } catch (_) {
+    showToast('Could not parse that file.', true);
+  } finally {
+    input.value = '';
+  }
 }
 
 // Export Studio interactive preview: backend not wired yet — honest stubs so

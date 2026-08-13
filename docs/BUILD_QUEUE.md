@@ -40,13 +40,13 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   the corpus view) with the corpus/questionnaire flow as the primary CTA;
   demote the Migrate card. Frontend-only.
 
-- [ ] **Session refresh for long operations.** Supabase JWTs expire (~1h);
+- [x] **Session refresh for long operations.** Supabase JWTs expire (~1h);
   a long dashboard session dies mid-upload or mid-run with a 401 and the UI
   loses work. Frontend: on 401 from an API call, attempt one silent
   re-auth/redirect-to-login that preserves the corpus view state (stash the
   questionnaire text in sessionStorage before redirect, restore after).
 
-- [ ] **Questionnaire file upload.** The runner accepts pasted text only.
+- [x] **Questionnaire file upload.** The runner accepts pasted text only.
   Accept .csv/.xlsx uploads of questionnaires (one question per row, common
   SIG/CAIQ-style layouts): parse client-side or via a small endpoint reusing
   `split_questionnaire` semantics; feed the same answer pipeline. Cap at the

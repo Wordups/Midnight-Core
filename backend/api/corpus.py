@@ -12,7 +12,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
@@ -164,6 +164,71 @@ def corpus_answer(payload: AnswerRequest, request: Request) -> dict[str, Any]:
     except Exception as exc:  # accounting must not fail the run
         logger.warning("corpus activity event failed: %s", exc)
     return run
+
+
+MAX_QUESTIONNAIRE_FILE_BYTES = 2 * 1024 * 1024
+
+
+def _questions_from_rows(rows: list[list[str]]) -> list[str]:
+    """SIG/CAIQ-style sheets: take the longest text cell per row as the question."""
+    questions: list[str] = []
+    for row in rows:
+        cells = [str(c or "").strip() for c in row]
+        # 12-char floor keeps IDs, refs, and header words ("Question") out
+        # while real assessment questions comfortably clear it.
+        cells = [c for c in cells if len(c) >= 12]
+        if cells:
+            questions.append(max(cells, key=len))
+    return questions
+
+
+@router.post("/parse")
+async def corpus_parse_questionnaire(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:
+    """Parse an uploaded questionnaire file into questions for the runner.
+
+    Returns questions for review in the paste box — parsing never triggers a
+    run (and therefore never spends LLM tokens).
+    """
+    _tenant_id(request)
+    raw = await file.read()
+    if len(raw) > MAX_QUESTIONNAIRE_FILE_BYTES:
+        raise HTTPException(status_code=413, detail="Questionnaire file is larger than 2 MB.")
+    name = (file.filename or "").lower()
+
+    if name.endswith((".txt", ".md")):
+        questions = split_questionnaire(raw.decode("utf-8", errors="ignore"))
+    elif name.endswith((".csv", ".tsv")):
+        import csv
+        import io as _io
+
+        delimiter = "\t" if name.endswith(".tsv") else ","
+        reader = csv.reader(_io.StringIO(raw.decode("utf-8-sig", errors="ignore")), delimiter=delimiter)
+        questions = _questions_from_rows(list(reader))
+    elif name.endswith(".xlsx"):
+        try:
+            import openpyxl  # optional dependency
+        except ImportError as exc:
+            raise HTTPException(
+                status_code=415,
+                detail="XLSX parsing is not enabled on this server — export the sheet as CSV instead.",
+            ) from exc
+        import io as _io
+
+        wb = openpyxl.load_workbook(_io.BytesIO(raw), read_only=True, data_only=True)
+        rows = [[cell for cell in row] for row in wb.active.iter_rows(values_only=True)]
+        questions = _questions_from_rows(rows)
+    else:
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported file type — use .csv, .tsv, .txt, .md, or .xlsx.",
+        )
+
+    truncated = len(questions) > MAX_QUESTIONS
+    return {
+        "questions": questions[:MAX_QUESTIONS],
+        "count": min(len(questions), MAX_QUESTIONS),
+        "truncated": truncated,
+    }
 
 
 @router.get("/runs")
