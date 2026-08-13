@@ -23,7 +23,7 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   `midnight_dashboard.html` + `create_studio.js` (accept prefill query
   params). No backend change expected.
 
-- [ ] **CI: run the test suite on push.** Extend `.github/workflows/` with a
+- [x] **CI: run the test suite on push.** Extend `.github/workflows/` with a
   workflow that installs `backend/requirements.txt` on Python 3.12 and runs
   `pytest tests/ --ignore=tests/test_tenant_isolation.py
   --ignore=tests/test_document_isolation.py` (those two need live Supabase).
