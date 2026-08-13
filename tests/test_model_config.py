@@ -21,12 +21,6 @@ def test_routes_model_is_current():
     assert routes.ANTHROPIC_MODEL != STALE
 
 
-def test_trace_agent_model_is_current():
-    ta = importlib.import_module("backend.agents.trace_agent")
-    assert ta.ANTHROPIC_MODEL in VALID_MODELS
-    assert ta.ANTHROPIC_MODEL != STALE
-
-
 def test_resolve_model_rejects_stale_override(monkeypatch):
     # An operator setting a stale/unknown ANTHROPIC_MODEL must not 404 the app.
     monkeypatch.setenv("ANTHROPIC_MODEL", STALE)

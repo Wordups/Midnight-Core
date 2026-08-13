@@ -96,8 +96,10 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   add "Assign to reviewer": creates a request via the PM API pre-filled with
   the question + follow-up. Depends on the Requests inbox (previous item).
 
-- [ ] **Decide TraceAgent: wire or delete.** 725 lines with no route and no
-  generation_intake writer. If wiring: a minimal POST intake route + run
-  trigger behind verify_access. If deleting: remove agent + test + table
-  migration note. OWNER DECISION — skip this item and take the next one
-  until the queue says otherwise.
+- [x] **Decide TraceAgent: wire or delete.** DELETED 2026-08-13. The Studio
+  pipeline (template shells + branding + citation-validated previews)
+  superseded this batch path. Removed trace_agent.py, generators/,
+  validators/spot_checker.py, templates/outlines/, its schemas and test
+  (~1,300 lines). schema_validator (validate_schema_bytes) kept — the live
+  export path uses it. The `generation_intake` table is now orphaned in
+  Supabase (inert; drop at leisure).

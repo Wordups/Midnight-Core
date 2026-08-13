@@ -14,7 +14,7 @@ import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-logger = logging.getLogger("midnight.trace_agent.schema_validator")
+logger = logging.getLogger("midnight.schema_validator")
 
 # Canonical parts of an OOXML word document.
 REQUIRED_PARTS = (
@@ -79,8 +79,7 @@ def validate_schema_bytes(data: bytes) -> SchemaValidationResult:
 def validate_schema(docx_path: str | Path) -> SchemaValidationResult:
     """Open the .docx as a zip, confirm required parts exist, parse the
     main document XML, count body paragraphs. Returns a result object
-    rather than raising — TraceAgent's repair loop wants the failure
-    reason as text."""
+    rather than raising — callers want the failure reason as text."""
     docx_path = Path(docx_path)
     if not docx_path.exists():
         return SchemaValidationResult(False, f"File does not exist: {docx_path}")
