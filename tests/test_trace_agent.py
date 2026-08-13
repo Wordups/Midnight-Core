@@ -180,6 +180,13 @@ def inserted_intake(_prereq_check):
     )
 
 
+import pytest as _pytest
+
+
+@_pytest.mark.skipif(
+    not os.getenv("RUN_LIVE_LLM_TESTS"),
+    reason="requires_live_llm: makes a real Anthropic call; set RUN_LIVE_LLM_TESTS=1",
+)
 def test_trace_agent_end_to_end(inserted_intake, tmp_path):
     """Hardcoded SOC playbook scenario; everything below is real I/O."""
     from backend.agents.trace_agent import TraceAgent

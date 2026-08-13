@@ -73,3 +73,31 @@ The owner reorders this file to reprioritize; the agent never reorders it.
   Add slot specs for ONE lane (Audit Package first), add it to LIVE_LANES +
   LIVE_CREATE_LANES, verify preview/generate end-to-end with tests. One lane
   per night.
+
+- [ ] **Brand logo renders in document headers.** tenants.brand_logo_url is
+  stored but never rendered (brand color now is). In template_engine
+  apply_branding: fetch the logo (timeout 5s, fail-open), insert into the
+  shell's header at a sane width (~1.2in). Test with a stub image.
+
+- [ ] **Wire Evidence + ExecutiveSummary agents to the UI.** Both are
+  implemented and in the agent catalog with zero triggers. Add a "Generate
+  executive summary" action on the GRC Summary view and an evidence panel
+  entry point; route through the existing agent_ops endpoints. Tests for the
+  routes if any are missing.
+
+- [ ] **PM layer UI, phase 1 — Requests inbox.** backend/api/pm.py is a full
+  request/task state machine (open -> in_review -> complete) with SME
+  invites; no frontend. Add a "Requests" dashboard view: list, status
+  chips, transition buttons, invite-SME form, calling the existing API only.
+  No backend changes.
+
+- [ ] **PM layer UI, phase 2 — assign a refusal to a human.** On
+  insufficient_evidence corpus answers, next to "Draft the missing policy"
+  add "Assign to reviewer": creates a request via the PM API pre-filled with
+  the question + follow-up. Depends on the Requests inbox (previous item).
+
+- [ ] **Decide TraceAgent: wire or delete.** 725 lines with no route and no
+  generation_intake writer. If wiring: a minimal POST intake route + run
+  trigger behind verify_access. If deleting: remove agent + test + table
+  migration note. OWNER DECISION — skip this item and take the next one
+  until the queue says otherwise.
