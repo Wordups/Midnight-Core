@@ -1,21 +1,42 @@
+# Render Blueprint — Midnight Core
+#
+# Deploys the Docker image (not the python runtime: the Trace Agent's docx-js
+# generator needs Node, which the Dockerfile installs). Tracks `master` — the
+# real code branch; `main` is an orphan from an early upload, never deploy it.
+#
+# Required secrets (set in the Render dashboard, sync: false here):
+#   ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY,
+#   SUPABASE_SERVICE_ROLE_KEY — config.py fails closed at boot without them.
+# Optional: VOYAGE_API_KEY (corpus embeddings), ALLOWED_ORIGINS, JIRA_* (env
+# fallback for the demo tenant's Jira integration).
 services:
   - type: web
     name: midnight-core
-    env: python
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    branch: master
+    healthCheckPath: /health
     envVars:
-      - key: TOOL_PASSWORD
-        sync: false
       - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: ALLOWED_ORIGINS
         sync: false
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_KEY
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: JIRA_SITE_URL
+        sync: false
+      - key: JIRA_EMAIL
+        sync: false
+      - key: JIRA_API_TOKEN
+        sync: false
+      - key: JIRA_PROJECT_KEY
         sync: false
       - key: ENVIRONMENT
         value: production
-      - key: WORKSPACE_ID
-        value: personal
+      - key: AUTOMATION_INTERVAL_MINUTES
+        value: "60"

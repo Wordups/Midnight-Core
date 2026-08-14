@@ -43,5 +43,6 @@ ENV PYTHONPATH=/app
 # Expose port
 EXPOSE 8000
 
-# Start the app
-CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the app. Shell form so $PORT (set by Render and other PaaS hosts)
+# is honored; falls back to 8000 for local docker run.
+CMD uvicorn backend.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
