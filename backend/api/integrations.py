@@ -51,9 +51,13 @@ def _client(tenant_id: str) -> JiraClient:
 class JiraConfigRequest(BaseModel):
     site_url: str = Field(min_length=4)
     auth_email: str = Field(min_length=3)
-    api_token: str = Field(min_length=8)
+    # Empty token on an already-configured tenant means "keep the stored one" —
+    # so settings like auto_push can be toggled without re-entering the secret.
+    api_token: str = Field(default="", max_length=500)
     project_key: str = Field(default="GRC", min_length=1, max_length=20)
     enabled: bool = True
+    auto_push: bool = False
+    alert_webhook_url: str = Field(default="", max_length=500)
 
 
 @router.get("/config")
@@ -64,11 +68,20 @@ def get_config(request: Request) -> dict:
 @router.put("/config")
 def put_config(payload: JiraConfigRequest, request: Request) -> dict:
     tenant_id = _tenant_id(request)
+    api_token = payload.api_token.strip()
+    if not api_token:
+        existing = load_config(tenant_id)
+        if existing is None:
+            raise HTTPException(status_code=422, detail="An API token is required to connect Jira.")
+        api_token = existing.api_token
+    elif len(api_token) < 8:
+        raise HTTPException(status_code=422, detail="That API token looks too short.")
     save_config(
         tenant_id,
         site_url=payload.site_url, email=payload.auth_email,
-        api_token=payload.api_token, project_key=payload.project_key,
-        enabled=payload.enabled,
+        api_token=api_token, project_key=payload.project_key,
+        enabled=payload.enabled, auto_push=payload.auto_push,
+        alert_webhook_url=payload.alert_webhook_url,
     )
     # Verify the credentials immediately so the user gets instant feedback.
     try:
@@ -169,6 +182,24 @@ def issue_status(issue_key: str, request: Request) -> dict:
     except Exception:
         pass
     return status
+
+
+# ── one-click sync: sync-back + push all unlinked material gaps ──────────────
+@router.post("/sync")
+def sync_now(request: Request) -> dict:
+    """The 'Sync now' button: refresh Jira statuses (Done stamps the link
+    resolved), then push every material gap that isn't filed yet — regardless
+    of the auto_push setting, since the click is the consent."""
+    tenant_id = _tenant_id(request)
+    if not rate_allow(f"jira-sync:{tenant_id}", max_hits=6, window_seconds=300):
+        raise HTTPException(status_code=429, detail="Sync already running — wait a few minutes.")
+    _client(tenant_id)  # fail closed (409) before doing any work
+    from backend.integrations.jira_sync import auto_push_gaps, sync_back
+
+    result = {"sync": sync_back(tenant_id), "push": auto_push_gaps(tenant_id)}
+    logger.info("manual jira sync for %s: %d synced, %d pushed", tenant_id,
+                result["sync"].get("synced", 0), len(result["push"].get("pushed", [])))
+    return result
 
 
 @router.get("/links")

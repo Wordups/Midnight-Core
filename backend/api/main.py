@@ -82,6 +82,18 @@ async def security_headers(request: Request, call_next):
 register_exception_handlers(app)
 app.include_router(health_router)
 
+
+@app.on_event("startup")
+async def _start_automation_scheduler():
+    from backend.core.scheduler import start as start_scheduler
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+async def _stop_automation_scheduler():
+    from backend.core.scheduler import stop as stop_scheduler
+    stop_scheduler()
+
 logger = logging.getLogger("midnight.auth")
 
 session_cookie_name = "midnight_session"

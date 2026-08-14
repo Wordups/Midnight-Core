@@ -54,8 +54,29 @@ def load_config(tenant_id: str) -> JiraConfig | None:
     return _from_env()
 
 
+def load_settings(tenant_id: str) -> dict:
+    """Automation settings for a tenant (auto_push, alert_webhook_url,
+    last_readiness_at). {} when there is no stored row — env-fallback tenants
+    get automation only after saving a real config."""
+    try:
+        rows = db_select(_TABLE, tenant_id=tenant_id, columns="*")
+    except Exception as exc:
+        logger.warning("jira settings load failed (%s)", exc)
+        rows = []
+    if not rows:
+        return {}
+    row = rows[0]
+    return {
+        "auto_push": bool(row.get("auto_push", False)),
+        "alert_webhook_url": (row.get("alert_webhook_url") or "").strip() or None,
+        "last_readiness_at": row.get("last_readiness_at"),
+    }
+
+
 def save_config(tenant_id: str, *, site_url: str, email: str, api_token: str,
-                project_key: str = "GRC", enabled: bool = True) -> None:
+                project_key: str = "GRC", enabled: bool = True,
+                auto_push: bool = False,
+                alert_webhook_url: str | None = None) -> None:
     """Upsert a tenant's Jira config. Never logs the token."""
     now = datetime.now(UTC).isoformat()
     existing = db_select(_TABLE, tenant_id=tenant_id, columns="tenant_id")
@@ -65,6 +86,8 @@ def save_config(tenant_id: str, *, site_url: str, email: str, api_token: str,
         "auth_email": email.strip(),
         "api_token": api_token,
         "enabled": enabled,
+        "auto_push": auto_push,
+        "alert_webhook_url": (alert_webhook_url or "").strip() or None,
         "updated_at": now,
     }
     if existing:
@@ -89,6 +112,9 @@ def public_config(tenant_id: str) -> dict:
             "project_key": row.get("project_key"),
             "auth_email": row.get("auth_email"),
             "enabled": row.get("enabled", True),
+            "auto_push": bool(row.get("auto_push", False)),
+            "alert_webhook_url": row.get("alert_webhook_url"),
+            "last_readiness_at": row.get("last_readiness_at"),
             "api_token": _mask(row.get("api_token")),
         }
     env = _from_env()

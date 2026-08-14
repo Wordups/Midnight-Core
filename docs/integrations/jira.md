@@ -26,6 +26,26 @@ An env fallback (`JIRA_SITE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN` /
 Endpoints: `GET/PUT /config`, `POST /test`, `POST /push-gap`,
 `GET /issues/{key}`, `GET /links`.
 
+## Automation (scheduler + alerts)
+`backend/core/scheduler.py` starts an in-process loop on app startup
+(`AUTOMATION_INTERVAL_MINUTES`, default 60; disable with
+`AUTOMATION_SCHEDULER=0`). Each pass runs `backend/integrations/jira_sync.py`
+per Jira-enabled tenant:
+
+1. **Sync-back** — refresh open `jira_issue_links`; a Jira issue reaching a
+   done status category stamps `resolved_at` and alerts. The Midnight gap
+   itself closes only when re-ingested evidence covers the control.
+2. **Auto-push** (opt-in per tenant, `auto_push`) — recompute program gaps and
+   file every unlinked critical/medium gap as a Jira issue. Dedupe is by
+   `control_id` against `jira_issue_links`, so re-runs never double-file.
+3. **Readiness cadence** — every 30 days (`last_readiness_at`), snapshot
+   coverage + open gaps and alert with the summary.
+
+Alerts land in the tenant's activity feed (signals) and, when
+`alert_webhook_url` is set, POST a Slack-compatible `{"text"}` payload.
+`POST /sync` is the one-click version (sync-back + push-all), wired to the
+dashboard's **Sync now** button. Requires migration `005_automation.sql`.
+
 ## Engineering report (CI)
 `.github/workflows/jira-report.yml` runs on PR merge and records the completed
 work as a Night Shift Task. It runs on a GitHub runner because the Claude

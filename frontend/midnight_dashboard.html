@@ -2493,11 +2493,24 @@
             <input type="password" id="jira-token" placeholder="••••••••" autocomplete="off" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
           </label>
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:8px">Create a token at <span style="color:var(--text2)">Atlassian → Account → Security → API tokens</span>. It is stored encrypted and never shown again after saving.</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">Create a token at <span style="color:var(--text2)">Atlassian → Account → Security → API tokens</span>. It is stored server-side, masked in this screen, and never shown again after saving.</div>
+
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center;max-width:640px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border2)">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);white-space:nowrap">
+            <input type="checkbox" id="jira-auto-push" style="accent-color:var(--accent, #7c6cf0)">
+            Auto-push new gaps
+          </label>
+          <span style="font-size:11px;color:var(--text3)">The hourly automation pass files every newly detected critical/medium gap as a Jira issue — no click needed. Already-linked controls are never re-filed.</span>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text3)">Alert webhook (optional)
+            <input type="url" id="jira-webhook" placeholder="https://hooks.slack.com/services/…" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+          </label>
+          <span style="font-size:11px;color:var(--text3)">Gets a message when gaps are auto-pushed, a Jira issue lands in Done, or the monthly readiness check runs. Slack-compatible <code>{"text"}</code> payload.</span>
+        </div>
 
         <div class="corpus-run-controls" style="margin-top:14px">
           <button type="button" class="run-btn" onclick="saveJiraConfig()">Save &amp; connect</button>
           <button type="button" class="run-btn" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2)" onclick="testJiraConnection()">Test connection</button>
+          <button type="button" class="run-btn" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2)" onclick="syncJiraNow()">Sync now</button>
           <span id="jira-status" style="font-size:12px;color:var(--text3)"></span>
         </div>
       </div>
@@ -2979,11 +2992,14 @@ async function loadJiraSettings() {
     const r = await fetch(`${JIRA_BASE}/config`, { credentials: 'include' });
     if (!r.ok) { setJiraBadge('off', 'Not connected'); return; }
     const c = await r.json();
+    window._jiraConfigured = !!c.configured;
     if (c.configured) {
       document.getElementById('jira-site').value = c.site_url || '';
       document.getElementById('jira-project').value = c.project_key || 'GRC';
       document.getElementById('jira-email').value = c.auth_email || '';
       document.getElementById('jira-token').placeholder = c.api_token || '••••••••';
+      document.getElementById('jira-auto-push').checked = !!c.auto_push;
+      document.getElementById('jira-webhook').value = c.alert_webhook_url || '';
       setJiraBadge(c.enabled ? 'ok' : 'warn',
         c.enabled ? `Connected${c.source === 'env' ? ' (env)' : ''}` : 'Disabled');
     } else {
@@ -3000,8 +3016,11 @@ async function saveJiraConfig() {
     auth_email: document.getElementById('jira-email').value.trim(),
     api_token: document.getElementById('jira-token').value,
     enabled: true,
+    auto_push: document.getElementById('jira-auto-push').checked,
+    alert_webhook_url: document.getElementById('jira-webhook').value.trim(),
   };
-  if (!body.site_url || !body.auth_email || !body.api_token) {
+  // An empty token is fine once connected — the backend keeps the stored one.
+  if (!body.site_url || !body.auth_email || (!body.api_token && !window._jiraConfigured)) {
     jiraStatus('Site URL, email, and API token are all required.', 'error');
     return;
   }
@@ -3017,6 +3036,7 @@ async function saveJiraConfig() {
       const who = data.connected_as || {};
       jiraStatus(`Connected as ${who.display_name || who.email || 'your account'}.`, 'ok');
       setJiraBadge('ok', 'Connected');
+      window._jiraConfigured = true;
       document.getElementById('jira-token').value = '';
       document.getElementById('jira-token').placeholder = '•••• saved';
     } else {
@@ -3040,6 +3060,23 @@ async function testJiraConnection() {
       setJiraBadge('warn', 'Check credentials');
     }
   } catch (e) { jiraStatus(e.message || 'Connection failed.', 'error'); }
+}
+
+async function syncJiraNow() {
+  jiraStatus('Syncing — refreshing statuses, pushing unfiled gaps…');
+  try {
+    const r = await fetch(`${JIRA_BASE}/sync`, { method: 'POST', credentials: 'include' });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { jiraStatus(apiDetailMessage(data.detail) || 'Sync failed.', 'error'); return; }
+    const synced = (data.sync || {}).synced || 0;
+    const done = ((data.sync || {}).newly_done || []).length;
+    const pushed = ((data.push || {}).pushed || []).length;
+    const parts = [`${synced} status${synced === 1 ? '' : 'es'} refreshed`];
+    if (done) parts.push(`${done} issue${done === 1 ? '' : 's'} newly Done`);
+    parts.push(`${pushed} gap${pushed === 1 ? '' : 's'} pushed`);
+    jiraStatus(parts.join(' · '), 'ok');
+    loadJiraLinks();
+  } catch (e) { jiraStatus(e.message || 'Sync failed.', 'error'); }
 }
 
 async function loadJiraLinks() {
