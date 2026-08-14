@@ -1,0 +1,101 @@
+name: jira-report
+# The night shift reports itself: when a PR merges (the nightly builder's output
+# arrives as PRs), record the completed work as a Jira issue in the Night Shift
+# project. A GitHub runner can reach Jira; the Claude routine sandbox can't, so
+# the reporting lives here rather than in the routine.
+#
+# Requires repo secrets: JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN,
+# JIRA_AGENT_PROJECT_KEY. If any are unset the job no-ops (never fails a merge).
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  report:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record completed work in Night Shift
+        env:
+          JIRA_BASE: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT: ${{ secrets.JIRA_AGENT_PROJECT_KEY }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+          PR_ADDITIONS: ${{ github.event.pull_request.additions }}
+          PR_DELETIONS: ${{ github.event.pull_request.deletions }}
+        run: |
+          python3 - <<'PY'
+          import base64, json, os, sys, urllib.request, urllib.error
+
+          base = (os.environ.get("JIRA_BASE") or "").rstrip("/")
+          email = os.environ.get("JIRA_EMAIL") or ""
+          token = os.environ.get("JIRA_TOKEN") or ""
+          project = os.environ.get("JIRA_PROJECT") or ""
+          if not (base and email and token and project):
+              print("Jira secrets not configured — skipping report (no-op).")
+              sys.exit(0)
+
+          title = os.environ.get("PR_TITLE") or "Untitled change"
+          url = os.environ.get("PR_URL") or ""
+          body = (os.environ.get("PR_BODY") or "").strip()
+          branch = os.environ.get("PR_BRANCH") or ""
+          num = os.environ.get("PR_NUM") or ""
+          merged_by = os.environ.get("PR_MERGED_BY") or ""
+          adds = os.environ.get("PR_ADDITIONS") or "0"
+          dels = os.environ.get("PR_DELETIONS") or "0"
+
+          def para(text):
+              return {"type": "paragraph", "content": [{"type": "text", "text": text}]}
+
+          content = [
+              para(f"Automated report — the nightly scheduler merged this work."),
+              para(f"PR #{num}: {url}"),
+              para(f"Branch: {branch}   ·   +{adds} / -{dels} lines   ·   merged by {merged_by}"),
+          ]
+          if body:
+              content.append({"type": "rule"})
+              for line in body.splitlines():
+                  line = line.strip()
+                  if line:
+                      content.append(para(line[:500]))
+
+          payload = {"fields": {
+              "project": {"key": project},
+              "issuetype": {"name": "Task"},
+              "summary": f"Night Shift: {title}"[:250],
+              "description": {"type": "doc", "version": 1, "content": content},
+              "labels": ["night-shift", "automated", "agent-report"],
+          }}
+
+          auth = base64.b64encode(f"{email}:{token}".encode()).decode()
+          req = urllib.request.Request(
+              f"{base}/rest/api/3/issue",
+              data=json.dumps(payload).encode(),
+              headers={"Authorization": f"Basic {auth}",
+                       "Content-Type": "application/json",
+                       "Accept": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=20) as resp:
+                  out = json.loads(resp.read().decode())
+                  print(f"Reported to Night Shift: {out.get('key')} ({base}/browse/{out.get('key')})")
+          except urllib.error.HTTPError as exc:
+              # Never fail the merge over a reporting hiccup.
+              print(f"Jira report failed (HTTP {exc.code}): {exc.read().decode()[:300]}")
+              sys.exit(0)
+          except Exception as exc:
+              print(f"Jira report skipped ({exc.__class__.__name__}).")
+              sys.exit(0)
+          PY
