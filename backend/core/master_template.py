@@ -22,7 +22,7 @@ front matter, exactly as it does for the pandoc shells.
 from __future__ import annotations
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_TAB_ALIGNMENT
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -76,6 +76,14 @@ def _bottom_border(paragraph, color: str, size: int = 6, space: int = 6) -> None
     bottom.set(qn("w:color"), color)
     pbdr.append(bottom)
     ppr.append(pbdr)
+
+
+def _right_tab(paragraph, pos_inches: float = 6.5) -> None:
+    """A right-aligned tab stop at the content edge — lets one line hold a
+    left item and a right item (title/org, classification/page number)."""
+    paragraph.paragraph_format.tab_stops.add_tab_stop(
+        Inches(pos_inches), WD_TAB_ALIGNMENT.RIGHT
+    )
 
 
 def _shade_cell(cell, color: str) -> None:
@@ -184,7 +192,8 @@ def _configure_styles(doc, accent: RGBColor) -> None:
 
 
 # ── Building blocks ──────────────────────────────────────────────────────────
-def _cover(doc, category_label: str, logo_bytes: bytes | None = None) -> None:
+def _cover(doc, category_label: str, logo_bytes: bytes | None = None,
+           accent_color: RGBColor = VIOLET) -> None:
     if logo_bytes:
         from io import BytesIO
         try:
@@ -209,8 +218,13 @@ def _cover(doc, category_label: str, logo_bytes: bytes | None = None) -> None:
     title.paragraph_format.space_after = Pt(10)
 
     chip = doc.add_paragraph(style="CoverMeta")
-    cr = chip.add_run("CLASSIFICATION:  {{CLASSIFICATION}}")
-    _set_char_spacing(cr, 20)
+    cc = chip.add_run("{{CLASSIFICATION}}")
+    cc.font.color.rgb = accent_color
+    cc.font.bold = True
+    _set_char_spacing(cc, 20)
+    ci = chip.add_run("     Internal distribution only")
+    ci.font.color.rgb = SLATE
+    _set_char_spacing(ci, 10)
     chip.paragraph_format.space_after = Pt(22)
 
     # Metadata table (label / value pairs), hairline rows, no box.
@@ -234,8 +248,15 @@ def _cover(doc, category_label: str, logo_bytes: bytes | None = None) -> None:
         vr.font.name = BODY_FONT; vr.font.size = Pt(10.5); vr.font.color.rgb = INK
         lc.width = Inches(1.9); vc.width = Inches(4.1)
 
-    tag = doc.add_paragraph("Audit-ready, never compliant.", style="Tagline")
+    # Tagline (left) · PREPARED WITH MIDNIGHT (right), on one baseline.
+    tag = doc.add_paragraph(style="Tagline")
     tag.paragraph_format.space_before = Pt(26)
+    _right_tab(tag)
+    tag.add_run("Audit-ready, never compliant.")
+    tag.add_run("\t")
+    pm = tag.add_run("PREPARED WITH MIDNIGHT")
+    pm.font.italic = False
+    _small_caps(pm, SLATE, size=7.5, track=15)
 
     _page_break(doc)
 
@@ -264,7 +285,8 @@ def _document_control(doc) -> None:
     for j, val in enumerate(("{{VERSION}}", "{{EFFECTIVE_DATE}}", "Initial issuance.", "{{AUTHOR_NAME}}")):
         run = first[j].paragraphs[0].add_run(val)
         run.font.name = BODY_FONT; run.font.size = Pt(10); run.font.color.rgb = INK
-    doc.add_paragraph()
+    # Body sections begin on a fresh page (pamphlet flow, like the design).
+    _page_break(doc)
 
 
 def _page_break(doc) -> None:
@@ -274,29 +296,40 @@ def _page_break(doc) -> None:
     run._r.append(br)
 
 
+def _small_caps(run, color: RGBColor, size: float = 8.0, track: int = 20) -> None:
+    run.font.name = HEAD_FONT
+    run.font.size = Pt(size)
+    run.font.color.rgb = color
+    _set_char_spacing(run, track)
+
+
 def _header_footer(doc, accent: RGBColor) -> None:
     section = doc.sections[0]
 
+    # Header: document title (left) · organization (right), like the design.
     header = section.header
     hp = header.paragraphs[0]
     hp.text = ""
-    hr = hp.add_run("{{DOCUMENT_TITLE}}")
-    hr.font.name = HEAD_FONT; hr.font.size = Pt(8.5); hr.font.color.rgb = SLATE
-    _set_char_spacing(hr, 20)
-    hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    _right_tab(hp)
+    _small_caps(hp.add_run("{{DOCUMENT_TITLE}}"), SLATE)
+    hp.add_run("\t")
+    _small_caps(hp.add_run("{{ORGANIZATION_NAME}}"), accent)
 
+    # Footer: classification · doc id · version (left) · page x of y (right).
     footer = section.footer
     fp = footer.paragraphs[0]
     fp.text = ""
-    left = fp.add_run("{{CLASSIFICATION}}   ")
-    left.font.name = HEAD_FONT; left.font.size = Pt(8); left.font.color.rgb = SLATE
+    _right_tab(fp)
+    _small_caps(fp.add_run("{{CLASSIFICATION}}   ·   {{DOCUMENT_ID}}   ·   V{{VERSION}}"), SLATE)
     fp.add_run("\t")
+    pg = fp.add_run("PAGE ")
+    _small_caps(pg, SLATE)
     _field(fp, " PAGE ", "")
-    fp.add_run(" of ")
+    _small_caps(fp.add_run(" OF "), SLATE)
     _field(fp, " NUMPAGES ", "")
-    for r in fp.runs:
+    for r in fp.runs:  # the field result runs inherit the small-caps look
         if not r.font.size:
-            r.font.name = BODY_FONT; r.font.size = Pt(8); r.font.color.rgb = SLATE
+            r.font.name = HEAD_FONT; r.font.size = Pt(8); r.font.color.rgb = SLATE
 
 
 # ── Public entry point ───────────────────────────────────────────────────────
@@ -313,7 +346,7 @@ def build_master_shell(doc_type: str | None, variant: str | None = None, *,
 
     _configure_styles(doc, accent)
     _header_footer(doc, accent)
-    _cover(doc, DOC_TYPE_LABELS.get(str(doc_type or "").upper(), "DOCUMENT"), logo_bytes)
+    _cover(doc, DOC_TYPE_LABELS.get(str(doc_type or "").upper(), "DOCUMENT"), logo_bytes, accent)
     _contents(doc)
     _document_control(doc)
 

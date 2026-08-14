@@ -2530,6 +2530,12 @@ def _build_docx(policy_data: dict, template_name: str) -> bytes:
         "APPROVER_TITLE": policy_data.get("approver_title") or "",
         "AUTHOR_NAME": policy_data.get("owner") or _org or "",
         "CLASSIFICATION": _branding.get("classification") or "Internal",
+        "DOCUMENT_ID": (
+            policy_data.get("grc_id")
+            or policy_data.get("policy_number")
+            or policy_data.get("document_id")
+            or "—"
+        ),
     })
 
     if not getattr(doc, "is_template_shell", False):
