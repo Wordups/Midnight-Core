@@ -2,7 +2,11 @@
 
 **An evidence-grounded GRC platform that turns policy evidence into control mappings, cited questionnaire answers, and *automated* remediation workflows — built, deployed, and adversarially tested.**
 
-Live app · [midnight-core-cod3.onrender.com](https://midnight-core-cod3.onrender.com) — Python (FastAPI) + Supabase + LLM provider layer, running on $0 inference.
+Live app · [midnight-core-cod3.onrender.com](https://midnight-core-cod3.onrender.com) — Python (FastAPI) + Supabase + a pluggable LLM provider layer (Claude / Groq / local).
+
+![Midnight running a vendor security assessment](assets/vendor_assessment.gif)
+
+*Answering a vendor security assessment from the evidence corpus — cited answers, gaps surfaced, remediation drafted.*
 
 ---
 
@@ -22,18 +26,9 @@ Drives the **real production Jira client** through an in-process mock — no cre
 python demo/rest_api_automation_demo.py
 ```
 
-```
-1. Authenticate against the REST API
-   ✓ Connected as Midnight Demo <demo@midnightgrc.com>
-2. A gap the evidence engine surfaced (fails closed on missing proof)
-   → SOC2-CC6.1 · SOC 2 · severity High
-3. Automate it into a Jira issue (POST /rest/api/3/issue)
-   ✓ Created MS-DEMO-1
-4. Read remediation status back (GET /rest/api/3/issue/{key})
-   ✓ MS-DEMO-1 is 'To Do'  (done=False)
-```
+![Terminal recording of the REST-API automation demo](assets/rest_automation_demo.gif)
 
-Point it at a real Jira with `--live` and `JIRA_SITE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN` / `JIRA_PROJECT_KEY`.
+The demo drives the exact production client through the full REST flow: authenticate → surface a gap → `POST /rest/api/3/issue` (ADF body) → read status back. Point it at a real Jira with `--live` and `JIRA_SITE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN` / `JIRA_PROJECT_KEY`.
 
 ---
 
@@ -42,7 +37,7 @@ Point it at a real Jira with `--live` and `JIRA_SITE_URL` / `JIRA_EMAIL` / `JIRA
 ### 1 · Integrations against REST APIs
 A fail-closed **Jira Cloud REST API v3** client: Basic auth, Atlassian Document Format payloads, clean error surfacing, no token logging. A detected gap becomes a Jira issue (`[control] summary`, source document ID in the body, framework + severity labels); status syncs back.
 → `../backend/integrations/jira_client.py` · `../backend/api/integrations.py`
-**Proof (live):** [`MS-1`](https://midnightgrc.atlassian.net/browse/MS-1) was created in a real Jira by the deployed product.
+**Proof:** the recording above is the exact create-issue call; in production it writes a real ticket into the tenant's own Jira project, then syncs the status back.
 
 ### 2 · Automation against MCP servers
 Midnight ships its **own MCP server** exposing the platform's REST API as agent tools (`get_posture`, `answer_questions`, `assign_to_reviewer`, `draft_document`, …) — so any MCP client can operate a compliance workspace.
@@ -62,7 +57,7 @@ flowchart LR
     A -->|gaps| J["Jira REST API v3<br/><b>remediation tickets</b>"]
     A -.tools.-> M["MCP server<br/>(agent access)"]
     B["Nightly agents<br/>(build + review)"] -->|PR merged| R["GitHub Action →<br/>Jira auto-report"]
-    J --> JB[("Jira: gaps → MS<br/>agent work → Night Shift")]
+    J --> JB[("Jira: gaps → remediation project<br/>agent work → engineering project")]
     R --> JB
 ```
 

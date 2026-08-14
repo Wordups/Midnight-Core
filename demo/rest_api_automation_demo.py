@@ -155,7 +155,6 @@ def main() -> int:
 
     h("Done.")
     dim("Same client code runs in production: backend/integrations/jira_client.py")
-    dim("Live proof: https://midnightgrc.atlassian.net/browse/MS-1")
     return 0
 
 
