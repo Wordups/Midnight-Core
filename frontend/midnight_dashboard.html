@@ -1210,6 +1210,10 @@
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1l6 3v4c0 3.5-2.5 6-6 7-3.5-1-6-3.5-6-7V4l6-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5.5 8l1.8 1.8L10.8 6.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="nav-item-label">Compliance Corpus</span>
     </div>
+    <div class="nav-item" id="nav-integrations" data-label="Integrations" title="Integrations" onclick="showView('integrations', this, 'Integrations')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M6 10L3.5 12.5a2 2 0 01-2.8-2.8L3.2 7M10 6l2.5-2.5a2 2 0 012.8 2.8L12.8 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M6.2 9.8l3.6-3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span class="nav-item-label">Integrations</span>
+    </div>
     <div class="nav-spacer"></div>
     <div class="nav-label">Reports</div>
     <div class="nav-item" id="nav-grc" data-label="GRC Summary" title="GRC Summary" onclick="showView('grc', this, 'GRC Summary')">
@@ -2461,6 +2465,55 @@
     </div>
   </div>
 
+  <div class="view" id="view-integrations">
+    <div class="content">
+      <div class="build-header">
+        <div class="build-title">Integrations</div>
+        <div class="build-sub">Connect Midnight to the tools your team already uses. Gaps and remediation items flow out as tickets; their status flows back into your posture.</div>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title" style="display:flex;align-items:center;gap:10px">
+          Jira
+          <span id="jira-conn-badge" style="font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;background:var(--bg3);color:var(--text3);border:1px solid var(--border2)">Not connected</span>
+        </div>
+        <div style="color:var(--text3);font-size:12.5px;margin:2px 0 14px">Compliance gaps become Jira issues — <code>[control] summary</code>, the source document ID in the body, and framework + severity labels. Status (To&nbsp;Do → In&nbsp;Progress → Done) syncs back.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text3)">Site URL
+            <input type="url" id="jira-site" placeholder="https://yourco.atlassian.net" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text3)">Project key
+            <input type="text" id="jira-project" placeholder="GRC" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text3)">Atlassian email
+            <input type="email" id="jira-email" placeholder="you@company.com" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text3)">API token
+            <input type="password" id="jira-token" placeholder="••••••••" autocomplete="off" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">Create a token at <span style="color:var(--text2)">Atlassian → Account → Security → API tokens</span>. It is stored encrypted and never shown again after saving.</div>
+
+        <div class="corpus-run-controls" style="margin-top:14px">
+          <button type="button" class="run-btn" onclick="saveJiraConfig()">Save &amp; connect</button>
+          <button type="button" class="run-btn" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2)" onclick="testJiraConnection()">Test connection</button>
+          <span id="jira-status" style="font-size:12px;color:var(--text3)"></span>
+        </div>
+      </div>
+
+      <div class="corpus-panel">
+        <div class="corpus-panel-title">Pushed to Jira</div>
+        <div class="corpus-table-wrap">
+          <table class="corpus-table">
+            <thead><tr><th>Issue</th><th>Control</th><th>Document</th><th>Status</th><th>Synced</th></tr></thead>
+            <tbody id="jira-links-rows"><tr><td colspan="5" style="color:var(--text3)">Nothing pushed yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="view" id="view-billing">
     <div class="content">
       <div class="build-header">
@@ -2802,6 +2855,7 @@ function showView(viewId, navEl, title) {
     gaps: null,
     coverage: null,
     corpus: null,
+    integrations: null,
     grc: 'Generate Summary',
     profile: null,
     library: null,
@@ -2817,6 +2871,7 @@ function showView(viewId, navEl, title) {
   if (viewId === 'birdtalk') { try { btLoadPulse(); } catch (_) {} }
   if (viewId === 'library') { try { loadBirdEye(); } catch (_) {} }
   if (viewId === 'corpus') { try { loadCorpusView(); } catch (_) {} }
+  if (viewId === 'integrations') { try { loadJiraSettings(); } catch (_) {} }
   if (viewId === 'requests') { try { loadRequestsView(); } catch (_) {} }
   if (viewId === 'overview') { try { loadPostureHero(); } catch (_) {} }
   if (viewId === 'billing') { try { renderBillingView(); } catch (_) {} }
@@ -2885,6 +2940,128 @@ async function loadCorpusView() {
   restoreCorpusStash();
   loadCorpusIndex();
   loadCorpusRuns();
+}
+
+// ── Jira integration settings ──────────────────────────────────────────────
+const JIRA_BASE = `${API}/api/v1/integrations/jira`;
+
+// FastAPI `detail` may be a string or an object ({message}/{detail}); surface
+// something readable either way.
+function apiDetailMessage(detail) {
+  if (!detail) return '';
+  if (typeof detail === 'string') return detail;
+  return detail.message || detail.detail || JSON.stringify(detail);
+}
+
+function setJiraBadge(state, text) {
+  const b = document.getElementById('jira-conn-badge');
+  if (!b) return;
+  const map = {
+    ok:   ['rgba(34,197,94,0.12)', '#4ade80', 'rgba(34,197,94,0.3)'],
+    off:  ['var(--bg3)', 'var(--text3)', 'var(--border2)'],
+    warn: ['rgba(234,179,77,0.12)', '#e6b34d', 'rgba(234,179,77,0.3)'],
+  };
+  const [bg, color, border] = map[state] || map.off;
+  b.style.background = bg; b.style.color = color; b.style.borderColor = border;
+  b.textContent = text;
+}
+
+function jiraStatus(msg, kind) {
+  const el = document.getElementById('jira-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = kind === 'error' ? '#f0685f' : kind === 'ok' ? '#4ade80' : 'var(--text3)';
+}
+
+async function loadJiraSettings() {
+  jiraStatus('');
+  try {
+    const r = await fetch(`${JIRA_BASE}/config`, { credentials: 'include' });
+    if (!r.ok) { setJiraBadge('off', 'Not connected'); return; }
+    const c = await r.json();
+    if (c.configured) {
+      document.getElementById('jira-site').value = c.site_url || '';
+      document.getElementById('jira-project').value = c.project_key || 'GRC';
+      document.getElementById('jira-email').value = c.auth_email || '';
+      document.getElementById('jira-token').placeholder = c.api_token || '••••••••';
+      setJiraBadge(c.enabled ? 'ok' : 'warn',
+        c.enabled ? `Connected${c.source === 'env' ? ' (env)' : ''}` : 'Disabled');
+    } else {
+      setJiraBadge('off', 'Not connected');
+    }
+  } catch (_) { setJiraBadge('off', 'Not connected'); }
+  loadJiraLinks();
+}
+
+async function saveJiraConfig() {
+  const body = {
+    site_url: document.getElementById('jira-site').value.trim(),
+    project_key: (document.getElementById('jira-project').value.trim() || 'GRC'),
+    auth_email: document.getElementById('jira-email').value.trim(),
+    api_token: document.getElementById('jira-token').value,
+    enabled: true,
+  };
+  if (!body.site_url || !body.auth_email || !body.api_token) {
+    jiraStatus('Site URL, email, and API token are all required.', 'error');
+    return;
+  }
+  jiraStatus('Saving and verifying…');
+  try {
+    const r = await fetch(`${JIRA_BASE}/config`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { jiraStatus(apiDetailMessage(data.detail) || 'Save failed.', 'error'); return; }
+    if (data.connection_ok) {
+      const who = data.connected_as || {};
+      jiraStatus(`Connected as ${who.display_name || who.email || 'your account'}.`, 'ok');
+      setJiraBadge('ok', 'Connected');
+      document.getElementById('jira-token').value = '';
+      document.getElementById('jira-token').placeholder = '•••• saved';
+    } else {
+      jiraStatus(`Saved, but couldn't connect: ${data.detail || 'check the token.'}`, 'error');
+      setJiraBadge('warn', 'Check credentials');
+    }
+  } catch (e) { jiraStatus(e.message || 'Save failed.', 'error'); }
+}
+
+async function testJiraConnection() {
+  jiraStatus('Testing…');
+  try {
+    const r = await fetch(`${JIRA_BASE}/test`, { method: 'POST', credentials: 'include' });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data.connection_ok) {
+      const who = data.connected_as || {};
+      jiraStatus(`Connection OK — ${who.display_name || who.email || 'authenticated'}.`, 'ok');
+      setJiraBadge('ok', 'Connected');
+    } else {
+      jiraStatus(apiDetailMessage(data.detail) || 'Connection failed.', 'error');
+      setJiraBadge('warn', 'Check credentials');
+    }
+  } catch (e) { jiraStatus(e.message || 'Connection failed.', 'error'); }
+}
+
+async function loadJiraLinks() {
+  const tbody = document.getElementById('jira-links-rows');
+  if (!tbody) return;
+  try {
+    const r = await fetch(`${JIRA_BASE}/links`, { credentials: 'include' });
+    if (!r.ok) return;
+    const rows = (await r.json()).links || [];
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text3)">Nothing pushed yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(l => {
+      const link = l.issue_url
+        ? `<a href="${l.issue_url}" target="_blank" rel="noopener" style="color:#7c9cf0">${l.issue_key}</a>`
+        : (l.issue_key || '—');
+      const when = l.last_synced_at ? new Date(l.last_synced_at).toLocaleDateString() : '';
+      return `<tr><td>${link}</td><td>${l.control_id || '—'}</td><td>${l.document_id || '—'}</td>`
+           + `<td>${l.last_status || '—'}</td><td style="color:var(--text3)">${when}</td></tr>`;
+    }).join('');
+  } catch (_) {}
 }
 
 // Overview hero: posture summary from the corpus index. Fails quiet — the
