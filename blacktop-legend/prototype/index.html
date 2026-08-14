@@ -1,0 +1,631 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Blacktop Legend</title>
+<style>
+  /* Night-court arcade: single committed theme, every surface painted explicitly */
+  :root{
+    --asphalt:#10151b;      /* page ground */
+    --panel:#1b232d;        /* HUD / overlay panels */
+    --panel-2:#242f3b;      /* raised elements */
+    --line:#33414f;
+    --chalk:#f2ecdd;        /* warm chalk-white ink */
+    --chalk-dim:#a8b0ac;
+    --lamp:#ffb347;         /* streetlight amber accent */
+    --you:#4fd1c5;          /* your teal */
+    --them:#ff7a6b;         /* opponent red */
+    --flow:#7db8ff;         /* flow-state blue */
+    --good:#7bd88f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--asphalt); color:var(--chalk);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #game{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column}
+  #stage{position:relative;background:#000;border-bottom:2px solid var(--line)}
+  #cv{display:block;width:100%;image-rendering:pixelated;image-rendering:crisp-edges;background:#0a0e12}
+  #hud{position:absolute;top:6px;left:6px;background:rgba(16,21,27,.82);border:1px solid var(--line);
+       border-radius:6px;padding:4px 8px;font-size:11px;line-height:1.5;color:var(--chalk)}
+  #hud b{color:var(--lamp)}
+  #menuBtn{position:absolute;top:6px;right:6px;background:var(--panel);color:var(--chalk);
+       border:1px solid var(--line);border-radius:6px;font-size:16px;padding:4px 10px}
+  #toast{position:absolute;left:50%;top:14%;transform:translateX(-50%);background:var(--panel-2);
+       border:1px solid var(--lamp);color:var(--chalk);border-radius:8px;padding:8px 14px;font-size:12px;
+       white-space:nowrap;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+  #dlg{position:absolute;left:6px;right:6px;bottom:6px;background:rgba(16,21,27,.94);
+       border:2px solid var(--lamp);border-radius:8px;padding:10px 12px;min-height:64px;font-size:13px;
+       line-height:1.5;z-index:20;color:var(--chalk)}
+  #dlg .who{color:var(--lamp);font-weight:700}
+  #dlg .nxt{position:absolute;right:10px;bottom:4px;color:var(--lamp);animation:bob 0.8s infinite}
+  @keyframes bob{50%{transform:translateY(2px)}}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+
+  #pad{flex:1;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;min-height:150px}
+  .dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:2px}
+  .dpad button{background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--chalk-dim);font-size:20px}
+  .dpad button:active{background:var(--panel-2);color:var(--lamp)}
+  .dpad .blank{visibility:hidden}
+  #btnA{width:74px;height:74px;border-radius:50%;background:var(--lamp);color:#241a08;font-size:22px;
+        font-weight:800;border:none;box-shadow:0 3px 0 #8a5f24}
+  #btnA:active{transform:translateY(2px);box-shadow:0 1px 0 #8a5f24}
+  .hint{text-align:center;color:var(--chalk-dim);font-size:10px;padding-bottom:6px}
+
+  .overlay{position:fixed;inset:0;background:var(--asphalt);z-index:40;display:flex;flex-direction:column;
+        max-width:520px;margin:0 auto;overflow-y:auto}
+  .hidden{display:none !important}
+
+  /* Battle */
+  #bTop{padding:10px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
+  #bScore{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+  #bScore .num{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  #bScore .you .num{color:var(--you)} #bScore .them .num{color:var(--them)}
+  #bScore .mid{color:var(--chalk-dim);font-size:10px;text-align:center}
+  .bars{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+  .barrow{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--chalk-dim)}
+  .barrow .lbl{width:52px}
+  .bar{flex:1;height:8px;background:#0d1117;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .bar i{display:block;height:100%;border-radius:3px;transition:width .3s}
+  .sta-you i{background:var(--you)} .sta-them i{background:var(--them)}
+  .flowpips{display:flex;gap:3px}
+  .flowpips s{width:10px;height:10px;border-radius:2px;background:#0d1117;border:1px solid var(--line);text-decoration:none}
+  .flowpips s.on{background:var(--flow);border-color:var(--flow)}
+  .inflow{animation:flowpulse 1s infinite}
+  @keyframes flowpulse{50%{filter:brightness(1.6)}}
+  #bScene{flex:0 0 auto;padding:14px 12px;text-align:center;background:
+      linear-gradient(180deg,#0a0e12 0%,#141b22 60%,#3a2a18 60%,#2c2013 100%)}
+  #bCourt{font-size:44px;letter-spacing:8px;min-height:56px}
+  #bFx{font-size:15px;min-height:22px;color:var(--lamp);font-weight:700}
+  #bLog{padding:8px 14px;font-size:13px;line-height:1.6;min-height:84px;color:var(--chalk)}
+  #bLog .dim{color:var(--chalk-dim)}
+  #bActs{margin-top:auto;padding:10px;border-top:1px solid var(--line);background:var(--panel)}
+  #bPrompt{font-size:11px;color:var(--lamp);margin-bottom:8px;font-weight:700}
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .acts button{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--chalk);
+      padding:10px 8px;font-size:12px;text-align:left;line-height:1.35;font-family:inherit}
+  .acts button:active{border-color:var(--lamp)}
+  .acts button:disabled{opacity:.35}
+  .acts .sub{display:block;font-size:9px;color:var(--chalk-dim)}
+  .acts .fam-drive{border-left:3px solid var(--you)}
+  .acts .fam-jumper{border-left:3px solid var(--lamp)}
+  .acts .fam-three{border-left:3px solid var(--flow)}
+  .acts .fam-post{border-left:3px solid var(--them)}
+  .acts .fam-item{border-left:3px solid var(--good)}
+  .acts .fam-def{border-left:3px solid var(--chalk-dim)}
+
+  /* Title */
+  #title{justify-content:center;align-items:center;text-align:center;gap:18px;
+      background:radial-gradient(ellipse at 50% 30%,#1d2733 0%,var(--asphalt) 70%)}
+  #title .ball{font-size:64px}
+  #title h1{font-size:34px;letter-spacing:2px;color:var(--lamp);text-transform:uppercase;
+      text-shadow:0 4px 0 #5d3c0e;line-height:1.1;text-wrap:balance}
+  #title p{color:var(--chalk-dim);font-size:12px;max-width:300px;line-height:1.6}
+  #title button{background:var(--lamp);color:#241a08;border:none;border-radius:10px;
+      padding:14px 34px;font-size:15px;font-weight:800;font-family:inherit}
+  #title .ghost{background:transparent;color:var(--chalk);border:1px solid var(--line)}
+  /* Menu */
+  #menu{padding:16px;gap:14px}
+  #menu h2{color:var(--lamp);font-size:15px;letter-spacing:1px}
+  #menu section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;line-height:1.7}
+  #menu .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  #menu .chips button{background:var(--panel-2);border:1px solid var(--line);color:var(--chalk-dim);
+      border-radius:16px;padding:6px 12px;font-size:11px;font-family:inherit}
+  #menu .chips button.eq{border-color:var(--you);color:var(--you);font-weight:700}
+  #menu .row{display:flex;gap:8px}
+  #menu .row button{flex:1;background:var(--panel-2);color:var(--chalk);border:1px solid var(--line);
+      border-radius:8px;padding:12px;font-size:13px;font-family:inherit}
+  #menu .danger{color:var(--them) !important}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;font-variant-numeric:tabular-nums}
+</style>
+
+<div id="game">
+  <div id="stage">
+    <canvas id="cv" width="312" height="216"></canvas>
+    <div id="hud"></div>
+    <button id="menuBtn">☰</button>
+    <div id="dlg" class="hidden"><div id="dlgText"></div><div class="nxt">▼</div></div>
+    <div id="toast" class="hidden"></div>
+  </div>
+  <div class="hint">D-pad to move · Ⓐ to talk / hoop = freestyle · keyboard: arrows + Z</div>
+  <div id="pad">
+    <div class="dpad">
+      <button class="blank"></button><button data-d="up">▲</button><button class="blank"></button>
+      <button data-d="left">◀</button><button class="blank"></button><button data-d="right">▶</button>
+      <button class="blank"></button><button data-d="down">▼</button><button class="blank"></button>
+    </div>
+    <button id="btnA">A</button>
+  </div>
+</div>
+
+<div id="battle" class="overlay hidden">
+  <div id="bTop">
+    <div id="bScore">
+      <div class="you"><div id="bYouName">YOU</div><div class="num" id="bYouPts">0</div></div>
+      <div class="mid" id="bMid">FIRST TO 11<br>2s &amp; 3s</div>
+      <div class="them" style="text-align:right"><div id="bThemName">THEM</div><div class="num" id="bThemPts">0</div></div>
+    </div>
+    <div class="bars">
+      <div class="barrow"><span class="lbl">STAMINA</span><div class="bar sta-you"><i id="bYouSta"></i></div>
+        <div class="flowpips" id="bYouFlow"></div></div>
+      <div class="barrow"><span class="lbl" id="bThemLbl">THEM</span><div class="bar sta-them"><i id="bThemSta"></i></div>
+        <div class="flowpips" id="bThemFlow"></div></div>
+    </div>
+  </div>
+  <div id="bScene"><div id="bCourt">⛹🏾&nbsp;&nbsp;&nbsp;🏀&nbsp;&nbsp;&nbsp;🧍🏽</div><div id="bFx"></div></div>
+  <div id="bLog"></div>
+  <div id="bActs"><div id="bPrompt"></div><div class="acts" id="bBtns"></div></div>
+</div>
+
+<div id="title" class="overlay">
+  <div class="ball">🏀</div>
+  <h1>Blacktop<br>Legend</h1>
+  <p>Collect skills. Battle 1v1. Find your Flow.<br>Every court has a King — take the crown, then take The Big Stage.</p>
+  <button id="btnNew">New Game</button>
+  <button id="btnCont" class="ghost hidden">Continue</button>
+  <p style="font-size:10px">M0 prototype · Chapter 1: Your Block</p>
+</div>
+
+<div id="menu" class="overlay hidden"></div>
+
+<script>
+"use strict";
+/* ================= DATA ================= */
+const TILE=24, VW=13, VH=9, MW=30, MH=20;
+const MAP=[
+"##############################",
+"#T..T....,....T.....WWWWWWWWW#",
+"#.HHHH..............WgggggggW#",
+"#.HHHH..............WggggghgW#",
+"#.HHDH..............WgggggggW#",
+"#...================GgggggggW#",
+"#...=...............WgggggggW#",
+"#...=...............WWWWWWWWW#",
+"#...=......TT........T.......#",
+"#...=.....cccchcccc..........#",
+"#...=.....ccccccccc..........#",
+"#...=.....ccccccccc.....F....#",
+"#...=.....ccccccccc..........#",
+"#...=.....cccchcccc..........#",
+"#...=...................T....#",
+"#...=..........,.............#",
+"#......T................T....#",
+"#..,.........T..........,....#",
+"#T...,.......,.........T.....#",
+"##############################"];
+const SOLID="#TWHDhF", LOCKED_GATE="G";
+
+const SKILLS={
+ driveLayup:{name:"Drive Layup",fam:"drive",pts:2,base:62,stat:"fin",sta:8,desc:"Reliable rim attack"},
+ pullup:{name:"Pull-Up Jumper",fam:"jumper",pts:2,base:52,stat:"sht",sta:7,desc:"Mid-range stop &amp; pop"},
+ crossover:{name:"Killer Crossover",fam:"drive",pts:2,base:56,stat:"hnd",sta:10,desc:"Shake em, attack the lane"},
+ floater:{name:"Floater",fam:"drive",pts:2,base:54,stat:"fin",sta:8,ignoreJump:true,desc:"Soft touch, can't be blocked"},
+ stepback3:{name:"Stepback Three",fam:"three",pts:3,base:42,stat:"sht",sta:12,desc:"Create space, let it fly"},
+ deep3:{name:"Deep Three",fam:"three",pts:3,base:38,stat:"sht",sta:11,desc:"From the parking lot"},
+ postFade:{name:"Post Fade",fam:"post",pts:2,base:52,stat:"fin",sta:10,desc:"Back em down, fade away"},
+ postHook:{name:"Baby Hook",fam:"post",pts:2,base:55,stat:"fin",sta:9,desc:"Old-school automatic"}
+};
+const MATCHUP={drive:{tight:10,sag:-14,reach:6,jump:-16},jumper:{tight:-14,sag:4,reach:10,jump:2},
+ three:{tight:-12,sag:10,reach:10,jump:8},post:{tight:0,sag:0,reach:8,jump:-14}};
+const DEFENSE={tight:{name:"Tight D",hint:"smother jumpers · beat by drives"},
+ sag:{name:"Sag Off",hint:"wall off drives · gives up threes"},
+ reach:{name:"Reach",hint:"gamble for the steal · risky"},
+ jump:{name:"Jump",hint:"hunt blocks inside · beat by 3s"}};
+const ITEMS={waterBottle:{name:"Water Bottle",icon:"🧴",desc:"Restore 45 stamina"},
+ specialSauce:{name:"Special Sauce",icon:"🌶️",desc:"Next 3 shots +18%"}};
+
+const BALLERS={
+ jaylen:{name:'Jaylen "Quicks"',emoji:"⛹🏾",x:9,y:10,stats:{hnd:58,sht:44,fin:52,def:45,stamMax:90},
+  loadout:["crossover","driveLayup","pullup"],teaches:"crossover",hasFlow:false,
+  intro:["Jaylen: You the kid from the corner house?","Jaylen: Court fee is one L. Check up."],
+  win:"Jaylen: Aight, aight. You got some game. Take my crossover — use it right.",
+  lose:"Jaylen: Come back when them handles are real."},
+ maya:{name:'Maya "Splash"',emoji:"🧕🏽",x:13,y:14,stats:{hnd:46,sht:62,fin:44,def:48,stamMax:95},
+  loadout:["stepback3","pullup","deep3"],teaches:"deep3",reward:"waterBottle",hasFlow:false,
+  intro:["Maya: I don't shoot 2s unless I'm bored.","Maya: Hope you brought a raincoat. ☔"],
+  win:"Maya: Ugh. Fine. Here's my Deep Three — and a water bottle, you look tired.",
+  lose:"Maya: Splash. Every. Time."},
+ percy:{name:'Old Head Percy',emoji:"🧔🏾",x:19,y:12,stats:{hnd:40,sht:50,fin:60,def:56,stamMax:110},
+  loadout:["postFade","postHook","driveLayup"],teaches:"postFade",hasFlow:false,
+  intro:["Percy: Young fella. Basketball is chess, not checkers.","Percy: Lesson one is free. The rest cost buckets."],
+  win:"Percy: Hm. The student scores. Take the Post Fade — footwork is forever.",
+  lose:"Percy: Class dismissed."},
+ reign:{name:'KING REIGN 👑',emoji:"🤴🏾",x:24,y:4,stats:{hnd:62,sht:60,fin:62,def:60,stamMax:120},
+  loadout:["crossover","stepback3","postFade","driveLayup"],hasFlow:true,reward:"dufflebag",
+  intro:["Reign: So you beat the park. Cute.","Reign: This gym is MY kingdom.","Reign: Crown's right here. Come take it."],
+  win:"Reign: ...The crown is yours, rook. Take my Dufflebag too — you'll need it where you're going.",
+  lose:"Reign: Long live the King."}
+};
+const PICKUPS=[
+ {id:"cap_stepback3",x:2,y:16,icon:"💿",kind:"skill",skill:"stepback3"},
+ {id:"cap_floater",x:26,y:17,icon:"💿",kind:"skill",skill:"floater"},
+ {id:"item_sauce",x:23,y:8,icon:"🌶️",kind:"item",item:"specialSauce"}];
+
+/* ================= STATE ================= */
+const SAVE_KEY="blacktop-save-v1";
+let G=null;
+function freshGame(){return{
+ x:4,y:5,face:"down",dogX:4,dogY:6,
+ stats:{hnd:52,sht:48,fin:52,def:46,stamMax:100},sta:100,
+ skills:["driveLayup","pullup"],loadout:["driveLayup","pullup"],
+ bag:["waterBottle"],bagCap:3,duffle:false,sauce:0,
+ beaten:{},picked:{},wins:0,kingDown:false,freestyleBest:0,sauceEarned:false};}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
+function load(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+
+/* ================= HELPERS ================= */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=()=>Math.random();
+let audioCtx=null;
+function beep(freq,dur,type){try{
+ if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+ const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+ o.type=type||"square";o.frequency.value=freq;g.gain.value=0.04;
+ o.connect(g);g.connect(audioCtx.destination);o.start();
+ g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur);
+}catch(e){}}
+const sfx={blip:()=>beep(520,.06),make:()=>{beep(660,.09);setTimeout(()=>beep(990,.12),90);},
+ miss:()=>beep(180,.15,"sawtooth"),steal:()=>beep(300,.1,"sawtooth"),
+ flow:()=>{[440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.12,"triangle"),i*100));}};
+function toast(msg,ms){const t=$("toast");t.textContent=msg;t.classList.remove("hidden");
+ clearTimeout(t._h);t._h=setTimeout(()=>t.classList.add("hidden"),ms||2200);}
+
+/* ================= SCENES ================= */
+let scene="title"; // title | world | dialog | battle | menu
+
+/* ================= DIALOG ================= */
+let dlgLines=[],dlgDone=null;
+function showDialog(lines,done){scene="dialog";dlgLines=lines.slice();dlgDone=done||null;$("dlg").classList.remove("hidden");nextDialog(true);}
+function nextDialog(first){if(!first)sfx.blip();
+ if(!dlgLines.length){$("dlg").classList.add("hidden");scene="world";const cb=dlgDone;dlgDone=null;if(cb)cb();return;}
+ $("dlgText").textContent=dlgLines.shift();}
+
+/* ================= WORLD ================= */
+const cv=$("cv"),cx=cv.getContext("2d");
+const TCOL={"#":"#232a33","T":"#17331f",".":"#24402b",",":"#1e3826","=":"#8c7550",
+ "c":"#a35f33","h":"#a35f33","H":"#5b4232","D":"#3a2c22","W":"#39424e","g":"#c8a15c","G":"#c8a15c","F":"#24402b"};
+function tileAt(x,y){if(x<0||y<0||x>=MW||y>=MH)return "#";return MAP[y][x];}
+function gateOpen(){return G.wins>=3;}
+function isSolid(x,y){const t=tileAt(x,y);
+ if(t==="G")return !gateOpen();
+ if(SOLID.includes(t))return true;
+ for(const k in BALLERS){const b=BALLERS[k];if(b.x===x&&b.y===y)return true;}
+ for(const p of PICKUPS){if(!G.picked[p.id]&&p.x===x&&p.y===y)return true;}
+ return false;}
+let moving=null; // {fx,fy,tx,ty,t0}
+const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+let held=null;
+function tryMove(dir){if(scene!=="world"||moving)return;G.face=dir;
+ const [dx,dy]=DIRS[dir],nx=G.x+dx,ny=G.y+dy;
+ if(isSolid(nx,ny))return;
+ moving={fx:G.x,fy:G.y,tx:nx,ty:ny,t0:performance.now()};
+ G.dogX=G.x;G.dogY=G.y;G.x=nx;G.y=ny;}
+function facingTile(){const [dx,dy]=DIRS[G.face];return [G.x+dx,G.y+dy];}
+
+function interact(){if(scene==="dialog"){nextDialog();return;}
+ if(scene!=="world"||moving)return;
+ const [fx,fy]=facingTile(),t=tileAt(fx,fy);
+ for(const k in BALLERS){const b=BALLERS[k];if(b.x===fx&&b.y===fy){talkBaller(k);return;}}
+ for(const p of PICKUPS){if(!G.picked[p.id]&&p.x===fx&&p.y===fy){takePickup(p);return;}}
+ if(t==="D"){showDialog(["You step inside your crib. Bounce curls up by the door.","You rest up... Stamina fully restored! 💤"],()=>{G.sta=G.stats.stamMax;save();});return;}
+ if(t==="F"){let msg=["You splash your face at the fountain. Stamina restored!"];
+   if(!G.bag.includes("waterBottle")&&G.bag.length<bagCap()){G.bag.push("waterBottle");msg.push("You filled a Water Bottle. 🧴");}
+   showDialog(msg,()=>{G.sta=G.stats.stamMax;save();});return;}
+ if(t==="h"){showDialog(["The rim rattles in the night breeze.","Freestyle session? Chain moves, build style. (Costs stamina!)"],()=>startFreestyle());return;}
+ if(t==="G"&&!gateOpen()){showDialog(["The gym gate is chained. A sign reads:","\"NOBODY sees King Reign until they've beaten the park.\"","("+G.wins+"/3 park ballers beaten)"]);return;}
+}
+function bagCap(){return G.duffle?6:3;}
+function takePickup(p){G.picked[p.id]=true;sfx.make();
+ if(p.kind==="skill"){G.skills.push(p.skill);
+  showDialog(["You found a skill capsule! 💿","Learned: "+SKILLS[p.skill].name+" — "+SKILLS[p.skill].desc+".","(Equip it from the ☰ menu — max 4 equipped.)"],()=>{autoEquip(p.skill);save();});}
+ else{if(G.bag.length<bagCap()){G.bag.push(p.item);
+  showDialog(["You found "+ITEMS[p.item].name+"! "+ITEMS[p.item].icon,ITEMS[p.item].desc+"."],()=>save());}
+  else{G.picked[p.id]=false;showDialog(["Your "+(G.duffle?"dufflebag":"backpack")+" is full!"]);}}}
+function autoEquip(s){if(G.loadout.length<4&&!G.loadout.includes(s))G.loadout.push(s);}
+function talkBaller(k){const b=BALLERS[k];
+ if(G.beaten[k]){showDialog([b.name.split(":")[0].split(" ")[0]+": Run it back? You know where to find me.","(Rematch — no new rewards, just respect.)"],()=>startBattle(k));return;}
+ showDialog(b.intro.slice(),()=>startBattle(k));}
+
+/* king ambush when you walk deep into the gym */
+function checkTriggers(){if(scene!=="world")return;
+ if(!G.kingDown&&G.x>=22&&G.y>=2&&G.y<=6&&!moving){
+  showDialog(BALLERS.reign.intro.slice(),()=>startBattle("reign"));}}
+
+/* ================= RENDER WORLD ================= */
+function draw(now){requestAnimationFrame(draw);
+ if(scene==="battle"||scene==="menu"||scene==="title")return;
+ let px=G.x,py=G.y,lerp=1;
+ if(moving){lerp=clamp((now-moving.t0)/150,0,1);
+  px=moving.fx+(moving.tx-moving.fx)*lerp;py=moving.fy+(moving.ty-moving.fy)*lerp;
+  if(lerp>=1){moving=null;afterStep();}}
+ const camX=clamp(px-VW/2+0.5,0,MW-VW),camY=clamp(py-VH/2+0.5,0,MH-VH);
+ cx.clearRect(0,0,cv.width,cv.height);
+ for(let ty=0;ty<VH+1;ty++)for(let tx=0;tx<VW+1;tx++){
+  const mx=Math.floor(camX)+tx,my=Math.floor(camY)+ty;if(mx>=MW||my>=MH)continue;
+  const t=tileAt(mx,my),sx=(mx-camX)*TILE,sy=(my-camY)*TILE;
+  cx.fillStyle=TCOL[t]||"#24402b";cx.fillRect(sx,sy,TILE,TILE);
+  if(t==="."&&(mx*7+my*13)%5===0){cx.fillStyle="#2b4a33";cx.fillRect(sx+9,sy+9,3,3);}
+  if(t==="c"||t==="g"){cx.strokeStyle="rgba(255,255,255,.13)";cx.strokeRect(sx+.5,sy+.5,TILE-1,TILE-1);}
+  if(t==="="){cx.fillStyle="#7a6544";cx.fillRect(sx+2,sy+2,4,3);cx.fillRect(sx+14,sy+12,5,3);}
+  cx.font="18px serif";cx.textBaseline="top";
+  if(t==="T")cx.fillText("🌳",sx+2,sy+2);
+  if(t==="F")cx.fillText("⛲",sx+2,sy+2);
+  if(t==="H"){cx.fillStyle="#6d5140";cx.fillRect(sx,sy,TILE,4);}
+  if(t==="D")cx.fillText("🚪",sx+2,sy+2);
+  if(t==="h"){cx.fillStyle="#eee";cx.fillRect(sx+4,sy+2,16,10);cx.strokeStyle="#ff8c42";cx.lineWidth=2;
+   cx.beginPath();cx.arc(sx+12,sy+14,5,0,7);cx.stroke();}
+  if(t==="G"&&!gateOpen())cx.fillText("🔒",sx+2,sy+2);
+ }
+ const ent=[];
+ for(const k in BALLERS){const b=BALLERS[k];ent.push({x:b.x,y:b.y,e:b.emoji,tag:(!G.beaten[k])?"❗":null});}
+ for(const p of PICKUPS){if(!G.picked[p.id])ent.push({x:p.x,y:p.y,e:p.icon});}
+ ent.push({x:G.dogX,y:G.dogY,e:"🐕"});
+ ent.push({x:px,y:py,e:"⛹🏾",isPlayer:true});
+ ent.sort((a,b)=>a.y-b.y);
+ for(const e of ent){const sx=(e.x-camX)*TILE,sy=(e.y-camY)*TILE;
+  if(sx<-TILE||sy<-TILE||sx>cv.width||sy>cv.height)continue;
+  cx.font="19px serif";cx.fillText(e.e,sx+2,sy+1);
+  if(e.tag){cx.font="11px serif";cx.fillStyle="#ffb347";cx.fillText(e.tag,sx+15,sy-7);}}
+ updateHud();
+}
+function afterStep(){checkTriggers();if(held)tryMove(held);}
+function updateHud(){$("hud").innerHTML="<b>PARK</b> "+G.wins+"/3 beat · <b>STA</b> "+Math.round(G.sta)+"/"+G.stats.stamMax+
+ (G.kingDown?" · 👑 CHAIN 1/8":"");}
+
+/* ================= BATTLE ================= */
+const B={};
+function pips(el,n){el.innerHTML="";for(let i=0;i<6;i++){const s=document.createElement("s");if(i<n)s.className="on";el.appendChild(s);}}
+function startBattle(k){const foe=BALLERS[k];scene="battle";
+ Object.assign(B,{foeKey:k,foe:foe,youPts:0,foePts:0,foeSta:foe.stats.stamMax,
+  youFlowM:0,foeFlowM:0,youFlowT:0,foeFlowT:0,yourBall:true,lastFam:null,sauceLeft:0,over:false,freestyle:false});
+ $("battle").classList.remove("hidden");
+ $("bYouName").textContent="YOU";
+ $("bThemName").textContent=foe.name;$("bThemLbl").textContent="THEM";
+ $("bMid").innerHTML="FIRST TO 11<br>2s &amp; 3s";
+ $("bCourt").innerHTML="⛹🏾&nbsp;&nbsp;&nbsp;🏀&nbsp;&nbsp;&nbsp;"+foe.emoji;
+ logClear();refreshBattleHud();
+ logLine("You check the ball up with "+foe.name+".","dim");
+ offensePhase();}
+function refreshBattleHud(){$("bYouPts").textContent=B.freestyle?B.style:(B.youPts);
+ $("bThemPts").textContent=B.freestyle?B.attempts:B.foePts;
+ $("bYouSta").style.width=clamp(G.sta/G.stats.stamMax*100,0,100)+"%";
+ $("bThemSta").style.width=B.freestyle?"0%":clamp(B.foeSta/B.foe.stats.stamMax*100,0,100)+"%";
+ pips($("bYouFlow"),B.freestyle?0:(B.youFlowT>0?6:B.youFlowM));
+ pips($("bThemFlow"),B.freestyle?0:(B.foeFlowT>0?6:B.foeFlowM));
+ $("bYouFlow").classList.toggle("inflow",!B.freestyle&&B.youFlowT>0);
+ $("bThemFlow").classList.toggle("inflow",!B.freestyle&&B.foeFlowT>0);}
+function logClear(){$("bLog").innerHTML="";}
+function logLine(txt,cls){const d=document.createElement("div");if(cls)d.className=cls;d.textContent=txt;
+ const log=$("bLog");log.appendChild(d);while(log.children.length>4)log.removeChild(log.firstChild);}
+function fx(t){$("bFx").textContent=t||"";}
+function setActs(prompt,btns){$("bPrompt").textContent=prompt;const wrap=$("bBtns");wrap.innerHTML="";
+ for(const b of btns){const el=document.createElement("button");el.className=b.cls||"";
+  el.innerHTML=b.html;el.disabled=!!b.disabled;el.onclick=()=>{sfx.blip();b.fn();};wrap.appendChild(el);}}
+function clearActs(){$("bPrompt").textContent="";$("bBtns").innerHTML="";}
+
+function skillBtn(id,fn){const s=SKILLS[id];
+ return {cls:"fam-"+s.fam,fn:fn,
+  html:s.name+" <span class='sub'>"+s.fam.toUpperCase()+" · "+s.pts+" pts · "+s.sta+" sta</span>"};}
+
+function offensePhase(){if(B.over)return;
+ // flow trigger
+ if(B.youFlowM>=6&&B.youFlowT===0){B.youFlowM=0;B.youFlowT=6;sfx.flow();fx("🌊 FLOW STATE 🌊");
+  logLine("Everything slows down. The rim looks like the ocean. YOU CAN'T MISS.");}
+ refreshBattleHud();
+ const btns=G.loadout.map(id=>skillBtn(id,()=>playerShot(id)));
+ if(!B.freestyle&&G.bag.length)btns.push({cls:"fam-item",html:"🎒 Bag <span class='sub'>use an item (takes possession)</span>",fn:openBattleBag});
+ setActs(B.youFlowT>0?"YOUR BALL — you're in FLOW":"YOUR BALL — pick your move",btns);}
+function openBattleBag(){const btns=G.bag.map((it,i)=>({cls:"fam-item",
+  html:ITEMS[it].icon+" "+ITEMS[it].name+" <span class='sub'>"+ITEMS[it].desc+"</span>",fn:()=>useItem(i)}));
+ btns.push({cls:"fam-def",html:"↩ Back",fn:offensePhase});
+ setActs("BACKPACK",btns);}
+async function useItem(i){const it=G.bag.splice(i,1)[0];clearActs();
+ if(it==="waterBottle"){G.sta=clamp(G.sta+45,0,G.stats.stamMax);logLine("You chug the Water Bottle. Stamina +45! 🧴");}
+ if(it==="specialSauce"){B.sauceLeft=3;logLine("You crack open the Special Sauce. 🌶️ Next 3 shots are SEASONED (+18%).");}
+ refreshBattleHud();await sleep(900);
+ logLine("You walk it back up top — possession over.","dim");
+ await sleep(700);endPossession();}
+
+async function playerShot(id){clearActs();const s=SKILLS[id];
+ const scheme=aiDefense();
+ G.sta=clamp(G.sta-s.sta,0,G.stats.stamMax);B.lastFam=s.fam;
+ await resolveShot({off:"you",skill:s,scheme:scheme});}
+function aiDefense(){const f=B.lastFam;
+ const counter={drive:(rnd()<.5?"sag":"jump"),jumper:"tight",three:"tight",post:"jump"}[f]||["tight","sag","reach","jump"][Math.floor(rnd()*4)];
+ return (f&&rnd()<.55)?counter:["tight","sag","reach","jump"][Math.floor(rnd()*4)];}
+
+async function resolveShot(o){ // o: off "you"|"foe", skill, scheme
+ const youOff=o.off==="you";
+ const off=youOff?{stats:G.stats,sta:G.sta,flow:B.youFlowT>0}:{stats:B.foe.stats,sta:B.foeSta,flow:B.foeFlowT>0};
+ const def=youOff?{stats:B.foe.stats,flow:B.foeFlowT>0}:{stats:G.stats,flow:B.youFlowT>0};
+ const s=o.skill,name=youOff?"You":B.foe.name.split(" ")[0];
+ logLine((youOff?"You go to work — ":name+" attacks — ")+s.name+" vs "+DEFENSE[o.scheme].name+".","dim");
+ await sleep(750);
+ // steal attempt
+ if(o.scheme==="reach"&&!off.flow){
+  const st=clamp(22+(def.stats.hnd-off.stats.hnd)*0.4,5,40);
+  if(rnd()*100<st){sfx.steal();fx("🖐️ STOLEN!");
+   logLine(youOff?"Picked! "+name+" pays for the gamble... ball out.":"You strip "+name+" clean! 🔥");
+   if(!youOff)bumpFlow("you");else bumpFlow("foe");
+   await sleep(900);endPossession();return;}}
+ // block attempt
+ if(o.scheme==="jump"&&(s.fam==="drive"||s.fam==="post")&&!s.ignoreJump&&!off.flow){
+  const bl=clamp(18+(def.stats.def-off.stats.fin)*0.4,5,35);
+  if(rnd()*100<bl){sfx.miss();fx("🚫 REJECTED!");
+   logLine(youOff?"Sent back at the rim. Get that outta here!":"You meet "+name+" at the summit. DENIED. 🖐️");
+   if(!youOff)bumpFlow("you");else bumpFlow("foe");
+   await sleep(900);endPossession();return;}}
+ // make %
+ let p=s.base+(off.stats[s.stat]-50)*0.6-(def.stats.def-50)*0.35+MATCHUP[s.fam][o.scheme];
+ if(off.sta<30)p-=12;
+ if(youOff&&B.sauceLeft>0){p+=18;B.sauceLeft--;}
+ if(def.flow)p-=25;
+ p=clamp(p,15,92);
+ if(off.flow)p=100;
+ const made=rnd()*100<p;
+ const ankle=off.flow&&s.fam==="drive";
+ if(ankle){fx("💀 ANKLE BREAKER!");logLine((youOff?name:name)+(youOff?" snatch souls — the defender is ON THE FLOOR.":"'s crossover drops you! Ankles = gone."));await sleep(800);}
+ if(made){sfx.make();fx(s.pts===3?"💦 SPLASH +3":"🏀 BUCKET +2");
+  if(youOff){B.youPts+=s.pts;bumpFlow("you");}else{B.foePts+=s.pts;bumpFlow("foe");}
+  logLine(youOff?("Count it. +"+s.pts+(off.flow?" — FLOW.":"")):(name+" scores. +"+s.pts+(off.flow?" — he's in FLOW.":"")));
+ }else{sfx.miss();fx("🧱 CLANK");
+  logLine(youOff?"Off the iron. Shake it off.":name+" misses — "+(o.scheme==="tight"?"that contest bothered it.":"board is yours."));
+  if(youOff)bumpFlow("foe");else bumpFlow("you");}
+ refreshBattleHud();await sleep(1000);endPossession();}
+
+function bumpFlow(side){if(B.freestyle)return;
+ if(side==="you"&&B.youFlowT===0)B.youFlowM=clamp(B.youFlowM+1,0,6);
+ if(side==="foe"&&B.foe.hasFlow&&B.foeFlowT===0)B.foeFlowM=clamp(B.foeFlowM+1,0,6);}
+
+function endPossession(){fx("");
+ G.sta=clamp(G.sta+5,0,G.stats.stamMax);B.foeSta=clamp(B.foeSta+5,0,B.foe.stats.stamMax);
+ if(B.youFlowT>0)B.youFlowT--;if(B.foeFlowT>0)B.foeFlowT--;
+ refreshBattleHud();
+ if(B.youPts>=11||B.foePts>=11){endBattle();return;}
+ B.yourBall=!B.yourBall;
+ if(B.yourBall)offensePhase();else defensePhase();}
+
+function defensePhase(){if(B.over)return;
+ if(B.foe.hasFlow&&B.foeFlowM>=6&&B.foeFlowT===0){B.foeFlowM=0;B.foeFlowT=6;sfx.flow();fx("⚠️ "+B.foe.name.split(" ")[0]+" IS IN FLOW");
+  logLine(B.foe.name+" gets that look in his eyes. Uh oh.");}
+ refreshBattleHud();
+ const btns=Object.keys(DEFENSE).map(k=>({cls:"fam-def",
+  html:DEFENSE[k].name+" <span class='sub'>"+DEFENSE[k].hint+"</span>",fn:()=>playerDefense(k)}));
+ setActs("THEIR BALL — call your defense",btns);}
+async function playerDefense(scheme){clearActs();
+ const s=SKILLS[aiOffense()];B.foeSta=clamp(B.foeSta-s.sta,0,B.foe.stats.stamMax);
+ await resolveShot({off:"foe",skill:s,scheme:scheme});}
+function aiOffense(){const lo=B.foe.loadout;let best=lo[0],bestScore=-1;
+ for(const id of lo){const s=SKILLS[id];if(B.foeSta<s.sta&&lo.some(o=>B.foeSta>=SKILLS[o].sta))continue;
+  const sc=s.base+B.foe.stats[s.stat]*0.5+s.pts*4+rnd()*14;
+  if(sc>bestScore){bestScore=sc;best=id;}}
+ return best;}
+
+async function endBattle(){B.over=true;clearActs();const won=B.youPts>=11;
+ await sleep(400);
+ if(won){fx("🏆 GAME.");logLine("FINAL: "+B.youPts+"–"+B.foePts+". That's game. 🏆");}
+ else{fx("💀 GAME.");logLine("FINAL: "+B.foePts+"–"+B.youPts+". They point to the scoreboard.");}
+ await sleep(1400);
+ $("battle").classList.add("hidden");scene="world";
+ const k=B.foeKey,foe=B.foe,first=!G.beaten[k];
+ if(won){
+  const post=[foe.win];
+  if(first){G.beaten[k]=true;if(k!=="reign")G.wins++;
+   for(const st of["hnd","sht","fin","def"])G.stats[st]+=2;G.stats.stamMax+=5;
+   post.push("Your game leveled up! +2 all stats, +5 max stamina.");
+   if(foe.teaches&&!G.skills.includes(foe.teaches)){G.skills.push(foe.teaches);autoEquip(foe.teaches);
+    post.push("Learned: "+SKILLS[foe.teaches].name+"! ("+SKILLS[foe.teaches].desc+")");}
+   if(foe.reward==="waterBottle"&&G.bag.length<bagCap()){G.bag.push("waterBottle");post.push("Got a Water Bottle! 🧴");}
+   if(foe.reward==="dufflebag"){G.duffle=true;post.push("Got the DUFFLEBAG! 🎒 Bag capacity 3 → 6.");}
+   if(k==="reign"){G.kingDown=true;
+    post.push("👑 You took the crown of Your Block! CHAIN 1/8 earned.");
+    post.push("Chapter 2 — Riverside Park — is where the vertical slice picks up. For now: rematches, freestyle, and style.");}
+   if(G.wins===3&&!G.kingDown)post.push("The gym gate just unchained. King Reign is waiting. 👑");}
+  showDialog(post,()=>save());
+ }else{
+  G.sta=Math.max(G.sta,30);
+  showDialog([foe.lose,"You walk it off. Rest up at your crib or the fountain, tweak your loadout, run it back."],()=>save());}
+}
+
+/* ================= FREESTYLE ================= */
+function startFreestyle(){scene="battle";
+ Object.assign(B,{freestyle:true,style:0,attempts:8,mult:1,lastFam:null,over:false});
+ $("battle").classList.remove("hidden");
+ $("bThemName").textContent="ATTEMPTS";$("bThemLbl").textContent="—";
+ $("bYouName")&&($("bYouName").textContent="STYLE");
+ $("bMid").innerHTML="FREESTYLE<br>vary moves = combo";
+ $("bCourt").innerHTML="⛹🏾&nbsp;&nbsp;🏀&nbsp;&nbsp;🌙";
+ logClear();logLine("Empty court. Streetlight hum. Just you and the rock.","dim");
+ refreshBattleHud();freestyleTurn();}
+function freestyleTurn(){if(B.attempts<=0){endFreestyle();return;}
+ refreshBattleHud();
+ setActs("STYLE "+B.style+" · COMBO x"+B.mult.toFixed(1)+" · "+B.attempts+" attempts left",
+  G.loadout.map(id=>skillBtn(id,()=>freestyleShot(id))).concat([{cls:"fam-def",html:"🚪 Wrap it up",fn:endFreestyle}]));}
+async function freestyleShot(id){clearActs();const s=SKILLS[id];
+ B.attempts--;G.sta=clamp(G.sta-s.sta,0,G.stats.stamMax);
+ let p=clamp(s.base+(G.stats[s.stat]-50)*0.6+(G.sta<30?-12:0)+10,15,95);
+ await sleep(500);
+ if(rnd()*100<p){sfx.make();
+  if(B.lastFam&&B.lastFam!==s.fam)B.mult=Math.min(3,B.mult+0.5);else if(B.lastFam===s.fam)B.mult=1;
+  const gain=Math.round(s.pts*10*B.mult);B.style+=gain;
+  fx("✨ +"+gain);logLine(s.name+" — clean. +"+gain+" style (x"+B.mult.toFixed(1)+").");}
+ else{sfx.miss();B.mult=1;fx("🧱");logLine("Bobbled it. Combo reset.","dim");}
+ B.lastFam=s.fam;refreshBattleHud();await sleep(800);freestyleTurn();}
+async function endFreestyle(){clearActs();fx("");
+ logLine("Session over. STYLE: "+B.style+(B.style>G.freestyleBest?" — NEW BEST!":" (best "+G.freestyleBest+")"));
+ G.freestyleBest=Math.max(G.freestyleBest,B.style);
+ await sleep(1500);
+ $("battle").classList.add("hidden");scene="world";
+ const lines=[];
+ if(G.freestyleBest>=200&&!G.sauceEarned){G.sauceEarned=true;
+  if(G.bag.length<bagCap()){G.bag.push("specialSauce");lines.push("A hooded figure nods from the fence and tosses you... SPECIAL SAUCE. 🌶️");}
+  else lines.push("A hooded figure wanted to gift you something — but your bag is full.");}
+ if(lines.length)showDialog(lines,()=>save());else save();}
+
+/* ================= MENU ================= */
+function openMenu(){if(scene!=="world")return;scene="menu";const m=$("menu");m.classList.remove("hidden");
+ const st=G.stats;
+ m.innerHTML=
+ "<h2>⛹🏾 YOUR GAME</h2>"+
+ "<section><div class='statgrid'>"+
+ "<span>Handles</span><b>"+st.hnd+"</b><span>Shooting</span><b>"+st.sht+"</b>"+
+ "<span>Finishing</span><b>"+st.fin+"</b><span>Defense</span><b>"+st.def+"</b>"+
+ "<span>Stamina</span><b>"+Math.round(G.sta)+"/"+st.stamMax+"</b><span>Park record</span><b>"+G.wins+"/3</b>"+
+ "<span>Chains</span><b>"+(G.kingDown?"1":"0")+"/8</b><span>Freestyle best</span><b>"+G.freestyleBest+"</b>"+
+ "</div></section>"+
+ "<h2>🏀 SKILLS <span style='color:var(--chalk-dim);font-size:10px'>(tap to equip · max 4)</span></h2>"+
+ "<section><div class='chips' id='mSkills'></div></section>"+
+ "<h2>"+(G.duffle?"🎒 DUFFLEBAG":"🎒 BACKPACK")+" <span style='color:var(--chalk-dim);font-size:10px'>"+G.bag.length+"/"+bagCap()+" slots</span></h2>"+
+ "<section id='mBag'>"+(G.bag.length?G.bag.map(i=>ITEMS[i].icon+" "+ITEMS[i].name+" — "+ITEMS[i].desc).join("<br>"):"Empty. Fountains refill water; freestyle finds the rare stuff.")+"</section>"+
+ "<div class='row'><button id='mClose'>✓ Back to the block</button><button id='mReset' class='danger'>Reset save</button></div>";
+ const chips=m.querySelector("#mSkills");
+ for(const id of G.skills){const b=document.createElement("button");const s=SKILLS[id];
+  b.textContent=s.name+" ("+s.fam+")";if(G.loadout.includes(id))b.classList.add("eq");
+  b.onclick=()=>{sfx.blip();
+   if(G.loadout.includes(id)){if(G.loadout.length>1)G.loadout=G.loadout.filter(x=>x!==id);}
+   else if(G.loadout.length<4)G.loadout.push(id);
+   b.classList.toggle("eq",G.loadout.includes(id));};
+  chips.appendChild(b);}
+ m.querySelector("#mClose").onclick=()=>{sfx.blip();save();m.classList.add("hidden");scene="world";};
+ let armed=false;
+ m.querySelector("#mReset").onclick=e=>{if(!armed){armed=true;e.target.textContent="Tap again to WIPE save";return;}
+  localStorage.removeItem(SAVE_KEY);location.reload();};}
+
+/* ================= INPUT ================= */
+document.querySelectorAll(".dpad button[data-d]").forEach(b=>{
+ const d=b.dataset.d;
+ const down=e=>{e.preventDefault();held=d;tryMove(d);};
+ const up=e=>{e.preventDefault();if(held===d)held=null;};
+ b.addEventListener("touchstart",down,{passive:false});b.addEventListener("touchend",up,{passive:false});
+ b.addEventListener("mousedown",down);b.addEventListener("mouseup",up);b.addEventListener("mouseleave",up);});
+const pressA=e=>{if(e)e.preventDefault();interact();};
+$("btnA").addEventListener("touchstart",pressA,{passive:false});
+$("btnA").addEventListener("mousedown",pressA);
+$("dlg").addEventListener("click",()=>nextDialog());
+$("menuBtn").addEventListener("click",openMenu);
+window.addEventListener("keydown",e=>{
+ const k=e.key;
+ if(k==="ArrowUp"||k==="w")held="up",tryMove("up");
+ else if(k==="ArrowDown"||k==="s")held="down",tryMove("down");
+ else if(k==="ArrowLeft"||k==="a")held="left",tryMove("left");
+ else if(k==="ArrowRight"||k==="d")held="right",tryMove("right");
+ else if(k==="z"||k==="Enter"||k===" "){e.preventDefault();interact();}
+ else if(k==="Escape"&&scene==="menu"){$("menu").classList.add("hidden");scene="world";}});
+window.addEventListener("keyup",e=>{held=null;});
+
+/* ================= BOOT ================= */
+const existing=load();
+if(existing){$("btnCont").classList.remove("hidden");}
+$("btnNew").onclick=()=>{G=freshGame();boot();};
+$("btnCont").onclick=()=>{G=existing||freshGame();boot();};
+function boot(){sfx.blip();$("title").classList.add("hidden");scene="world";save();
+ if(!G.beaten.jaylen&&G.wins===0){
+  showDialog(["Bounce: WOOF! 🐕","(Your dog Bounce is hyped. Tonight's the night.)",
+   "Three ballers run the park court. Beat all 3 and the gym unchains —","— and King Reign is waiting inside. 👑",
+   "Grab skill capsules 💿 you find around the block. Rest at your crib 🚪 or the fountain ⛲."]);}}
+requestAnimationFrame(draw);
+</script>
