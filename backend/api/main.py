@@ -193,6 +193,7 @@ def _oauth_provider_name(provider: str) -> str:
     normalized = provider.strip().lower()
     mapping = {
         "google": "google",
+        "github": "github",
         "microsoft": "azure",
     }
     resolved = mapping.get(normalized)
@@ -490,7 +491,9 @@ def _build_session_payload(
     return payload
 
 
-def _authenticate_token(access_token: str) -> tuple[dict[str, Any], dict[str, Any], Any]:
+def _validate_supabase_token(access_token: str) -> Any:
+    """Validate the token against Supabase auth and return the auth user —
+    without requiring a Midnight profile/tenant to exist yet."""
     try:
         auth_user_response = supabase.auth.get_user(access_token)
     except AuthApiError as exc:
@@ -512,8 +515,12 @@ def _authenticate_token(access_token: str) -> tuple[dict[str, Any], dict[str, An
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session token user does not match validated user.",
         )
+    return auth_user
 
-    user_record, organization = _load_user_membership(token_user_id)
+
+def _authenticate_token(access_token: str) -> tuple[dict[str, Any], dict[str, Any], Any]:
+    auth_user = _validate_supabase_token(access_token)
+    user_record, organization = _load_user_membership(str(auth_user.id))
     return user_record, organization, auth_user
 
 
@@ -738,6 +745,79 @@ async def magic_link(request: Request, payload: MagicLinkRequest):
     }
 
 
+def _provision_oauth_workspace(auth_user: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+    """First OAuth sign-in (Google/GitHub/Microsoft): Supabase authenticated the
+    user but no Midnight profile/tenant exists — the email+password signup path
+    creates those explicitly, so the OAuth path mirrors it here. New user
+    becomes owner of a fresh workspace on the free plan."""
+    email = _normalize_email(getattr(auth_user, "email", "") or "")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This sign-in method did not share an email address.",
+        )
+    meta = getattr(auth_user, "user_metadata", None) or {}
+    name = str(meta.get("full_name") or meta.get("name") or "").strip()
+    company_name = f"{name or email.split('@')[0]}'s Workspace"
+    org_slug = _generate_unique_org_slug(company_name)
+
+    try:
+        org_response = (
+            supabase_admin.table("tenants")
+            .insert({"slug": org_slug, "name": company_name, "plan_type": "free"})
+            .execute()
+        )
+        organization = _first_row(org_response.data)
+        if not organization or not organization.get("id"):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Organization record was not created.",
+            )
+
+        user_response = (
+            supabase_admin.table("profiles")
+            .insert(
+                {
+                    "id": str(auth_user.id),
+                    "tenant_id": organization["id"],
+                    "email": email,
+                    "name": name or None,
+                    "organization_name": company_name,
+                    "role": "owner",
+                }
+            )
+            .execute()
+        )
+        user_record = _first_row(user_response.data) or {
+            "id": str(auth_user.id),
+            "tenant_id": organization["id"],
+            "email": email,
+            "name": name or None,
+            "organization_name": company_name,
+            "role": "owner",
+        }
+
+        (
+            supabase_admin.table("onboarding_sessions")
+            .insert(
+                {
+                    "tenant_id": organization["id"],
+                    "current_step": "plan",
+                    "progress": 0,
+                    "completed": False,
+                }
+            )
+            .execute()
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise _database_setup_error(exc) from exc
+
+    logger.info("oauth_workspace_provisioned", extra={"email": email, "slug": org_slug})
+    return user_record, organization
+
+
 @app.post("/auth/exchange")
 async def exchange_token(payload: TokenExchangeRequest, response: Response):
     access_token = payload.access_token.strip()
@@ -747,7 +827,19 @@ async def exchange_token(payload: TokenExchangeRequest, response: Response):
             detail="Access token is required.",
         )
 
-    user_record, organization, auth_user = _authenticate_token(access_token)
+    provisioned = False
+    try:
+        user_record, organization, auth_user = _authenticate_token(access_token)
+    except HTTPException as exc:
+        # First OAuth sign-in: authenticated with Supabase, but no profile yet.
+        # Only the exact "not provisioned" case auto-provisions — a profile
+        # with a broken tenant assignment is a data problem and still fails.
+        if exc.status_code != status.HTTP_403_FORBIDDEN or "not provisioned" not in str(exc.detail):
+            raise
+        auth_user = _validate_supabase_token(access_token)
+        user_record, organization = _provision_oauth_workspace(auth_user)
+        provisioned = True
+
     _set_auth_cookie(response, access_token, 60 * 60)
 
     return {
@@ -758,7 +850,8 @@ async def exchange_token(payload: TokenExchangeRequest, response: Response):
             auth_user=auth_user,
         ),
         "access_token": access_token,
-        "redirect_to": POST_AUTH_REDIRECT,
+        "provisioned": provisioned,
+        "redirect_to": "/onboarding/plan" if provisioned else POST_AUTH_REDIRECT,
     }
 
 
