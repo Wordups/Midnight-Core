@@ -36,6 +36,22 @@ services:
         sync: false
       - key: JIRA_PROJECT_KEY
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_STARTER
+        sync: false
+      - key: STRIPE_PRICE_STARTER_ANNUAL
+        sync: false
+      - key: STRIPE_PRICE_PRO
+        sync: false
+      - key: STRIPE_PRICE_PRO_ANNUAL
+        sync: false
+      - key: STRIPE_PRICE_TEAM
+        sync: false
+      - key: STRIPE_PRICE_TEAM_ANNUAL
+        sync: false
       - key: ENVIRONMENT
         value: production
       - key: AUTOMATION_INTERVAL_MINUTES

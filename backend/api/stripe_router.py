@@ -31,6 +31,8 @@ _TIER_TO_ENV: dict[tuple[str, str], str] = {
     ("starter", "year"):  "STRIPE_PRICE_STARTER_ANNUAL",
     ("pro", "month"):     "STRIPE_PRICE_PRO",
     ("pro", "year"):      "STRIPE_PRICE_PRO_ANNUAL",
+    ("team", "month"):    "STRIPE_PRICE_TEAM",
+    ("team", "year"):     "STRIPE_PRICE_TEAM_ANNUAL",
 }
 
 
@@ -39,7 +41,7 @@ def _resolve_price_id(tier: str, interval: str) -> str:
     if not env_key:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid tier/interval: '{tier}'/'{interval}'. Tier must be starter or pro; interval month or year.",
+            detail=f"Invalid tier/interval: '{tier}'/'{interval}'. Tier must be starter, pro, or team; interval month or year.",
         )
     price_id = os.getenv(env_key, "").strip()
     if not price_id:
