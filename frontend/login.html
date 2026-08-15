@@ -508,6 +508,52 @@ function setMode(mode) {
   }
 }
 
+// ── workspace invites ────────────────────────────────────────────────────────
+// Invite emails land on /login.html?invite=<token>. The token survives the
+// OAuth round-trip in sessionStorage; after any successful auth, finishAuth
+// accepts it (moving this user into the inviting workspace) before redirecting.
+const INVITE_KEY = 'midnight_pending_invite';
+
+function captureInviteToken() {
+  const token = new URL(window.location.href).searchParams.get('invite');
+  if (!token) return;
+  sessionStorage.setItem(INVITE_KEY, token);
+  const helper = document.getElementById('login-helper-copy');
+  if (helper) helper.textContent = "You've been invited to a workspace. Sign in — or create an account with the invited email — to join.";
+}
+
+async function finishAuth(redirect) {
+  const token = sessionStorage.getItem(INVITE_KEY);
+  if (token) {
+    try {
+      const res = await fetch(API + '/pm/invites/accept', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (res.status === 401) {
+        // Not signed in yet (e.g. email confirmation pending) — keep the token
+        // so the next successful sign-in accepts it.
+        window.location.replace(redirect || POST_AUTH_REDIRECT);
+        return;
+      }
+      const body = await res.json().catch(() => ({}));
+      sessionStorage.removeItem(INVITE_KEY);
+      if (res.ok) {
+        window.location.replace(POST_AUTH_REDIRECT + '?joined=1');
+        return;
+      }
+      showError(body.detail || 'Could not accept the invite.');
+      setTimeout(() => window.location.replace(redirect || POST_AUTH_REDIRECT), 3000);
+      return;
+    } catch (_) {
+      sessionStorage.removeItem(INVITE_KEY);
+    }
+  }
+  window.location.replace(redirect || POST_AUTH_REDIRECT);
+}
+
 async function exchangeAuthTokenFromUrl() {
   const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
   if (!hash) return false;
@@ -534,7 +580,7 @@ async function exchangeAuthTokenFromUrl() {
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(payload.detail || 'Authentication exchange failed.');
-    window.location.replace(payload.redirect_to || POST_AUTH_REDIRECT);
+    await finishAuth(payload.redirect_to);
     return true;
   } catch (err) {
     showError(err.message || 'Authentication exchange failed.');
@@ -551,7 +597,7 @@ async function checkExistingSession() {
     if (!res.ok) return false;
     const data = await res.json();
     if (data.authenticated) {
-      window.location.replace(data.redirect_to || POST_AUTH_REDIRECT);
+      await finishAuth(data.redirect_to);
       return true;
     }
   } catch (_) {}
@@ -598,7 +644,7 @@ async function handleLogin() {
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(payload.detail || 'Invalid credentials.');
-    window.location.replace(payload.redirect_to || POST_AUTH_REDIRECT);
+    await finishAuth(payload.redirect_to);
   } catch (err) {
     passwordEl?.classList.add('error');
     if (passwordEl) passwordEl.value = '';
@@ -639,7 +685,7 @@ async function handleSignup() {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.detail || 'Signup failed.');
-    window.location.replace(body.redirect_to || '/onboarding/plan');
+    await finishAuth(body.redirect_to || '/onboarding/plan');
   } catch (err) {
     showError(err.message || 'Signup failed.');
   } finally {
@@ -685,6 +731,7 @@ async function sendMagicLink() {
 
 (async () => {
   const url = new URL(window.location.href);
+  captureInviteToken();
   setMode(url.searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
   if (await exchangeAuthTokenFromUrl()) return;
   await checkExistingSession();
