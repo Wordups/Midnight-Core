@@ -75,10 +75,10 @@
   .flowpips s.on{background:var(--flow);border-color:var(--flow)}
   .inflow{animation:flowpulse 1s infinite}
   @keyframes flowpulse{50%{filter:brightness(1.6)}}
-  #bScene{flex:0 0 auto;padding:14px 12px;text-align:center;background:
-      linear-gradient(180deg,#0a0e12 0%,#141b22 60%,#3a2a18 60%,#2c2013 100%)}
-  #bCourt{font-size:44px;letter-spacing:8px;min-height:56px}
-  #bFx{font-size:15px;min-height:22px;color:var(--lamp);font-weight:700}
+  #bScene{flex:0 0 auto;position:relative;background:#141b26}
+  #bcv{display:block;width:100%;aspect-ratio:4/3}
+  #bFx{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:16px;color:var(--lamp);
+      font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.8);pointer-events:none}
   #bLog{padding:8px 14px;font-size:13px;line-height:1.6;min-height:84px;color:var(--chalk)}
   #bLog .dim{color:var(--chalk-dim)}
   #bActs{margin-top:auto;padding:10px;border-top:1px solid var(--line);background:var(--panel)}
@@ -154,7 +154,7 @@
         <div class="flowpips" id="bThemFlow"></div></div>
     </div>
   </div>
-  <div id="bScene"><div id="bCourt">⛹🏾&nbsp;&nbsp;&nbsp;🏀&nbsp;&nbsp;&nbsp;🧍🏽</div><div id="bFx"></div></div>
+  <div id="bScene"><canvas id="bcv"></canvas><div id="bFx"></div></div>
   <div id="bLog"></div>
   <div id="bActs"><div id="bPrompt"></div><div class="acts" id="bBtns"></div></div>
 </div>
@@ -421,8 +421,9 @@ function drawGlow(){
  v.addColorStop(0,"rgba(25,30,48,0)");v.addColorStop(1,"rgba(25,30,48,.3)");
  cx.fillStyle=v;cx.fillRect(0,0,CW,CH);}
 function draw(now){requestAnimationFrame(draw);
- if(scene==="battle"||scene==="menu"||scene==="title"){lastFrame=now;return;}
  const dt=Math.min(0.05,(now-lastFrame)/1000||0);lastFrame=now;
+ if(scene==="battle"){drawBattle(now,dt);return;}
+ if(scene==="menu"||scene==="title")return;
  if(cv.clientWidth&&Math.abs(cv.width-cv.clientWidth*(window.devicePixelRatio||1))>1)resize();
  step(dt);
  const VWf=CW/T,VHf=CH/T;
@@ -480,6 +481,117 @@ function draw(now){requestAnimationFrame(draw);
 function updateHud(){$("hud").innerHTML="<b>PARK</b> "+G.wins+"/3 beat · <b>STA</b> "+Math.round(G.sta)+"/"+G.stats.stamMax+
  (G.kingDown?" · 👑 CHAIN 1/8":"");}
 
+/* ================= BATTLE SCENE RENDERER ================= */
+const bcv=$("bcv"),bx=bcv.getContext("2d");
+let BW=400,BH=225;
+function bResize(){const w=bcv.clientWidth;if(!w)return;const h=w*0.75,dpr=window.devicePixelRatio||1;
+ BW=w;BH=h;bcv.width=Math.round(w*dpr);bcv.height=Math.round(h*dpr);bx.setTransform(dpr,0,0,dpr,0,0);}
+const RIM={x:0.795,y:0.40};
+const A={you:{x:.24,y:.72,jy:0,rot:0,emoji:"⛹🏾",hidden:false},
+         foe:{x:.52,y:.66,jy:0,rot:0,emoji:"🧍🏽",hidden:false}};
+const Ball={x:.3,y:.7,visible:false};
+let bParts=[],bTws=[],bFls=[];
+function battleSceneInit(foeEmoji){
+ Object.assign(A.you,{x:.24,y:.72,jy:0,rot:0});
+ Object.assign(A.foe,{x:.52,y:.66,jy:0,rot:0,hidden:!foeEmoji,emoji:foeEmoji||"🧍🏽"});
+ Ball.visible=false;bParts=[];bTws=[];bFls=[];bResize();}
+function tw(o,to,ms){return new Promise(res=>{const from={};for(const k in to)from[k]=o[k];
+ bTws.push({o,from,to,t0:performance.now(),ms,res});});}
+function flight(from,to,ms,h){Ball.visible=true;Ball.x=from.x;Ball.y=from.y;
+ return new Promise(res=>{bFls.push({from:{x:from.x,y:from.y},to:{x:to.x,y:to.y},t0:performance.now(),ms,h,res});});}
+function burst(x,y,c,n){for(let i=0;i<(n||12);i++)bParts.push({x,y,vx:(rnd()-0.5)*0.35,vy:-rnd()*0.3-0.05,life:0.5+rnd()*0.35,c});}
+function drawActor(a,inFlow){if(a.hidden)return;
+ const X=a.x*BW,Y=(a.y+a.jy)*BH,s=BW*0.13;
+ bx.fillStyle="rgba(0,0,0,.35)";bx.beginPath();bx.ellipse(a.x*BW,a.y*BH+s*0.34,s*0.36,s*0.11,0,0,7);bx.fill();
+ if(inFlow){const g=bx.createRadialGradient(X,Y,0,X,Y,s*0.9);
+  g.addColorStop(0,"rgba(125,184,255,.4)");g.addColorStop(1,"rgba(125,184,255,0)");
+  bx.fillStyle=g;bx.beginPath();bx.arc(X,Y,s*0.9,0,7);bx.fill();}
+ bx.save();bx.translate(X,Y);bx.rotate(a.rot*Math.PI/180);
+ bx.font=s+"px serif";bx.textAlign="center";bx.textBaseline="middle";bx.fillText(a.emoji,0,0);bx.restore();}
+function drawBattle(now,dt){
+ if(bcv.clientWidth&&Math.abs(bcv.width-bcv.clientWidth*(window.devicePixelRatio||1))>1)bResize();
+ for(let i=bTws.length-1;i>=0;i--){const t=bTws[i],p=clamp((now-t.t0)/t.ms,0,1),e=1-(1-p)*(1-p);
+  for(const k in t.to)t.o[k]=t.from[k]+(t.to[k]-t.from[k])*e;
+  if(p>=1){bTws.splice(i,1);t.res();}}
+ for(let i=bFls.length-1;i>=0;i--){const f=bFls[i],p=clamp((now-f.t0)/f.ms,0,1);
+  Ball.x=f.from.x+(f.to.x-f.from.x)*p;
+  Ball.y=f.from.y+(f.to.y-f.from.y)*p-f.h*4*p*(1-p);
+  if(p>=1){bFls.splice(i,1);f.res();}}
+ const W=BW,H=BH,hz=H*0.34;
+ // night sky
+ let g=bx.createLinearGradient(0,0,0,hz);g.addColorStop(0,"#131a2c");g.addColorStop(1,"#27354e");
+ bx.fillStyle=g;bx.fillRect(0,0,W,hz);
+ bx.fillStyle="rgba(255,255,255,.7)";
+ for(let i=0;i<14;i++){const r=hash(i,7);bx.fillRect(r*W,hash(i,3)*hz*0.8,1.5,1.5);}
+ bx.fillStyle="#e8e4d4";bx.beginPath();bx.arc(W*0.12,H*0.12,W*0.025,0,7);bx.fill();
+ bx.fillStyle="#27354e";bx.beginPath();bx.arc(W*0.128,H*0.113,W*0.02,0,7);bx.fill();
+ // court floor with depth
+ g=bx.createLinearGradient(0,hz,0,H);g.addColorStop(0,"#3d5f7b");g.addColorStop(1,"#4b7290");
+ bx.fillStyle=g;bx.fillRect(0,hz,W,H-hz);
+ // painted key + markings (perspective-ish)
+ bx.fillStyle="rgba(232,131,74,.4)";
+ bx.beginPath();bx.moveTo(W*0.62,H*0.52);bx.lineTo(W*0.95,H*0.52);bx.lineTo(W*1.0,H*0.78);bx.lineTo(W*0.58,H*0.78);bx.closePath();bx.fill();
+ bx.strokeStyle="rgba(242,236,221,.7)";bx.lineWidth=2;
+ bx.beginPath();bx.moveTo(0,hz+2);bx.lineTo(W,hz+2);bx.stroke();
+ bx.beginPath();bx.ellipse(W*0.80,H*0.65,W*0.34,H*0.26,0,Math.PI*0.55,Math.PI*1.45,true);bx.stroke();
+ bx.beginPath();bx.moveTo(W*0.62,H*0.52);bx.lineTo(W*0.95,H*0.52);bx.lineTo(W*1.0,H*0.78);bx.lineTo(W*0.58,H*0.78);bx.closePath();bx.stroke();
+ // streetlamp glow
+ bx.save();bx.globalCompositeOperation="lighter";
+ g=bx.createRadialGradient(W*0.5,hz,0,W*0.5,hz,W*0.45);
+ g.addColorStop(0,"rgba(255,205,115,.14)");g.addColorStop(1,"rgba(255,205,115,0)");
+ bx.fillStyle=g;bx.fillRect(0,0,W,H);bx.restore();
+ // hoop
+ const rx=RIM.x*W,ry=RIM.y*H;
+ bx.fillStyle="#5b6673";bx.fillRect(W*0.868,ry-H*0.14,W*0.014,H*0.62);
+ bx.fillStyle="#f4f6f8";bx.fillRect(W*0.80,ry-H*0.19,W*0.09,H*0.20);
+ bx.strokeStyle="#c9d2db";bx.strokeRect(W*0.807,ry-H*0.135,W*0.045,H*0.10);
+ bx.strokeStyle="#ff8c42";bx.lineWidth=3;
+ bx.beginPath();bx.ellipse(rx,ry,W*0.030,H*0.016,0,0,7);bx.stroke();
+ bx.strokeStyle="rgba(255,255,255,.75)";bx.lineWidth=1;
+ for(let i=-2;i<=2;i++){bx.beginPath();bx.moveTo(rx+i*W*0.011,ry+H*0.012);bx.lineTo(rx+i*W*0.006,ry+H*0.075);bx.stroke();}
+ // particles
+ for(let i=bParts.length-1;i>=0;i--){const p=bParts[i];p.life-=dt;
+  if(p.life<=0){bParts.splice(i,1);continue;}
+  p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=0.9*dt;
+  bx.globalAlpha=Math.min(1,p.life*2);bx.fillStyle=p.c;
+  bx.beginPath();bx.arc(p.x*W,p.y*H,2.2,0,7);bx.fill();bx.globalAlpha=1;}
+ // actors (depth order) + ball
+ const yFlow=!B.freestyle&&B.youFlowT>0,fFlow=!B.freestyle&&B.foeFlowT>0;
+ const list=[[A.you,yFlow],[A.foe,fFlow]].sort((a,b)=>a[0].y-b[0].y);
+ for(const [a,fl] of list)drawActor(a,fl);
+ if(Ball.visible){const bxp=Ball.x*W,byp=Ball.y*H,r=W*0.018;
+  bx.fillStyle="#e8813f";bx.beginPath();bx.arc(bxp,byp,r,0,7);bx.fill();
+  bx.strokeStyle="#8a4a1e";bx.lineWidth=1;
+  bx.beginPath();bx.arc(bxp,byp,r,0,7);bx.moveTo(bxp-r,byp);bx.quadraticCurveTo(bxp,byp-r*0.6,bxp+r,byp);
+  bx.moveTo(bxp,byp-r);bx.quadraticCurveTo(bxp+r*0.6,byp,bxp,byp+r);bx.stroke();}
+ // vignette
+ const v=bx.createRadialGradient(W/2,H/2,H*0.5,W/2,H/2,H*1.05);
+ v.addColorStop(0,"rgba(12,16,28,0)");v.addColorStop(1,"rgba(12,16,28,.42)");
+ bx.fillStyle=v;bx.fillRect(0,0,W,H);}
+/* battle choreography */
+const ATK_HOME={x:.24,y:.72},DEF_HOME={x:.52,y:.66};
+function stanceOffense(mine){const atk=mine?A.you:A.foe,dfd=mine?A.foe:A.you;
+ tw(atk,{x:ATK_HOME.x,y:ATK_HOME.y,rot:0,jy:0},380);tw(dfd,{x:DEF_HOME.x,y:DEF_HOME.y,rot:0,jy:0},380);}
+async function animApproach(atk,fam){
+ const spot=fam==="three"?{x:.40,y:.66}:fam==="jumper"?{x:.50,y:.64}:fam==="post"?{x:.58,y:.60}:{x:.62,y:.57};
+ await tw(atk,{x:spot.x,y:spot.y},420);}
+async function animShot(atk,made,flow){
+ tw(atk,{jy:-0.09},220);
+ await flight({x:atk.x+0.03,y:atk.y-0.14},RIM,520,0.16);
+ tw(atk,{jy:0},220);
+ if(made){await flight(RIM,{x:RIM.x+0.005,y:0.56},200,0);Ball.visible=false;
+  burst(RIM.x,0.46,flow?"#7db8ff":"#bfe6f7",14);}
+ else{await flight(RIM,{x:RIM.x-0.13,y:0.68},330,0.10);Ball.visible=false;
+  burst(RIM.x,RIM.y,"#ff8c42",8);}}
+async function animSteal(dfd,atk){await tw(dfd,{x:atk.x+0.06,y:atk.y+0.01},220);
+ burst(atk.x+0.03,atk.y,"#f4f6f8",10);}
+async function animBlock(dfd,atk){tw(atk,{jy:-0.09},200);
+ await tw(dfd,{x:atk.x+0.09,jy:-0.12},210);
+ await flight({x:atk.x+0.02,y:atk.y-0.14},{x:atk.x+0.13,y:0.72},280,0.04);
+ Ball.visible=false;burst(atk.x+0.08,atk.y-0.12,"#f4f6f8",10);
+ tw(atk,{jy:0},180);tw(dfd,{jy:0},180);}
+async function animAnkle(dfd){await tw(dfd,{rot:82,y:dfd.y+0.035},330);}
+
 /* ================= BATTLE ================= */
 const B={};
 function pips(el,n){el.innerHTML="";for(let i=0;i<6;i++){const s=document.createElement("s");if(i<n)s.className="on";el.appendChild(s);}}
@@ -490,7 +602,7 @@ function startBattle(k){const foe=BALLERS[k];scene="battle";
  $("bYouName").textContent="YOU";
  $("bThemName").textContent=foe.name;$("bThemLbl").textContent="THEM";
  $("bMid").innerHTML="FIRST TO 11<br>2s &amp; 3s";
- $("bCourt").innerHTML="⛹🏾&nbsp;&nbsp;&nbsp;🏀&nbsp;&nbsp;&nbsp;"+foe.emoji;
+ battleSceneInit(foe.emoji);
  logClear();refreshBattleHud();
  logLine("You check the ball up with "+foe.name+".","dim");
  offensePhase();}
@@ -519,7 +631,7 @@ function offensePhase(){if(B.over)return;
  // flow trigger
  if(B.youFlowM>=6&&B.youFlowT===0){B.youFlowM=0;B.youFlowT=6;sfx.flow();fx("🌊 FLOW STATE 🌊");
   logLine("Everything slows down. The rim looks like the ocean. YOU CAN'T MISS.");}
- refreshBattleHud();
+ refreshBattleHud();stanceOffense(true);
  const btns=G.loadout.map(id=>skillBtn(id,()=>playerShot(id)));
  if(!B.freestyle&&G.bag.length)btns.push({cls:"fam-item",html:"🎒 Bag <span class='sub'>use an item (takes possession)</span>",fn:openBattleBag});
  setActs(B.youFlowT>0?"YOUR BALL — you're in FLOW":"YOUR BALL — pick your move",btns);}
@@ -547,22 +659,25 @@ async function resolveShot(o){ // o: off "you"|"foe", skill, scheme
  const off=youOff?{stats:G.stats,sta:G.sta,flow:B.youFlowT>0}:{stats:B.foe.stats,sta:B.foeSta,flow:B.foeFlowT>0};
  const def=youOff?{stats:B.foe.stats,flow:B.foeFlowT>0}:{stats:G.stats,flow:B.youFlowT>0};
  const s=o.skill,name=youOff?"You":B.foe.name.split(" ")[0];
+ const atk=youOff?A.you:A.foe,dfd=youOff?A.foe:A.you;
  logLine((youOff?"You go to work — ":name+" attacks — ")+s.name+" vs "+DEFENSE[o.scheme].name+".","dim");
- await sleep(750);
+ await animApproach(atk,s.fam);
  // steal attempt
  if(o.scheme==="reach"&&!off.flow){
   const st=clamp(22+(def.stats.hnd-off.stats.hnd)*0.4,5,40);
   if(rnd()*100<st){sfx.steal();fx("🖐️ STOLEN!");
+   await animSteal(dfd,atk);
    logLine(youOff?"Picked! "+name+" pays for the gamble... ball out.":"You strip "+name+" clean! 🔥");
    if(!youOff)bumpFlow("you");else bumpFlow("foe");
-   await sleep(900);endPossession();return;}}
+   await sleep(700);endPossession();return;}}
  // block attempt
  if(o.scheme==="jump"&&(s.fam==="drive"||s.fam==="post")&&!s.ignoreJump&&!off.flow){
   const bl=clamp(18+(def.stats.def-off.stats.fin)*0.4,5,35);
   if(rnd()*100<bl){sfx.miss();fx("🚫 REJECTED!");
+   await animBlock(dfd,atk);
    logLine(youOff?"Sent back at the rim. Get that outta here!":"You meet "+name+" at the summit. DENIED. 🖐️");
    if(!youOff)bumpFlow("you");else bumpFlow("foe");
-   await sleep(900);endPossession();return;}}
+   await sleep(700);endPossession();return;}}
  // make %
  let p=s.base+(off.stats[s.stat]-50)*0.6-(def.stats.def-50)*0.35+MATCHUP[s.fam][o.scheme];
  if(off.sta<30)p-=12;
@@ -572,14 +687,20 @@ async function resolveShot(o){ // o: off "you"|"foe", skill, scheme
  if(off.flow)p=100;
  const made=rnd()*100<p;
  const ankle=off.flow&&s.fam==="drive";
- if(ankle){fx("💀 ANKLE BREAKER!");logLine((youOff?name:name)+(youOff?" snatch souls — the defender is ON THE FLOOR.":"'s crossover drops you! Ankles = gone."));await sleep(800);}
- if(made){sfx.make();fx(s.pts===3?"💦 SPLASH +3":"🏀 BUCKET +2");
-  if(youOff){B.youPts+=s.pts;bumpFlow("you");}else{B.foePts+=s.pts;bumpFlow("foe");}
-  logLine(youOff?("Count it. +"+s.pts+(off.flow?" — FLOW.":"")):(name+" scores. +"+s.pts+(off.flow?" — he's in FLOW.":"")));
- }else{sfx.miss();fx("🧱 CLANK");
-  logLine(youOff?"Off the iron. Shake it off.":name+" misses — "+(o.scheme==="tight"?"that contest bothered it.":"board is yours."));
+ if(ankle){fx("💀 ANKLE BREAKER!");
+  logLine(youOff?"You snatch souls — the defender is ON THE FLOOR.":name+"'s crossover drops you! Ankles = gone.");
+  await animAnkle(dfd);await sleep(350);}
+ const shotAnim=animShot(atk,made,off.flow);
+ if(made){sfx.make();
+  if(youOff){B.youPts+=s.pts;bumpFlow("you");}else{B.foePts+=s.pts;bumpFlow("foe");}}
+ else{sfx.miss();
   if(youOff)bumpFlow("foe");else bumpFlow("you");}
- refreshBattleHud();await sleep(1000);endPossession();}
+ await shotAnim;
+ if(made){fx(s.pts===3?"💦 SPLASH +3":"🏀 BUCKET +2");
+  logLine(youOff?("Count it. +"+s.pts+(off.flow?" — FLOW.":"")):(name+" scores. +"+s.pts+(off.flow?" — he's in FLOW.":"")));}
+ else{fx("🧱 CLANK");
+  logLine(youOff?"Off the iron. Shake it off.":name+" misses — "+(o.scheme==="tight"?"that contest bothered it.":"board is yours."));}
+ refreshBattleHud();await sleep(700);endPossession();}
 
 function bumpFlow(side){if(B.freestyle)return;
  if(side==="you"&&B.youFlowT===0)B.youFlowM=clamp(B.youFlowM+1,0,6);
@@ -596,7 +717,7 @@ function endPossession(){fx("");
 function defensePhase(){if(B.over)return;
  if(B.foe.hasFlow&&B.foeFlowM>=6&&B.foeFlowT===0){B.foeFlowM=0;B.foeFlowT=6;sfx.flow();fx("⚠️ "+B.foe.name.split(" ")[0]+" IS IN FLOW");
   logLine(B.foe.name+" gets that look in his eyes. Uh oh.");}
- refreshBattleHud();
+ refreshBattleHud();stanceOffense(false);
  const btns=Object.keys(DEFENSE).map(k=>({cls:"fam-def",
   html:DEFENSE[k].name+" <span class='sub'>"+DEFENSE[k].hint+"</span>",fn:()=>playerDefense(k)}));
  setActs("THEIR BALL — call your defense",btns);}
@@ -642,7 +763,7 @@ function startFreestyle(){scene="battle";
  $("bThemName").textContent="ATTEMPTS";$("bThemLbl").textContent="—";
  $("bYouName")&&($("bYouName").textContent="STYLE");
  $("bMid").innerHTML="FREESTYLE<br>vary moves = combo";
- $("bCourt").innerHTML="⛹🏾&nbsp;&nbsp;🏀&nbsp;&nbsp;🌙";
+ battleSceneInit(null);
  logClear();logLine("Empty court. Streetlight hum. Just you and the rock.","dim");
  refreshBattleHud();freestyleTurn();}
 function freestyleTurn(){if(B.attempts<=0){endFreestyle();return;}
@@ -652,8 +773,11 @@ function freestyleTurn(){if(B.attempts<=0){endFreestyle();return;}
 async function freestyleShot(id){clearActs();const s=SKILLS[id];
  B.attempts--;G.sta=clamp(G.sta-s.sta,0,G.stats.stamMax);
  let p=clamp(s.base+(G.stats[s.stat]-50)*0.6+(G.sta<30?-12:0)+10,15,95);
- await sleep(500);
- if(rnd()*100<p){sfx.make();
+ await animApproach(A.you,s.fam);
+ const made=rnd()*100<p;
+ await animShot(A.you,made,false);
+ tw(A.you,{x:.24,y:.72,jy:0},350);
+ if(made){sfx.make();
   if(B.lastFam&&B.lastFam!==s.fam)B.mult=Math.min(3,B.mult+0.5);else if(B.lastFam===s.fam)B.mult=1;
   const gain=Math.round(s.pts*10*B.mult);B.style+=gain;
   fx("✨ +"+gain);logLine(s.name+" — clean. +"+gain+" style (x"+B.mult.toFixed(1)+").");}
