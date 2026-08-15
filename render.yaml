@@ -1,8 +1,7 @@
 # Render Blueprint — Midnight Core
 #
-# Deploys the Docker image (not the python runtime: the Trace Agent's docx-js
-# generator needs Node, which the Dockerfile installs). Tracks `master` — the
-# real code branch; `main` is an orphan from an early upload, never deploy it.
+# Deploys the Docker image. Tracks `master` — the real code branch; `main` is
+# an orphan from an early upload, never deploy it.
 #
 # Required secrets (set in the Render dashboard, sync: false here):
 #   ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY,
