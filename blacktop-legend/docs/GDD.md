@@ -133,7 +133,8 @@ Your older sibling was "supposed to make it" and didn't — their old mentor giv
 
 ## 8. Art & audio direction
 
-- **Look:** GBC-inspired pixel art, modern palette. 16px tiles, chunky characters, oversized ball. Battles: side-view court diorama with big readable animations per skill family.
+- **Look:** Retro structure, modern skin. The *design* is 1999 (grid world, gated progression, 4-move loadouts) but the *presentation* is contemporary casual — clean stylized low-poly readability (reference class: Whiteout Survival), soft drop shadows, saturated golden-hour palettes, smooth free-roam movement with a gliding camera. No pixel grid, no tile-snap. Each neighborhood is a distinct environment biome (park greens, caged asphalt, waxed gym wood, windy docks) with its own lighting.
+- Battles: side-view court diorama with big readable animations per skill family.
 - **Audio:** lo-fi boom-bap overworld; battle tracks build layers as hype rises. Sneaker squeaks, chain nets, Bounce's bark as UI feedback.
 
 ## 9. Monetization
