@@ -1123,8 +1123,10 @@ from backend.api.agent_ops import agent_ops_router
 from backend.api.admin_ops import admin_router
 from backend.api.stripe_router import billing_router, billing_webhook_router
 from backend.api.pm import router as pm_router
+from backend.api.api_keys_router import router as api_keys_router
 from backend.api.corpus import router as corpus_router
 from backend.api.integrations import router as integrations_router
+from backend.api.mcp_gateway import router as mcp_router
 
 app.include_router(assessments_router, dependencies=[Depends(verify_access)])
 app.include_router(corpus_router, dependencies=[Depends(verify_access)])
@@ -1138,6 +1140,10 @@ app.include_router(admin_router, dependencies=[Depends(verify_access)])
 app.include_router(billing_router, dependencies=[Depends(verify_access)])
 app.include_router(billing_webhook_router)
 app.include_router(pm_router, dependencies=[Depends(verify_access)])
+app.include_router(api_keys_router, dependencies=[Depends(verify_access)])
+# MCP gateway is bare by design (like the Stripe webhook): its auth is the
+# per-tenant API key in the Authorization header, verified per request.
+app.include_router(mcp_router)
 
 
 @app.get("/")
