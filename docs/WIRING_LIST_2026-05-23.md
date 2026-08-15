@@ -1,5 +1,10 @@
 # Phase 1 Wiring List — 2026-05-23
 
+> **SUPERSEDED — historical planning snapshot.** Point-in-time wiring plan
+> against the 2026-05-21 codebase; several items shipped since (differently
+> than planned), several are stale (e.g. references to the deleted Trace
+> Agent). `docs/BUILD_QUEUE.md` is the current work queue.
+
 **70 sessions estimated. 17.5 weeks at 4/wk. Demo-ready ~2026-06-14. Launch-ready ~2026-09-27 to 2026-10-25. On track for STRATEGY §XVI Q4 2026 target.**
 
 Produced from a read-only audit of the codebase at HEAD (ceb3066) against

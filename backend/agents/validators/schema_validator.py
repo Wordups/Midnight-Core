@@ -1,5 +1,4 @@
-"""Schema validator — confirms the file the docx-js subprocess produced
-is a real, well-formed .docx.
+"""Schema validator — confirms a generated .docx file is real and well-formed.
 
 We do NOT use python-docx here (its read path drifts from Word's
 behavior on edge cases). Instead: open the file as a zip archive,

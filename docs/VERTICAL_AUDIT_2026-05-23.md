@@ -1,5 +1,10 @@
 # Vertical Alignment Audit — 2026-05-23
 
+> **SUPERSEDED — historical planning snapshot.** Point-in-time reconciliation
+> against the 2026-05-21 codebase and the (now also superseded) root
+> `ARCHITECTURE.md`. References to Trace Agent and other since-deleted
+> modules are stale. `docs/BUILD_QUEUE.md` is the current work queue.
+
 Read-only reconciliation of `docs/STRATEGY.md`, `docs/MULTI_TENANT_SPEC.md`,
 `docs/LAUNCH_READY.md`, and `docs/POST_LAUNCH_ROADMAP.md` against the codebase and
 `ARCHITECTURE.md` (the authoritative root-level scope audit dated 2026-05-21).

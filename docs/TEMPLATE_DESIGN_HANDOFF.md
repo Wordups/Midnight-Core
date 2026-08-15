@@ -130,7 +130,7 @@ Either way, keep the pandoc pack shells working as a fallback.
 6. **Numbering is sequential** with no duplicates across body + Framework Mappings + Revision History.
 7. **Round-trips** through `python-docx` (`Document(io.BytesIO(raw))`) without error.
 8. **Tenant accent** flows: passing a brand color recolors headings/rules; output still legible.
-9. **Tests updated/added:** extend `tests/test_master_template.py` and/or `tests/test_template_engine.py`; full suite green (`pytest tests/ --ignore=tests/test_trace_agent.py`, env stubs `ANTHROPIC_API_KEY=sk-test SUPABASE_URL=… SUPABASE_ANON_KEY=test SUPABASE_SERVICE_ROLE_KEY=test ENVIRONMENT=dev`).
+9. **Tests updated/added:** extend `tests/test_master_template.py` and/or `tests/test_template_engine.py`; full suite green (`pytest tests/ --ignore=tests/test_tenant_isolation.py --ignore=tests/test_document_isolation.py`, env stubs `ANTHROPIC_API_KEY=sk-test SUPABASE_URL=… SUPABASE_ANON_KEY=test SUPABASE_SERVICE_ROLE_KEY=test ENVIRONMENT=dev`).
 
 ## 7. Guardrails
 - Don't change the engine contract (§2) without updating `_build_docx` + tests.

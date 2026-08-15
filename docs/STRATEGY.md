@@ -142,10 +142,10 @@ close" knows exactly what to do. Wedge is the prioritization intelligence layer.
 marketing spine: most tools tell you what's wrong. Midnight tells you what to do next.
 
 **Automate** is the execution layer. Once the Wedge says what to do, Midnight does the work that can
-be automated. `agents/trace_agent.py` generates audit-ready policies in a 16-step batch orchestration
-process. The distribution system sends the GRC Card on a configured schedule. The task system routes
-requests to SMEs and tracks completion. Automate reduces the gap between "we know what needs to
-happen" and "it happened."
+be automated. Create Studio (`backend/api/routes.py::create_generate`) generates audit-ready policies
+from template packs. The distribution system sends the GRC Card on a configured schedule. The task
+system routes requests to SMEs and tracks completion. Automate reduces the gap between "we know what
+needs to happen" and "it happened."
 
 **Output** is the artifact layer. The audit-ready policy document. The GRC Card. The framework
 coverage report. The finding summary distributed to leadership. In Midnight, every output is stamped,
@@ -166,13 +166,14 @@ it, and produces the artifacts the analyst and their stakeholders need.
 
 This PM shape maps directly onto ILWAO:
 
-`bird_eye/orchestrator.py` runs the five detectors on every document in the tenant's library —
+`bird_eye/orchestrator.py` runs the detectors on every document in the tenant's library —
 this is Logic. `core/framework_mapper.py` and `core/gap_engine.py` handle the bridge between Logic
-and Wedge, mapping coverage and computing gaps. `agents/trace_agent.py` is the primary Automate
-engine: a 16-step fixed orchestrator that takes a policy request and produces an audit-ready
-document. `agents/evidence_agent.py`, `agents/executive_summary_agent.py`,
-`agents/signal_manager_agent.py`, and `agents/tenant_manager_agent.py` handle supporting surfaces
-across the Automate and Output stages. The GRC Card is the Output artifact.
+and Wedge, mapping coverage and computing gaps. Create Studio (`api/routes.py::create_generate`,
+backed by `core/master_template.py` + `template_voice.py` + `template_engine.py`) is the primary
+Automate engine: takes a policy request and produces an audit-ready document.
+`agents/evidence_agent.py`, `agents/executive_summary_agent.py`, `agents/signal_manager.py`, and
+`agents/tenant_manager.py` handle supporting surfaces across the Automate and Output stages. The
+GRC Card is the Output artifact.
 
 The multi-tenant data model underpins all of this. Every operation is scoped to `tenant_id`,
 enforced at the RLS layer via Supabase's `current_tenant_id()` function and at the application layer
@@ -342,9 +343,10 @@ detector found and why. "Midnight read your document and found this."
 by severity and effort. "Of these six issues, here's what to fix first, and here's why. Midnight
 doesn't just find problems — it tells you what to do next."
 
-**Automate (2 min):** Trigger the Trace Agent on a policy gap. Show it generating audit-ready
-language — the 16-step process, the policy section output, the Midnight watermark. "This is what
-used to take a week to draft. Midnight just did it in 90 seconds."
+**Automate (2 min):** Trigger Create Studio on a policy gap (the POLICY lane — the only lane
+currently live end-to-end). Show it generating audit-ready language — the template shell, the
+policy section output, the Midnight watermark. "This is what used to take a week to draft.
+Midnight just did it in 90 seconds."
 
 **Output (2 min):** Show the GRC Card. Framework coverage percentages, open findings count, pending
 SME submissions, audit calendar. Then show the distribution settings — cadence, distro list. "This
@@ -356,7 +358,7 @@ Close: "Which of these stages is costing you the most time right now?"
 
 **"We don't have policies yet."**
 This is an Input-stage problem being misread as a reason to delay. The reframe: not having policies
-is the reason to start now. Midnight's Trace Agent generates policy documents from framework
+is the reason to start now. Midnight's Create Studio generates policy documents from framework
 requirements — you don't need to have policies to start; Midnight starts you. Demo the Automate
 stage first for this prospect.
 
@@ -582,17 +584,27 @@ rewriting the tagline.
 
 ## XV. Pricing
 
-Pricing is anchored against Ostendio ($2,994/yr Select, $23,940/yr Premium, $119,400/yr Enterprise)
-and Vanta mid-tier observed data ($25K-45K/yr for companies at 50-200 employees). The goal is to
-sit below both while capturing more value at the mid-tier.
+**As shipped 2026-08-14** (`backend/billing_plans.py`, `frontend/midnight_dashboard.html`
+billing view) — this supersedes the original anchor below; shipped price is
+the source of truth going forward:
 
 | Tier | Annual | Monthly | Includes |
 |---|---|---|---|
-| **Free** | $0 | $0 | 1 GRC seat, 3 SME seats, 1 framework, 5 active tasks, Bird Eye scan, Bird Talk unlimited |
-| **Starter** | $5,940 | $495 | 1 GRC seat, unlimited free SME seats, 1 framework, unlimited tasks, audit-ready export, GRC Card distribution |
-| **Professional** | $14,940 | $1,245 | 3 GRC seats, unlimited SMEs, 3 frameworks (including AI governance when available), questionnaire response, custom templates |
-| **Team** | $35,940 | $2,995 | 10 GRC seats, all 7+ frameworks, full AI governance suite, audit log, SSO, white-label GRC Card |
-| **Enterprise** | $75K+ | Custom | Dedicated tenant, BAA, SLA, custom controls, white-glove onboarding |
+| **Free** | $0 | $0 | 1 watermarked generation, preview only |
+| **Starter** | $490 | $49 | 1 framework, 10 docs/mo, docx export, 1 seat |
+| **Pro** | $1,990 | $199 | Everything mapped, full gap list, 3 seats |
+| **Team** | $4,990 | $499 | 10 seats, SME workflow at scale |
+| **Enterprise** | Custom | Custom | Contact-only, no self-serve checkout |
+
+Original anchor reasoning (kept for context — the tiers below were never
+shipped at these numbers): pricing was anchored against Ostendio ($2,994/yr
+Select, $23,940/yr Premium, $119,400/yr Enterprise) and Vanta mid-tier
+observed data ($25K-45K/yr for companies at 50-200 employees), aiming to sit
+below both while capturing more value at the mid-tier — Starter $495/mo,
+Professional $1,245/mo, Team $2,995/mo. The 2026-08-14 reprice landed well
+below that anchor (still above the original $29/$99 launch ceiling it
+replaced). Whether to re-anchor upward toward the original target is an open
+call, not a stale-doc question — flagging the gap rather than resolving it.
 
 SME seats are free at all paid tiers. The friction point for B2B adoption is always "how many
 people do I have to pay for?" Removing that question removes the adoption blocker and drives organic
