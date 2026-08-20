@@ -144,7 +144,7 @@ class AssessmentsRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 502)
         body = response.json()
         self.assertEqual(body.get("error"), "http_error")
-        self.assertIn("unparseable", body.get("detail", "").lower())
+        self.assertIn("garbled", body.get("detail", "").lower())
         self.assertIn("request_id", body)
 
 

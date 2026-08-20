@@ -66,7 +66,8 @@ def _enforce_corpus_fence(request: Request, tenant_id: str) -> None:
     if used >= cap:
         raise _upgrade_403(
             plan,
-            f"The {plan} plan includes {cap} questionnaire runs per month. Upgrade for more.",
+            f"You've used all {cap} questionnaire runs included in the {plan} plan "
+            "this month. The count resets on the 1st — or move up a plan to keep going now.",
         )
 
 
@@ -114,7 +115,7 @@ def corpus_index(request: Request) -> dict[str, Any]:
         return build_corpus_index(tenant_id)
     except Exception as exc:
         logger.error("corpus index failed: %s", exc)
-        raise HTTPException(status_code=503, detail="Corpus index is unavailable.") from exc
+        raise HTTPException(status_code=503, detail="We couldn't load your documents just now. Try again in a moment.") from exc
 
 
 @router.post("/answer")
@@ -130,11 +131,11 @@ def corpus_answer(payload: AnswerRequest, request: Request) -> dict[str, Any]:
     if not questions:
         questions = split_questionnaire(payload.raw_text or "")
     if not questions:
-        raise HTTPException(status_code=422, detail="No questions could be extracted from the input.")
+        raise HTTPException(status_code=422, detail="We couldn't find any questions in that file.")
     if len(questions) > MAX_QUESTIONS:
         raise HTTPException(
             status_code=413,
-            detail=f"{len(questions)} questions submitted; the limit is {MAX_QUESTIONS} per run.",
+            detail=f"That's {len(questions)} questions. Send up to {MAX_QUESTIONS} at a time.",
         )
 
     from backend.core.ratelimit import allow as _rate_allow
@@ -151,11 +152,11 @@ def corpus_answer(payload: AnswerRequest, request: Request) -> dict[str, Any]:
         sections = load_corpus_sections(tenant_id)
     except Exception as exc:
         logger.error("corpus sections load failed: %s", exc)
-        raise HTTPException(status_code=503, detail="Corpus is unavailable.") from exc
+        raise HTTPException(status_code=503, detail="Your documents couldn't be loaded just now. Try again in a moment.") from exc
     if not sections:
         raise HTTPException(
             status_code=409,
-            detail="The corpus is empty. Ingest or generate at least one document first.",
+            detail="There are no documents to answer from yet. Add your policies and procedures first — every answer cites real evidence, so with nothing on file there is nothing to stand on.",
         )
 
     llm, model = _llm_for_request(request)
@@ -218,7 +219,7 @@ async def corpus_parse_questionnaire(request: Request, file: UploadFile = File(.
         except ImportError as exc:
             raise HTTPException(
                 status_code=415,
-                detail="XLSX parsing is not enabled on this server — export the sheet as CSV instead.",
+                detail="Excel files aren't supported here yet. Save the sheet as CSV and upload that instead.",
             ) from exc
         import io as _io
 
@@ -228,7 +229,7 @@ async def corpus_parse_questionnaire(request: Request, file: UploadFile = File(.
     else:
         raise HTTPException(
             status_code=415,
-            detail="Unsupported file type — use .csv, .tsv, .txt, .md, or .xlsx.",
+            detail="That file type isn't supported. Use .csv, .tsv, .txt, .md, or .xlsx.",
         )
 
     truncated = len(questions) > MAX_QUESTIONS

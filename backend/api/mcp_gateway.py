@@ -63,9 +63,11 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "answer_questions",
-        "description": "Answer security-questionnaire questions from the tenant's "
-                       "evidence corpus with citations. Fails closed: no evidence, no "
-                       "yes. Counts against the plan's monthly questionnaire runs.",
+        "description": "Answer security-questionnaire questions from the customer's "
+                       "own documents, with a citation behind every answer. If the "
+                       "evidence isn't there it says so rather than guessing. Each "
+                       "call uses one of the questionnaire runs included in the plan "
+                       "— check get_posture for how many are left this month.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -159,6 +161,32 @@ class ToolError(Exception):
     protocol error."""
 
 
+def _run_allowance(tenant_id: str) -> dict:
+    """How many questionnaire runs this tenant has left this month.
+
+    Runs are the thing Midnight charges for, so an assistant should be able to
+    see the budget before it spends it rather than discovering the ceiling
+    halfway through a questionnaire. None for `remaining` means the number is
+    temporarily unknown, not that it is unlimited -- no plan is unlimited.
+    """
+    plan = _plan_type(tenant_id)
+    cap = limits_for(plan).get("corpus_runs_per_month")
+    used = None
+    try:
+        from backend.storage.file_store import count_activity_for_tenant
+        month_start = datetime.now(UTC).replace(day=1, hour=0, minute=0,
+                                                second=0, microsecond=0)
+        used = count_activity_for_tenant(tenant_id, action="corpus_answered",
+                                         since=month_start)
+    except Exception:
+        pass
+    remaining = None
+    if cap is not None and used is not None:
+        remaining = max(0, cap - used)
+    return {"plan": plan, "included_per_month": cap, "used_this_month": used,
+            "remaining": remaining, "questions_per_run": MAX_QUESTIONS}
+
+
 def _tool_get_posture(tenant_id: str, args: dict) -> dict:
     index = {}
     try:
@@ -177,6 +205,7 @@ def _tool_get_posture(tenant_id: str, args: dict) -> dict:
         "gaps_medium": gaps.get("gaps_medium", 0),
         "gaps_low": gaps.get("gaps_low", 0),
         "top_gaps": (gaps.get("gaps") or [])[:10],
+        "questionnaire_runs": _run_allowance(tenant_id),
     }
 
 
@@ -190,18 +219,23 @@ def _tool_answer_questions(tenant_id: str, args: dict) -> dict:
     if use_case not in USE_CASES:
         raise ToolError(f"use_case must be one of {', '.join(sorted(USE_CASES))}.")
 
-    plan = _plan_type(tenant_id)
-    cap = limits_for(plan).get("corpus_runs_per_month")
-    if cap is not None:
-        from backend.storage.file_store import count_activity_for_tenant
-        month_start = datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        if count_activity_for_tenant(tenant_id, action="corpus_answered", since=month_start) >= cap:
-            raise ToolError(f"The {plan} plan includes {cap} questionnaire runs per month. "
-                            "Upgrade in the Midnight dashboard for more.")
+    allowance = _run_allowance(tenant_id)
+    plan = allowance["plan"]
+    cap = allowance["included_per_month"]
+    if cap is not None and allowance["remaining"] == 0:
+        raise ToolError(
+            f"You've used all {cap} questionnaire runs included in the {plan} plan "
+            "this month. The count resets on the 1st. To answer more now, move up "
+            "a plan under Plan & Billing in Midnight."
+        )
 
     sections = load_corpus_sections(tenant_id)
     if not sections:
-        raise ToolError("The corpus is empty — ingest or generate at least one document in Midnight first.")
+        raise ToolError(
+            "There are no documents to answer from yet. Add your policies and "
+            "procedures to Midnight first — every answer has to cite real "
+            "evidence, so with nothing on file there is nothing to stand on."
+        )
 
     llm, model = _llm_for_plan(plan)
     run = answer_batch(tenant_id, questions, use_case=use_case,
@@ -210,6 +244,8 @@ def _tool_answer_questions(tenant_id: str, args: dict) -> dict:
         create_activity_event(tenant_id=tenant_id, action="corpus_answered")
     except Exception:
         pass
+    if cap is not None and allowance["remaining"] is not None:
+        run = {**run, "runs_remaining_this_month": max(0, allowance["remaining"] - 1)}
     return run
 
 

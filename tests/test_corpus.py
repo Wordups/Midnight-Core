@@ -310,8 +310,9 @@ class ApiTests(unittest.TestCase):
         kwargs = mock_select.call_args.kwargs
         self.assertEqual(kwargs["tenant_id"], "tenant-A")
 
+    @patch("backend.api.corpus.count_activity_for_tenant", return_value=0)
     @patch("backend.api.corpus.load_corpus_sections")
-    def test_answer_empty_corpus_409(self, mock_sections):
+    def test_answer_empty_corpus_409(self, mock_sections, _mock_count):
         mock_sections.return_value = []
         self._login()
         resp = self.client.post("/api/v1/corpus/answer", json={"questions": ["Do you require MFA for admins?"]})
@@ -351,17 +352,29 @@ class ApiTests(unittest.TestCase):
 
     @patch("backend.api.corpus.load_corpus_sections")
     @patch("backend.api.corpus.count_activity_for_tenant")
-    def test_pro_plan_not_fenced(self, mock_count, mock_sections):
-        mock_count.return_value = 999
+    def test_pro_plan_within_allowance_is_not_fenced(self, mock_count, mock_sections):
+        mock_count.return_value = 99  # pro includes 100 runs a month
         mock_sections.return_value = []
         self._login(plan="pro")
         resp = self.client.post(
             "/api/v1/corpus/answer",
             json={"questions": ["Do you require MFA for privileged access?"]},
         )
-        # falls through the fence and hits the empty-corpus 409 instead
+        # inside the allowance: falls through the fence to the empty-corpus 409
         self.assertEqual(resp.status_code, 409)
-        mock_count.assert_not_called()
+
+    @patch("backend.api.corpus.count_activity_for_tenant")
+    def test_pro_plan_monthly_fence(self, mock_count):
+        """Every plan is finite, pro included. An agent hammering the
+        questionnaire surface is the case this exists to bound."""
+        mock_count.return_value = 100  # pro cap is 100/month
+        self._login(plan="pro")
+        resp = self.client.post(
+            "/api/v1/corpus/answer",
+            json={"questions": ["Do you require MFA for privileged access?"]},
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.json()["detail"]["code"], "upgrade_required")
 
 
 if __name__ == "__main__":

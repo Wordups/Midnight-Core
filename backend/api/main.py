@@ -212,14 +212,14 @@ def _extract_user_id_from_token(access_token: str) -> str:
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid session token.",
+            detail="Your session is no longer valid. Please sign in again.",
         ) from exc
 
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session token is missing a user identifier.",
+            detail="Something went wrong with your session. Please sign in again.",
         )
     return str(user_id)
 
@@ -404,7 +404,7 @@ def _load_user_membership(user_id: str) -> tuple[dict[str, Any], dict[str, Any] 
     if not tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is missing a tenant assignment.",
+            detail="Your account isn't attached to a workspace yet. Contact whoever invited you.",
         )
 
     try:
@@ -499,7 +499,7 @@ def _validate_supabase_token(access_token: str) -> Any:
     except AuthApiError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired Supabase session.",
+            detail="Your session has expired. Please sign in again.",
         ) from exc
 
     auth_user = getattr(auth_user_response, "user", None)
@@ -513,7 +513,7 @@ def _validate_supabase_token(access_token: str) -> Any:
     if str(auth_user.id) != token_user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session token user does not match validated user.",
+            detail="Something went wrong with your session. Please sign in again.",
         )
     return auth_user
 

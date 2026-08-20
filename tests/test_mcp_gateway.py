@@ -131,7 +131,7 @@ class GatewayToolTests(unittest.TestCase):
             resp = self._call("answer_questions", {"questions": ["Do you encrypt at rest?"]})
         result = resp.json()["result"]
         self.assertTrue(result["isError"])
-        self.assertIn("corpus is empty", result["content"][0]["text"])
+        self.assertIn("no documents to answer from", result["content"][0]["text"])
 
     def test_answer_questions_enforces_plan_cap(self):
         with patch("backend.api.mcp_gateway._plan_type", return_value="free"), \

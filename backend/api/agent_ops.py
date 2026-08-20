@@ -201,7 +201,7 @@ def _require_tenant_id(request: Request) -> str:
     if not tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tenant scope is required for agent ops telemetry.",
+            detail="We couldn't tell which workspace you're in. Please sign in again.",
         )
     return str(tenant_id)
 

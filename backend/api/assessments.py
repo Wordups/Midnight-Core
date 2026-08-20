@@ -149,7 +149,7 @@ async def create_assessment(request: AssessmentRequest) -> AssessmentResponse:
         )
         raise HTTPException(
             status_code=502,
-            detail=f"Model returned unparseable JSON: {exc}",
+            detail="The assessment came back garbled. Run it again — this usually clears on a retry.",
         ) from exc
     except ValidationError as exc:
         logger.warning(
@@ -158,5 +158,5 @@ async def create_assessment(request: AssessmentRequest) -> AssessmentResponse:
         )
         raise HTTPException(
             status_code=502,
-            detail="Model output did not match the assessment schema.",
+            detail="The assessment came back in an unexpected shape. Run it again — this usually clears on a retry.",
         ) from exc

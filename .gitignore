@@ -91,3 +91,6 @@ midnight_task_def.json
 
 # Word/Office lock files
 ~$*
+
+# Security posture drafts live outside this public repo (Documents/midnight-trust-center)
+docs/security-policies/
