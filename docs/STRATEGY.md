@@ -584,27 +584,44 @@ rewriting the tagline.
 
 ## XV. Pricing
 
-**As shipped 2026-08-14** (`backend/billing_plans.py`, `frontend/midnight_dashboard.html`
-billing view) — this supersedes the original anchor below; shipped price is
-the source of truth going forward:
+**As shipped 2026-08-20** (`backend/billing_plans.py`, `frontend/midnight_dashboard.html`
+billing view) — this supersedes both the 2026-08-14 reprice and the original
+anchor below; shipped price is the source of truth going forward:
 
-| Tier | Annual | Monthly | Includes |
-|---|---|---|---|
-| **Free** | $0 | $0 | 1 watermarked generation, preview only |
-| **Starter** | $490 | $49 | 1 framework, 10 docs/mo, docx export, 1 seat |
-| **Pro** | $1,990 | $199 | Everything mapped, full gap list, 3 seats |
-| **Team** | $4,990 | $499 | 10 seats, SME workflow at scale |
-| **Enterprise** | Custom | Custom | Contact-only, no self-serve checkout |
+| Tier | Annual | Monthly | Runs/mo | Includes |
+|---|---|---|---|---|
+| **Free** | $0 | $0 | 2 | 1 watermarked generation, preview only |
+| **Starter** | $990 | $99 | 20 | 1 framework, 10 docs/mo, docx export, 1 seat |
+| **Pro** | $3,490 | $349 | 100 | Everything mapped, full gap list, 3 seats |
+| **Team** | $9,990 | $999 | 400 | 10 seats, SME workflow at scale |
+| **Enterprise** | from ~$25,000 | — | By contract | Contact-only, no self-serve checkout |
 
-Original anchor reasoning (kept for context — the tiers below were never
-shipped at these numbers): pricing was anchored against Ostendio ($2,994/yr
-Select, $23,940/yr Premium, $119,400/yr Enterprise) and Vanta mid-tier
-observed data ($25K-45K/yr for companies at 50-200 employees), aiming to sit
-below both while capturing more value at the mid-tier — Starter $495/mo,
-Professional $1,245/mo, Team $2,995/mo. The 2026-08-14 reprice landed well
-below that anchor (still above the original $29/$99 launch ceiling it
-replaced). Whether to re-anchor upward toward the original target is an open
-call, not a stale-doc question — flagging the gap rather than resolving it.
+**The value metric is questionnaire runs, not seats.** One run answers up to 50
+questions against the evidence corpus and costs real model tokens. Before this
+reprice, pro/team/enterprise all carried `corpus_runs_per_month: None` — so the
+moment a customer pointed an AI assistant at the connector, the plan promised
+unlimited inference for $199/mo. Every tier is finite now, enterprise included,
+where the number comes from the contract rather than from code.
+
+Seats are the wrong unit in an agent world: an assistant does questionnaire work
+for the whole company, occupies no seat, and consumes computation continuously.
+Runs track the thing that costs money to produce and saves money to have.
+
+Market anchors re-verified 2026-08-20: Ostendio $2,994/yr entry (cheapest real
+GRC platform), Sprinto from $4k with a ~$15k median, Vanta ~$20k median, Drata
+~$34k average, and Conveyor — the closest comp to what `answer_questions`
+actually does — $9,600/yr on credits. Pro at $3,490 now sits just above
+Ostendio's floor; Team at $9,990 matches Conveyor. The prior $490/yr ceiling was
+roughly 6x below the cheapest serious competitor, which in compliance software
+reads as a toy rather than a bargain.
+
+The open call flagged on 2026-08-14 — whether to re-anchor upward toward the
+original $495/$1,245/$2,995 target — is now partially resolved: the reprice moved
+toward it without reaching it. Self-serve remains the wedge, deliberately below
+the field, but no longer at a signal-destroying discount.
+
+Original anchor reasoning (kept for context — never shipped at these numbers):
+Starter $495/mo, Professional $1,245/mo, Team $2,995/mo.
 
 SME seats are free at all paid tiers. The friction point for B2B adoption is always "how many
 people do I have to pay for?" Removing that question removes the adoption blocker and drives organic
