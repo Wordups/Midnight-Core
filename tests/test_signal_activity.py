@@ -29,10 +29,13 @@ class SignalActivityPersistenceTests(unittest.TestCase):
             )
         self.assertIsNotNone(signal)
         self.assertEqual(signal["signal_type"], "policy_generation_failed")
+        # metadata now reaches the audit row rather than dying in the app log,
+        # so a record says what happened and not merely that something did
         insert_mock.assert_called_once_with(
             tenant_id="tenant-123",
             action="policy_generation_failed",
             policy_id="policy-123",
+            metadata={"doc_type": "POLICY"},
         )
 
 

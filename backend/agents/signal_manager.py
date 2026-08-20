@@ -32,7 +32,15 @@ class SignalManagerAgent(BaseAgent):
         severity = Severity.LOW
         next_action = "Review activity details."
 
-        if "policy" in event_type and "fail" in event_type:
+        if "mcp" in event_type:
+            # An AI assistant acted on the tenant's program through the
+            # connector. Recorded as its own type: "an agent read your posture"
+            # is a distinct audit event from anything a person does, and a
+            # compliance customer will eventually ask us to prove which it was.
+            signal_type = SignalType.MCP_TOOL_CALL
+            severity = Severity.LOW
+            next_action = "Review connector activity if the call was unexpected."
+        elif "policy" in event_type and "fail" in event_type:
             signal_type = SignalType.POLICY_GENERATION_FAILED
             severity = Severity.HIGH
             next_action = "Inspect model output and retry the failed policy section safely."

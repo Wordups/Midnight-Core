@@ -239,3 +239,65 @@ class KeyEndpointTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ConnectorAuditTests(unittest.TestCase):
+    """An AI assistant acting on a compliance program has to leave a record that
+    names what it did. These calls used to land as action='unknown' with the tool
+    name reaching nothing more durable than a log line."""
+
+    def test_mcp_event_type_is_classified_not_unknown(self):
+        from backend.agents.schemas import SignalType
+        from backend.agents.signal_manager import SignalManagerAgent
+
+        out = SignalManagerAgent().run({
+            "event_type": "mcp_tool_call",
+            "tenant_id": "00000000-0000-0000-0000-000000000001",
+            "source": "mcp.gateway",
+            "summary": "AI connector called get_posture",
+            "metadata": {"tool": "get_posture", "error": False},
+        })
+        signal_type = out.signal_type
+        value = getattr(signal_type, "value", signal_type)
+        self.assertEqual(value, SignalType.MCP_TOOL_CALL.value)
+        self.assertNotEqual(value, SignalType.UNKNOWN.value)
+
+    def test_activity_row_carries_the_tool_name(self):
+        from backend.storage import file_store
+
+        captured = {}
+
+        def fake_postgrest(method, table, payload=None, **kwargs):
+            captured["payload"] = payload
+            return []
+
+        with patch.object(file_store, "_postgrest", side_effect=fake_postgrest):
+            file_store._insert_activity_log(
+                tenant_id="00000000-0000-0000-0000-000000000001",
+                action="mcp_tool_call",
+                metadata={"tool": "get_posture", "error": False},
+            )
+        self.assertEqual(captured["payload"]["metadata"]["tool"], "get_posture")
+
+    def test_audit_row_survives_a_database_without_migration_007(self):
+        """The metadata column is applied by hand. Until it exists, the audit row
+        must still be written — thinner, but written."""
+        from backend.storage import file_store
+
+        calls = []
+
+        def fake_postgrest(method, table, payload=None, **kwargs):
+            calls.append(payload)
+            if "metadata" in (payload or {}):
+                raise RuntimeError("column activity_log.metadata does not exist")
+            return []
+
+        with patch.object(file_store, "_postgrest", side_effect=fake_postgrest):
+            file_store._insert_activity_log(
+                tenant_id="00000000-0000-0000-0000-000000000001",
+                action="mcp_tool_call",
+                metadata={"tool": "get_posture"},
+            )
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn("metadata", calls[1])
+        self.assertEqual(calls[1]["action"], "mcp_tool_call")

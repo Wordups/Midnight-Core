@@ -27,6 +27,7 @@ class SignalType(str, Enum):
     FRAMEWORK_MAPPING_FAILED = "framework_mapping_failed"
     USER_INVITE_FAILED = "user_invite_failed"
     USER_ONBOARDING_EVENT = "user_onboarding_event"
+    MCP_TOOL_CALL = "mcp_tool_call"
     UNKNOWN = "unknown"
 
 

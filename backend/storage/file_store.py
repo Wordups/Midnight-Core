@@ -345,17 +345,36 @@ def _insert_document_row(payload: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
-def _insert_activity_log(*, tenant_id: str, action: str, policy_id: str | None = None) -> None:
-    _postgrest(
-        "POST",
-        "activity_log",
-        payload={
-            "tenant_id": tenant_id,
-            "policy_id": policy_id,
-            "action": action,
-        },
-        prefer="return=minimal",
-    )
+def _insert_activity_log(
+    *,
+    tenant_id: str,
+    action: str,
+    policy_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Write one audit row.
+
+    `metadata` lands in a jsonb column added by migration 007. Migrations are
+    applied by hand here, so the column may not exist yet on a given database —
+    if the insert is rejected we retry without it rather than lose the audit row
+    entirely. A thinner record beats a missing one.
+    """
+    payload = {
+        "tenant_id": tenant_id,
+        "policy_id": policy_id,
+        "action": action,
+    }
+    if metadata:
+        try:
+            _postgrest("POST", "activity_log", payload={**payload, "metadata": metadata},
+                       prefer="return=minimal")
+            return
+        except Exception:
+            logger.warning(
+                "activity_log_metadata_unavailable",
+                extra={"action": action, "hint": "run migrations/007_activity_metadata.sql"},
+            )
+    _postgrest("POST", "activity_log", payload=payload, prefer="return=minimal")
 
 
 def _normalize_document_record(document_row: dict[str, Any], policy_row: dict[str, Any] | None = None) -> dict:
@@ -666,6 +685,7 @@ def create_signal_activity_event(
         tenant_id=signal.tenant_id,
         action=signal.signal_type.value,
         policy_id=policy_id,
+        metadata=metadata or None,
     )
     logger.info(
         "signal_activity_emitted",
