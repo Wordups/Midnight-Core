@@ -21,41 +21,53 @@ logger = logging.getLogger("midnight.agent_ops")
 agent_ops_router = APIRouter(prefix="/api/agents", tags=["agent-ops"])
 
 
+# "kind" distinguishes real LLM-driven agents (backend/agents/*_agent.py) from
+# plain backend services that are bucketed here only because activity_log
+# needs somewhere to attribute events that aren't any of the five real agents.
+# signal_manager and tenant_manager are NOT agents — don't relabel them as
+# such in the UI. See docs/superpowers/specs/ for the 2026-08-21 correction.
 AGENT_CATALOG: list[dict[str, str]] = [
     {
         "id": "signal_manager",
         "name": "Signal Manager",
         "role": "Classifies and persists every system event into activity_log.",
+        "kind": "service",
     },
     {
         "id": "policy_agent",
         "name": "Policy Agent",
         "role": "Generates and updates policy drafts and sections.",
+        "kind": "agent",
     },
     {
         "id": "cleaner_agent",
         "name": "Cleaner Agent",
         "role": "Cleans and migrates legacy documents into the canonical schema.",
+        "kind": "agent",
     },
     {
         "id": "framework_mapping_agent",
         "name": "Framework Mapping Agent",
         "role": "Maps policy content to compliance frameworks and surfaces gaps.",
+        "kind": "agent",
     },
     {
         "id": "tenant_manager",
         "name": "Tenant Manager",
         "role": "Provisions tenants and manages onboarding and invites.",
+        "kind": "service",
     },
     {
         "id": "evidence_agent",
         "name": "Evidence Agent",
         "role": "Collects and links supporting evidence for controls.",
+        "kind": "agent",
     },
     {
         "id": "executive_summary_agent",
         "name": "Executive Summary Agent",
         "role": "Produces executive-level summaries of policy posture.",
+        "kind": "agent",
     },
 ]
 
@@ -218,6 +230,7 @@ async def agents_status(request: Request) -> dict[str, Any]:
             "id": a["id"],
             "name": a["name"],
             "role": a["role"],
+            "kind": a["kind"],
             "last_event_at": None,
             "last_action": None,
             "last_action_label": None,
@@ -280,6 +293,7 @@ async def agents_events(request: Request, limit: int = DEFAULT_EVENT_LIMIT) -> d
                 "action_label": _humanize_action(action),
                 "agent_id": agent["id"],
                 "agent_name": agent["name"],
+                "agent_kind": agent["kind"],
                 "policy_id": row.get("policy_id"),
                 "policy_name": (policy or {}).get("policy_name"),
                 "policy_status": (policy or {}).get("status"),

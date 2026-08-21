@@ -117,6 +117,10 @@
   .badge[data-status="active"] { background: var(--green-bg); color: var(--green); border-color: rgba(0,232,154,0.35); }
   .badge[data-status="idle"]   { background: var(--amber-bg); color: var(--amber); border-color: rgba(250,170,40,0.35); }
   .badge[data-status="no_data"]{ background: var(--bg4); color: var(--text3); border-color: var(--border); }
+  .kind-tag {
+    font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+  }
   .card-stats {
     display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px;
     border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;
@@ -270,12 +274,14 @@
         : "No data";
       const lastSeen = agent.last_event_at ? fmtRelative(agent.last_event_at) : "—";
       const lastAction = agent.last_action_label || "—";
+      const kind = agent.kind === "service" ? "service" : "agent";
       return `
         <div class="card">
           <div class="card-head">
             <div class="card-name">${escapeHtml(agent.name)}</div>
             <span class="badge" data-status="${escapeHtml(status)}">${statusLabel}</span>
           </div>
+          <div class="kind-tag">${kind === "service" ? "System process, not an LLM agent" : "Agent"}</div>
           <div class="card-role">${escapeHtml(agent.role || "")}</div>
           <div class="card-stats">
             <div>
